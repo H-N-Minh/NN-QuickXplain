@@ -58,20 +58,3 @@ def data_preprocessing_predicting(pandas_data, features_data):
 
     return data_one_hot
 
-
-def data_preprocessing_predicting_mf(pandas_data, features_data):
-    concat_data = pandas_data.append(features_data, ignore_index=True)
-    data_array = np.array(concat_data)
-
-    categorical_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='constant', fill_value='missing')),
-        ('encoder', OneHotEncoder(handle_unknown='ignore'))])
-
-    preprocessor = ColumnTransformer(categorical_transformer)
-    # transformers=[
-    # ('cat', categorical_transformer, [0])
-    # ])
-
-    data_one_hot = preprocessor.fit_transform(data_array)
-
-    return data_one_hot
