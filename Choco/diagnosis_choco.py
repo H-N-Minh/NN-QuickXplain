@@ -1,7 +1,7 @@
 import subprocess
 
 
-def get_siemens_diagnosis(variable_order_file_path=None):
+def get_diagnosis(variable_order_file_path=None):
     try:
         if variable_order_file_path:
             result = subprocess.run(["java", "-jar",
