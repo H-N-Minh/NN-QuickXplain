@@ -21,9 +21,5 @@ def get_diagnosis(variable_order_file_path=None):
     return print(result)
 
 
-# get_siemens_diagnosis()
-# get_camera_diagnosis(test_file_path=r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\data\camera_testing_ur.csv")
-                     #variable_order_file_path=r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\data\camera_testing_vo.csv")
-                     #diag_file_path=r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\data\camera_diag_output")
-# get_camera_diagnosis()
+# get_diagnosis()
 
