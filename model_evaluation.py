@@ -299,7 +299,7 @@ class ConLearn:
         return id_to_keep
     
 
-    def model_predict_siemens_diagnosis(id, validation_input, validation_data, label_dict, progress_file_path,
+    def model_predict_diagnosis(id, validation_input, validation_data, label_dict, progress_file_path,
                                         output_file_path, variable_order_file_path):
         # remove duplicates since it is the same configuration and keep order of list - set() also possible...
         # validation_input = [i for n, i in enumerate(validation_input) if i not in validation_input[:n]]
