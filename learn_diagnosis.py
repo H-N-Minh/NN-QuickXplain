@@ -5,7 +5,7 @@ import shutil
 import pandas as pd
 
 
-from Choco.diagnosis_choco import get_siemens_diagnosis
+from Choco.diagnosis_choco import get_diagnosis
 from ConfigurationCreator.inconsistent_configuration_create import inconsistent_configuration_create
 from ConfigurationCreator.configuration_preference_ordering import configuration_preference_ordering
 from model_evaluation import ConLearn
@@ -35,7 +35,7 @@ def learn_diagnosis(settings):
                 property_ordering = configuration_preference_ordering(settings_dict["OUTPUT_XML_FILE_PATH"],
                                                                   settings["VARIABLE_ORDER_FILE_PATH"],
                                                                   settings_dict["IRRELEVANT_FEATURES"])
-                get_siemens_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
+                get_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
                 new_diagnosis, new_runtime, new_consistency_check = diagnosis_handling('diagnosis_output')
                 if diagnosis_list:
                     for diagnosis in diagnosis_list:
@@ -123,7 +123,7 @@ def learn_diagnosis(settings):
         average_original_runtime, \
         average_new_runtime, \
         average_original_consistency_check, \
-        average_new_consistency_check = ConLearn.model_predict_siemens_diagnosis(id, validation_input,
+        average_new_consistency_check = ConLearn.model_predict_diagnosis(id, validation_input,
                                                                                  validation_data, label_dict,
                                                                                  settings["PROGRESS_XML_FILE_PATH"],
                                                                                  settings["OUTPUT_XML_FILE_PATH"],
