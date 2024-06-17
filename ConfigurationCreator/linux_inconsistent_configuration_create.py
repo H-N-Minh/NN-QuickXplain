@@ -14,13 +14,6 @@ def inconsistent_configurations_create(settings_dict):
     print("Start: " + str(datetime.now()))
     print("Check inconsistency!\n")
 
-    # Ex: checks Linux-2.6.33.3 configurations stored in the folder './fm_confs.' The Linux-2.6.33.3 is stored in the current folder.
-    # java -jar fm_conf_checker.jar Linux-2.6.33.3.xml ./fm_confs/
-    #result = subprocess.run(["java", "-jar",
-                             #r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_checker.jar",
-                             #r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-                             #settings_dict["CANDIDATE_FILE_PATH"]])
-
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
     # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
     result = subprocess.run(["java", "-jar",
@@ -100,11 +93,11 @@ def defined_inconsistent_configurations_create(settings_dict):
 
     # Ex: loop through combination files in <path_to_comb_files> and generate inconsistent configurations that
     # preserve the already identified diagnosis of the given combination. Output: txt files in ./conf/ folder.
-    # result = subprocess.run(["java", "-jar", "-Xmx4G",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen_v2.jar",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-    # settings_dict["COMBINATION_FILE_PATH"], "2", settings_dict["CANDIDATE_FILE_PATH"], "1", "5"])
-    """
+    result = subprocess.run(["java", "-jar", "-Xmx4G",
+                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen_v2.jar",
+                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                        settings_dict["COMBINATION_FILE_PATH"], "2", settings_dict["CANDIDATE_FILE_PATH"], "1", "5"])
+    
     for dirpath, dirnames, filenames in os.walk(settings_dict["CONFIGURATION_FILE_PATH"]):
         # Sort the dirnames to iterate over them in alphabetical order
         dirnames.sort()
@@ -134,21 +127,14 @@ def defined_inconsistent_configurations_create(settings_dict):
             os.rename(src_path, dst_path)
     
     print("Next: Check inconsistency!\n")
-    """
-    # Ex: checks Linux-2.6.33.3 configurations stored in the folder './fm_confs.' The Linux-2.6.33.3 is stored in the current folder.
-    # java -jar fm_conf_checker.jar Linux-2.6.33.3.xml ./fm_confs/
-    # result = subprocess.run(["java", "-jar",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_checker.jar",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-    # settings_dict["CANDIDATE_FILE_PATH"]])
-
+    
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
     # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
     # change between busybox and linux!
-    # result = subprocess.run(["java", "-jar",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-    # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-    # settings_dict["INCONSISTENT_FILE_PATH"]])
+    result = subprocess.run(["java", "-jar",
+                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                            settings_dict["INCONSISTENT_FILE_PATH"]])
     print("Status: Inconsistent configurations determined " + str(datetime.now()))
 
     print("Next: Create Training data set!")
@@ -164,7 +150,6 @@ def defined_inconsistent_configurations_create(settings_dict):
     return print("Successfully finished and " + str(configurations_added) + " inconsistent configurations added!")
 
 
-# change between busybox and linux!
 settings_dict = {
     "CANDIDATE_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\candidate",
     "COMBINATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\Combinations\comb16",
