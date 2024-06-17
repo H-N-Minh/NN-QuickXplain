@@ -1,25 +1,14 @@
 import subprocess
 
 
-def get_diagnosis(variable_order_file_path=None):
+def get_linux_diagnosis(configuration_file_path):
     try:
-        if variable_order_file_path:
-            result = subprocess.run(["java", "-jar",
-                                     r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\siemens_diagnosis.jar",
-                                     r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs\conf_0.xml",
-                                     variable_order_file_path],
-                                    capture_output=True, text=True, timeout=400)
-        else:
-            result = subprocess.run(["java", "-jar",
-                                     r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\siemens_diagnosis.jar",
-                                     r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs\conf_0.xml"],
-                                    capture_output=True, text=True, timeout=400)
-
+        result = subprocess.run(["java", "-jar",
+                                 r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                                 r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                                 configuration_file_path])
     except:
         print('Subprocess did not answer! Continue with another try...')
 
     return print(result)
-
-
-# get_diagnosis()
 
