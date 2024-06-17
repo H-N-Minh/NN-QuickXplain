@@ -2,8 +2,10 @@ import pandas as pd
 import tensorflow_addons as tfa
 
 
-def data_labeling(label_names, training_file_path, binary_features=None, ignore=None):
-    pandas_data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
+def data_labeling(label_names, training_file_path, binary_features=None, ignore=None, delimiter=None):
+    if not delimiter:
+        delimiter = ';'
+    pandas_data = pd.read_csv(training_file_path, delimiter=delimiter, dtype='string')
     # Fill NaN cells with default value string
     pandas_data.fillna('noValue', inplace=True)
     label_columns = []
@@ -27,17 +29,23 @@ def data_labeling(label_names, training_file_path, binary_features=None, ignore=
                         losses[column.name] = "sparse_categorical_crossentropy"
                         break
                     else:
-                        losses[column.name] = "categorical_crossentropy"
+                        # losses[column.name] = "categorical_crossentropy"
+                        losses[column.name] = tfa.losses.TripletSemiHardLoss()
         else:
+            # if no binary features are explicit defined, all features are binary
+            # losses[column.name] = "sparse_categorical_crossentropy"
             losses[column.name] = "categorical_crossentropy"
-            #losses[column.name] = tfa.losses.TripletSemiHardLoss()
+            # losses[column.name] = tfa.losses.TripletSemiHardLoss()
     for key, value in label_dict.items():
         label_dict[key] = sorted(value)
     return pandas_data, label_columns, label_dict, losses, loss_weights
 
 
-def training_data_labeling(label_names, training_file_path, prediction_names=None, binary_features=None, ignore=None):
-    pandas_data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
+def training_data_labeling(label_names, training_file_path, prediction_names=None, binary_features=None, ignore=None,
+                           delimiter=None):
+    if not delimiter:
+        delimiter = ';'
+    pandas_data = pd.read_csv(training_file_path, delimiter=delimiter, dtype='string')
     # pandas_data = pandas_data.sample(frac=1).reset_index(drop=True)     # shuffle pandas data
     label_columns = []
     label_dict = {}
@@ -68,6 +76,12 @@ def training_data_labeling(label_names, training_file_path, prediction_names=Non
                         break
                     else:
                         losses[column.name] = "categorical_crossentropy"
+                        # losses[column.name] = tfa.losses.TripletSemiHardLoss()
+        else:
+            # if no binary features are explicit defined, all features are binary
+            # losses[column.name] = "sparse_categorical_crossentropy"
+            losses[column.name] = "categorical_crossentropy"
+
     for key, value in label_dict.items():
         label_dict[key] = sorted(value)
 
@@ -89,7 +103,33 @@ def data_consistency(pandas_data, features_data):
                 if not set(data[1].values).issubset(set(column[1].values)):
                     consistency = False
                     print('Inconsistent feature: ' + data[0] + ': ' + data[1].values)
+                    # return consistency
+                if not set(column[1].values).issubset(set(data[1].values)):
+                    consistency = False
+                    print('Inconsistent feature: ' + column[0] + ': ' + column[1].values)
+                    # return consistency
+                break
+    return consistency
+
+
+def data_consistency_triplet_loss(pandas_data, features_data, training_label_dict, validation_label_dict):
+    consistency = True
+    for column in list(pandas_data.items()):
+        for data in list(features_data.items()):
+            if column[0] == data[0]:
+                if not set(data[1].values) == (set(column[1].values)):
+                    consistency = False
+                    print('Inconsistent feature: ' + data[0] + ': ' + data[1].values)
                     return consistency
+    if not set(training_label_dict['Diagnosis']) == (set(validation_label_dict['Diagnosis'])):
+        consistency = False
+        difference = set(training_label_dict['Diagnosis']).difference(set(validation_label_dict['Diagnosis']))
+        if difference:
+            print('Inconsistent label! The differences are:' + str(difference))
+        else:
+            difference = set(validation_label_dict['Diagnosis']).difference(set(training_label_dict['Diagnosis']))
+            print('Inconsistent label! The differences are:' + str(difference))
+        return consistency
     return consistency
 
 
