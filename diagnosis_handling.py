@@ -1,30 +1,57 @@
 import csv
 import re
+import os
+import natsort as ns
 
 
-def diagnosis_handling(diagnosis_file_path):
-    diagnosis = ''
-    with open(diagnosis_file_path, 'r', newline='') as output_file:
-        diag_text = csv.reader(output_file, delimiter=';')
-        for row in diag_text:
-            if 'Diag:' in row[0]:
-                split = re.split(r'\t+', row[0])
-                diagnosis = split[0]
-                runtime = split[1].split(' ')
-                consistency_check = split[2].split(' ')
-                for item in runtime:
-                    if not 'Runtime' in item:
-                        runtime = item
-                        break
-                for item in consistency_check:
-                    if not 'CC' in item:
-                        consistency_check = item
-                        break
-    if diagnosis != '':
-        diagnosis = re.sub('[^A-Za-z0-9_]+', ' ', diagnosis).split()
-        diag = [item for item in diagnosis if 'gis_' in item]
-    else:
-        diag = ()
-        runtime = 0
-        consistency_check = 0
-    return diag, runtime, consistency_check
+def diagnosis_handling_linux(diagnosis_file_path):
+    inconsistent = False
+    configurations_added = 0
+    data = []
+    configurations = []
+    diagnoses = []
+    file_list = os.listdir(diagnosis_file_path)
+    file_list = ns.natsorted(file_list)
+    for file in file_list:
+        inconsistent = False
+        columns = []
+        with open(diagnosis_file_path + "\\" + file, 'r') as f:
+            content = f.readlines()
+            if content[1] == "inconsistent\n":
+                inconsistent = True
+                row = []
+                configuration = content[0].split(", ")
+                configuration_dict = {}
+                for item in configuration:
+                    key = item.split("=")[0]
+                    value = item.split("=")[1].removesuffix("\n")
+                    columns.append(key)
+                    row.append(value)
+                    configuration_dict[key] = value
+                configurations.append(configuration_dict)
+                # create one line per diagnosis
+                columns.append("Diagnosis")
+                diagnosis = content[2].replace("Diag: [", "").replace("]", "")
+                diagnosis_list = diagnosis.split(", ")
+                diagnosis_dict = {}
+                for item in diagnosis_list:
+                    key = item.split("=")[0]
+                    value = item.split("=")[1].removesuffix("\n")
+                    diagnosis_dict[key] = value
+                diagnoses.append(diagnosis_dict)
+                columns.append("Runtime")
+                runtime = content[3].removeprefix("Runtime: ").removesuffix(" seconds\n")
+                columns.append("Consistency check")
+                consistency = content[4].removeprefix("CC: ").removesuffix("\n")
+                entry = []
+                for i in range(len(diagnosis_list)):
+                    entry.append(row.copy())
+                    entry[i].append(diagnosis_list[i].split("=", 1)[0])
+                    entry[i].append(runtime)
+                    entry[i].append(consistency)
+                for item in entry:
+                    data.append(item)
+                configurations_added += 1
+                print("Configurations added: " + str(configurations_added))
+    return inconsistent, configurations_added, data, columns, configurations, diagnoses
+
