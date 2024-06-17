@@ -112,27 +112,6 @@ def data_consistency(pandas_data, features_data):
     return consistency
 
 
-def data_consistency_triplet_loss(pandas_data, features_data, training_label_dict, validation_label_dict):
-    consistency = True
-    for column in list(pandas_data.items()):
-        for data in list(features_data.items()):
-            if column[0] == data[0]:
-                if not set(data[1].values) == (set(column[1].values)):
-                    consistency = False
-                    print('Inconsistent feature: ' + data[0] + ': ' + data[1].values)
-                    return consistency
-    if not set(training_label_dict['Diagnosis']) == (set(validation_label_dict['Diagnosis'])):
-        consistency = False
-        difference = set(training_label_dict['Diagnosis']).difference(set(validation_label_dict['Diagnosis']))
-        if difference:
-            print('Inconsistent label! The differences are:' + str(difference))
-        else:
-            difference = set(validation_label_dict['Diagnosis']).difference(set(training_label_dict['Diagnosis']))
-            print('Inconsistent label! The differences are:' + str(difference))
-        return consistency
-    return consistency
-
-
 def data_similarity(pandas_data, features_data):
     deviation = {}
     for index, row in features_data.iterrows():
@@ -152,7 +131,3 @@ def data_similarity(pandas_data, features_data):
         print("Percentage of configurations with " + str(i) +" deviations = " + str(percentage) + "%.")
     return
 
-
-def data_labeling_mf(training_file_path):
-    pandas_Data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
-    return pandas_Data
