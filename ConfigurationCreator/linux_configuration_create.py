@@ -21,7 +21,6 @@ def linux_configuration_create(settings_dict):
                              r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen.jar",
                              r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
                              "5523", "1", "1"])
-    # "5523", "1", str(configurations_added)])
 
     features = []
     values_list = []
@@ -66,11 +65,11 @@ def get_leaf_nodes(element):
 
 def linux_configuration_create_simple(settings_dict):
 
-    # num_configurations = 100
-    # tree = et.parse(r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux.xml")
-    # root = tree.getroot()
-    # linux_features = get_leaf_nodes(root)
-    """
+    num_configurations = 100
+    tree = et.parse(r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux.xml")
+    root = tree.getroot()
+    linux_features = get_leaf_nodes(root)
+    
     for i in range(num_configurations):
         configuration = {}
         for item in linux_features:
@@ -84,11 +83,11 @@ def linux_configuration_create_simple(settings_dict):
             for key, value in configuration.items():
                 file.write(key + " " + value + "\n")
             file.close()
-    """
-    # result = subprocess.run(["java", "-jar",
-                             # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-                             # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-                             # settings_dict["CONFIGURATION_FILE_PATH"]])
+    
+    result = subprocess.run(["java", "-jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                             settings_dict["CONFIGURATION_FILE_PATH"]])
 
     inconsistent, configurations_added, data, columns, configurations, diagnoses = diagnosis_handling_linux(
         settings_dict["DIAGNOSIS_FILE_PATH"])
