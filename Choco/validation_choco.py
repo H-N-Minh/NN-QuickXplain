@@ -9,12 +9,13 @@ from XML_handling import xml_parse
 def validate_consistency(validation_file_path):
     validation_count = len([f for f in os.listdir(validation_file_path) if
                             os.path.isfile(os.path.join(validation_file_path, f))])
-    inconsistent_predictions = 0
-    consistency = 0
+    inconsistent_count = 0
+    consistency_average = 0
+    consistency_list = []
     try:
         result = subprocess.run(["java", "-jar",
-                                r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\checker.jar",
-                                r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs"],
+                                 r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\checker.jar",
+                                 r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs"],
                                 capture_output=True, text=True, timeout=400)
 
         if result.returncode == 0:
@@ -27,15 +28,17 @@ def validate_consistency(validation_file_path):
                     os.remove(os.path.join(validation_file_path, file))
             return
 
-
         with open('output', 'r') as output:
             output_lines = output.readlines()
             for line in output_lines:
                 if 'inconsistent' in line:
-                    inconsistent_predictions += 1
+                    inconsistent_count += 1
+                    consistency_list.append(0)
+                else:
+                    consistency_list.append(1)
                     # os.remove(os.path.join(validation_file_path, line.split(";")[0]))
-        consistency = round(((validation_count - inconsistent_predictions) / validation_count) * 100, 2)
-        print("Average consistency of prediction is: " + str(consistency) + "%")
+        consistency_average = round(((validation_count - inconsistent_count) / validation_count) * 100, 2)
+        print("Average consistency of prediction is: " + str(consistency_average) + "%")
     except:
         print('Subprocess did not answer! Continue with another try...')
     """
@@ -43,7 +46,7 @@ def validate_consistency(validation_file_path):
         if file.endswith(".xml"):
             os.remove(os.path.join(validation_file_path, file))
     """
-    return consistency
+    return consistency_average, consistency_list
 
 
 def validate_accuracy(prediction_file_path, validation_file_path, irrelevant_features, prediction_names):
@@ -62,12 +65,14 @@ def validate_accuracy(prediction_file_path, validation_file_path, irrelevant_fea
 
             for column in prediction:
                 for col in validation_data:
-                    if column in prediction_names and column == col and prediction.iloc[0][column] == validation_data.iloc[file_number[0]][col]:
+                    if column in prediction_names and column == col and prediction.iloc[0][column] == \
+                            validation_data.iloc[file_number[0]][col]:
                         correct_prediction += 1
                         break
                     else:
                         if column in prediction_names and column == col:
-                            wrong_predictions[column] = prediction.iloc[0][column], validation_data.iloc[file_number[0]][col]
+                            wrong_predictions[column] = prediction.iloc[0][column], \
+                                                        validation_data.iloc[file_number[0]][col]
 
             if not overall_wrong_predictions:
                 for key, value in wrong_predictions.items():
@@ -75,7 +80,10 @@ def validate_accuracy(prediction_file_path, validation_file_path, irrelevant_fea
             else:
                 for key, value in wrong_predictions.items():
                     if key + ": " + value[0] + ", " + value[1] in overall_wrong_predictions.keys():
-                        overall_wrong_predictions[key + ": " + value[0] + ", " + value[1]] = overall_wrong_predictions[key + ": " + value[0] + ", " + value[1]] + 1
+                        overall_wrong_predictions[key + ": " + value[0] + ", " + value[1]] = overall_wrong_predictions[
+                                                                                                 key + ": " + value[
+                                                                                                     0] + ", " + value[
+                                                                                                     1]] + 1
                     else:
                         overall_wrong_predictions[key + ": " + value[0] + ", " + value[1]] = 1
 
