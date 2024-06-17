@@ -103,27 +103,16 @@ class ConLearn:
     def model_evaluation(model, losses, lossWeights, trainX, testX, trainLabels, testLabels,
                          label_Dict, settings, features_Dict=None, prediction_names=None):
         epochs = 12
-        # siemens
         lr = 0.0005  # siemens NN:0.000003
-        # epochs = 32  # camera
-        # lr = 0.01  # camera
-        # optimizer = tf.optimizers.Adam(learning_rate=lr)
         optimizer = tf.optimizers.Adam(learning_rate=lr)
-        # optimizer = tf.optimizers.SGD(learning_rate=lr)
-        # optimizer = tf.optimizers.Adagrad(learning_rate=lr)
         model.compile(optimizer=optimizer, loss=losses, loss_weights=lossWeights, metrics=["accuracy"])
-        # model.compile(optimizer=optimizer, loss=losses, loss_weights=lossWeights,
-        # metrics=[tf.keras.metrics.Precision(thresholds=0.01, top_k=10),
-        # tf.keras.metrics.Recall(thresholds=0.01, top_k=10)])
+
         model.summary()
         if len(trainLabels) == 1:
             trainLabels = trainLabels[0]
         if len(testLabels) == 1:
             testLabels = testLabels[0]
 
-        # create a learning rate callback
-        # lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 1e-3 * 10 ** (epoch / 20))
-        # lr_scheduler = tf.keras.callbacks.LearningRateScheduler(lambda epoch: 0.00025)
         history = model.fit(trainX, trainLabels, validation_data=(testX, testLabels), epochs=epochs, batch_size=1024,
                             verbose=1, shuffle=True, label_dict=label_Dict, features_dict=features_Dict,
                             prediction_names=prediction_names, defined_epochs=epochs,
@@ -138,7 +127,7 @@ class ConLearn:
         model.save("Models/" + id + "/model")
 
         # print model diagrams
-        # os.environ["PATH"] += os.pathsep + 'C:/Program Files/Graphviz 2.44.1/bin/'
+
         plot_model(model, "Models/" + id + "/model.png", show_shapes=True, show_layer_names=True)
 
         print('\nhistory dict:', history.history)
@@ -208,18 +197,7 @@ class ConLearn:
         plt.tight_layout()
         plt.savefig("Models/" + id + "/accuracy.png")
         plt.close()
-        """
-        # plot the learning rate curve
-        lrs = 1e-3 * (10 ** (tf.range(100) / 20))
-        plt.semilogx(lrs, history.history["loss"])
-        plt.xlabel("Learning Rate")
-        plt.ylabel("Loss")
-        plt.title("Finding the ideal Learning Rate")
-        # save the losses figure
-        plt.tight_layout()
-        plt.savefig("Models/" + id + "/learning_rate.png")
-        plt.close()
-        """
+
         return id
 
     def save_model_csv(id, training_file_path, label_names, model_library_file_path, delimiter=None):
