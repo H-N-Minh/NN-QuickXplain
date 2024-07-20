@@ -13,5 +13,7 @@ Starting method for intilizing learning of the machine learning model. On basis 
 
 # model_evaluation
 build_model Algorithm is used to create the neural network used for machien learning.
+
 model_evaluation Algorithm is utilized to learn the machine learning model based on the tensorflow model.fit() method.
+
 model_predict_linux_diagnosis After the training session of the machine learning model this method is called to determine the performance of the model by checking the runtime improvement and similarity of the diagnosis calculated by FastDiag based on the validation data. 
