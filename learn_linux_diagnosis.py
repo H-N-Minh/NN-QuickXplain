@@ -87,9 +87,8 @@ def learn_diagnosis(settings):
 
 
 settings_dict = {
-    "TRAINING_FILE_PATH": "Learning Data Input/linux_dataset/TrainingData_comb16.csv",
-    "VALIDATION_FILE_PATH": "Learning Data Input/linux_dataset/ValidationData_all.csv",
-    "BINARY_FEATURES": "Learning Data Input/linux_dataset/Binary Features.txt",
+    "TRAINING_FILE_PATH": "Learning Data Input/real-fm_dataset/TrainingData_all.csv",
+    "VALIDATION_FILE_PATH": "Learning Data Input/real-fm_dataset/ValidationData_all.csv",
     "CONFIGURATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\data",
     "DIAGNOSIS_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\Data",
     "MODEL_LIBRARY_FILE_PATH": "Models/DiagnosisModelLibrary.csv",
