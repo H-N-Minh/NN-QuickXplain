@@ -1,7 +1,5 @@
 import subprocess
 import os
-import csv
-import re
 import shutil
 
 import pandas as pd
@@ -10,9 +8,7 @@ import metric_calculation as mc
 from collections import Counter
 from XML_handling import training_xml_write
 from XML_handling import configuration_xml_write
-from Choco.diagnosis_choco import get_siemens_diagnosis
 from Choco.diagnosis_choco import get_linux_diagnosis
-from diagnosis_handling import diagnosis_handling
 from diagnosis_handling import diagnosis_handling_linux
 
 
@@ -123,13 +119,13 @@ def evaluate_diagnosis_semantic_regularization(epoch, epoch_logs, val_x, predict
             configuration_xml_write(feature_values, settings["PROGRESS_XML_FILE_PATH"],
                                     settings["OUTPUT_XML_FILE_PATH"] + "\conf_0.xml")
             print("Create diagnosis for evaluation configuration: " + str(i) + ":")
-            get_siemens_diagnosis()
+            get_linux_diagnosis()
             shutil.copyfile('diagnosis_output', 'Diagnosis/diagnosis_output_' + str(i))
 
     # check if prediction is part of diagnosis
     # siemens diagnosis
     for i in range(0, len(val_x)):
-        diag_items, runtime, consistency_check = diagnosis_handling('Diagnosis/diagnosis_output_' + str(i))
+        diag_items, runtime, consistency_check = diagnosis_handling_linux('Diagnosis/diagnosis_output_' + str(i))
         if not prediction_list[i] in prediction_list:
             loss += 0.05
 
@@ -140,12 +136,12 @@ def evaluate_diagnosis_semantic_regularization(epoch, epoch_logs, val_x, predict
             epoch_logs[key] += loss
             print("\nAdditional loss: " + str(loss))
             break
-    """
+    
     # remove diagnosis after last epoch
     if epoch == defined_epochs - 1:
         for i in range(0, len(val_x)):
             os.remove('Diagnosis/diagnosis_output_' + str(i))
-    """
+    
     return epoch_logs
 
 
@@ -161,7 +157,7 @@ def evaluate_diagnosis_ranking_regularization(epoch, epoch_logs, val_x, predicti
             variable_dict[variable_list[j]] = predictions[i][j]
         variable_dict = dict(sorted(variable_dict.items(), key=lambda item: item[1], reverse=True))
         prediction_dict[i] = list(variable_dict.keys())
-    """
+    
     # create diagnosis for validation configuration in first epoch
     if epoch == 0:
         feature_values = {}
@@ -177,12 +173,12 @@ def evaluate_diagnosis_ranking_regularization(epoch, epoch_logs, val_x, predicti
             configuration_xml_write(feature_values, settings["PROGRESS_XML_FILE_PATH"],
                                     settings["OUTPUT_XML_FILE_PATH"] + "\conf_0.xml")
             print("Create diagnosis for evaluation configuration: " + str(i) + ":")
-            get_siemens_diagnosis()
+            get_linux_diagnosis()
             shutil.copyfile('diagnosis_output', 'Diagnosis/diagnosis_output_' + str(i))
-    """
+    
     # check if ranking of prediction is reflecting diagnosis
     for i in range(0, len(val_x)):
-        diag_items, runtime, consistency_check = diagnosis_handling('Diagnosis/diagnosis_output_' + str(i))
+        diag_items, runtime, consistency_check = diagnosis_handling_linux('Diagnosis/diagnosis_output_' + str(i))
 
         predictions_in_diagnosis = []
         for j in range(len(diag_items)):
@@ -207,12 +203,12 @@ def evaluate_diagnosis_ranking_regularization(epoch, epoch_logs, val_x, predicti
         if isinstance(epoch_logs[key], float) and key == 'val_loss':
             epoch_logs[key] += loss
             break
-    """
+    
     # remove diagnosis after last epoch
     if epoch == defined_epochs - 1:
         for i in range(0, len(val_x)):
             os.remove('Diagnosis/diagnosis_output_' + str(i))
-    """
+    
     return epoch_logs
 
 
@@ -349,17 +345,17 @@ def evaluate_importance_regularization(epoch_logs, predictions, test_features, l
         with open(settings["VARIABLE_ORDER_FILE_PATH"], 'w') as f:
             f.writelines('\n'.join(variable_ordering_list[i]))
         print("Create diagnosis for evaluation configuration: " + str(i) + ":")
-        get_siemens_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
+        get_linux_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
         shutil.copyfile('diagnosis_output', 'Diagnosis/diagnosis_output_' + str(i))
 
     # check if prediction is part of diagnosis
     for i in range(0, len(predictions)):
-        new_diagnosis_list, runtime, consistency_check = diagnosis_handling('Diagnosis/diagnosis_output_' + str(i))
-        """
+        new_diagnosis_list, runtime, consistency_check = diagnosis_handling_linux('Diagnosis/diagnosis_output_' + str(i))
+        
         new_diagnosis_list = []
         for j in range(len(original_diagnosis_list[i])):
             new_diagnosis_list.append(variable_ordering_list[i][j])
-        """
+        
         new_importance, original_importance = mc.preference_score_calculation(i, new_diagnosis_list,
                                                                               original_diagnosis_list[i], validate_po,
                                                                               label_list)
