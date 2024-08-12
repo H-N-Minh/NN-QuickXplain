@@ -165,13 +165,11 @@ def defined_inconsistent_configurations_create(settings_dict):
 
 settings_dict = {
     "CANDIDATE_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\candidate",
-    "COMBINATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\Combinations\comb16",
+    "COMBINATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\Combinations\real-fm\comb 16",
     "CONFIGURATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\conf",
-    "INCONSISTENT_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\Inconsistent\comb16",
-    "DIAGNOSIS_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\Choco\data",
-    "INPUT_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\Learning Data Input\linux_dataset\Configuration_500_10000.csv",
-    "OUTPUT_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\Learning Data Input\linux_dataset\TrainingData_comb16.csv"
-}
+    "INCONSISTENT_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\Inconsistent\real-fm\comb16",
+    "DIAGNOSIS_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\data",
+    "OUTPUT_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\ConLearn\Learning Data Input\real-fm_dataset\TrainingData_comb16.csv"}
 
 # inconsistent_configurations_create(settings_dict)
 defined_inconsistent_configurations_create(settings_dict)
