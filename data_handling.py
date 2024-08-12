@@ -7,7 +7,7 @@ def data_labeling(label_names, training_file_path, binary_features=None, ignore=
         delimiter = ';'
     pandas_data = pd.read_csv(training_file_path, delimiter=delimiter, dtype='string')
     # Fill NaN cells with default value string
-    pandas_data.fillna('noValue', inplace=True)
+    pandas_data.fillna('None', inplace=True)
     label_columns = []
     label_dict = {}
     losses = {}
@@ -47,6 +47,7 @@ def training_data_labeling(label_names, training_file_path, prediction_names=Non
         delimiter = ';'
     pandas_data = pd.read_csv(training_file_path, delimiter=delimiter, dtype='string')
     # pandas_data = pandas_data.sample(frac=1).reset_index(drop=True)     # shuffle pandas data
+    pandas_data.fillna('None', inplace=True)
     label_columns = []
     label_dict = {}
     features_dict = {}
