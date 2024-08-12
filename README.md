@@ -2,6 +2,8 @@
 
 DiagLearn is a machine learning program able to learn and predict variable value orderings as input for diagnosis algorithms such as FastDiag. The variable value orderings are predicted on basis of a training dataset that includes historical diagnosis. The reordering of the variable values aims to decrease the runtime of the diagnosis algorithm significantly by reducing the number of consistency check required to determine the diagnosis of a feature model.
 
+Hint: settings_dict needs to be adjusted according to your file storage system before running any of the below code!
+
 # linux_configuration_create.py
 This code creates valid featture model configurations either in a simplified random manor or in a more complex approach.
 
