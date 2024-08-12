@@ -112,22 +112,3 @@ def data_consistency(pandas_data, features_data):
     return consistency
 
 
-def data_similarity(pandas_data, features_data):
-    deviation = {}
-    for index, row in features_data.iterrows():
-        for i, r in pandas_data.iterrows():
-            compare_result = row.compare(r)
-            if compare_result.empty:
-                deviation[index] = 0
-                break
-            if index not in deviation:
-                deviation[index] = len(compare_result)
-            else:
-                if len(compare_result) < deviation[index]:
-                    deviation[index] = len(compare_result)
-    for i in range(max(deviation.values())):
-        same_deviation = [k for k, v in deviation.items() if v == i]
-        percentage = len(same_deviation) / len(features_data) * 100
-        print("Percentage of configurations with " + str(i) +" deviations = " + str(percentage) + "%.")
-    return
-
