@@ -13,14 +13,8 @@ import timeit
 
 from keras.utils import plot_model
 
-from Choco.diagnosis_choco import get_siemens_diagnosis
-from Choco.diagnosis_choco import get_camera_diagnosis
 from Choco.diagnosis_choco import get_linux_diagnosis
-from diagnosis_handling import diagnosis_handling
 from diagnosis_handling import diagnosis_handling_linux
-from XML_handling import prediction_xml_write
-from XML_handling import configuration_xml_write
-from XML_handling import solver_xml_parse
 from metric_calculation import similarity_calculation
 from neuron_constraint_initializer import NeuronConstraintInitializer
 
