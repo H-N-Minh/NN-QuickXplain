@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import numpy as np
 import subprocess
 
 from datetime import datetime
@@ -14,13 +15,14 @@ def inconsistent_configurations_create(settings_dict):
     print("Start: " + str(datetime.now()))
     print("Check inconsistency!\n")
 
-    # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
-    # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
+    # Ex: generate Linux configurations that contain 2 leaf features, a maximum of 100 variable combinations, and a
+    # maximum of 10 variable value combinations. java - jar fm_conf_gen.jar linux - 2.6.33.3.xml 2 100 10
+    # change feature model file according to the feature model to be created
+    # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
     result = subprocess.run(["java", "-jar",
-                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_checker.jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
                              settings_dict["CANDIDATE_FILE_PATH"]])
-
 
     print("Status: Diagnosis for inconsistent configurations determined " + str(datetime.now()))
     print("Next: Reduce diagnosis cardinality!")
@@ -66,9 +68,11 @@ def inconsistent_configurations_create(settings_dict):
 
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
     # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
+    # change feature model file according to the feature model to be created
+    # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
     result = subprocess.run(["java", "-jar",
                              r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
                              settings_dict["CANDIDATE_FILE_PATH"]])
 
     print("Status: Inconsistent configurations determined " + str(datetime.now()))
@@ -93,17 +97,25 @@ def defined_inconsistent_configurations_create(settings_dict):
 
     # Ex: loop through combination files in <path_to_comb_files> and generate inconsistent configurations that
     # preserve the already identified diagnosis of the given combination. Output: txt files in ./conf/ folder.
-    result = subprocess.run(["java", "-jar", "-Xmx4G",
-                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen_v2.jar",
-                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-                        settings_dict["COMBINATION_FILE_PATH"], "2", settings_dict["CANDIDATE_FILE_PATH"], "1", "5"])
-    
+    # change feature model file according to the feature model to be created
+    # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
+    #result = subprocess.run(["java", "-jar", #"-Xmx4G",
+    #r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen_v2.jar",
+    #r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea2468.xml",
+    #settings_dict["COMBINATION_FILE_PATH"], "2", settings_dict["CANDIDATE_FILE_PATH"], "10", "10"])
+
+    result = subprocess.run(["java", "-jar",  # "-Xmx4G",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen_v2.jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
+                             settings_dict["COMBINATION_FILE_PATH"], "2", "194", "10"])
+
     for dirpath, dirnames, filenames in os.walk(settings_dict["CONFIGURATION_FILE_PATH"]):
         # Sort the dirnames to iterate over them in alphabetical order
         dirnames.sort()
         # Sort the filenames to iterate over them in alphabetical order
         filenames.sort()
         # Iterate over the files
+
         for filename in filenames:
             # Ignore hidden files
             if filename.startswith('.'):
@@ -127,14 +139,15 @@ def defined_inconsistent_configurations_create(settings_dict):
             os.rename(src_path, dst_path)
     
     print("Next: Check inconsistency!\n")
-    
+
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
     # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
     # change between busybox and linux!
     result = subprocess.run(["java", "-jar",
                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                            r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
                             settings_dict["INCONSISTENT_FILE_PATH"]])
+
     print("Status: Inconsistent configurations determined " + str(datetime.now()))
 
     print("Next: Create Training data set!")
