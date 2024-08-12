@@ -17,10 +17,13 @@ def linux_configuration_create(settings_dict):
 
     # Ex: generate Linux configurations that contain 2 leaf features, a maximum of 100 variable combinations, and a
     # maximum of 10 variable value combinations. java - jar fm_conf_gen.jar linux - 2.6.33.3.xml 2 100 10
+    # change feature model file according to the feature model to be created
+    # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
     result = subprocess.run(["java", "-jar",
                              r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_conf_gen.jar",
-                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
-                             "5523", "1", "1"])
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
+                             "194", "1", "1"])
+    # "5523", "1", str(configurations_added)])
 
     features = []
     values_list = []
@@ -65,11 +68,14 @@ def get_leaf_nodes(element):
 
 def linux_configuration_create_simple(settings_dict):
 
-    num_configurations = 100
-    tree = et.parse(r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux.xml")
+    num_configurations = 1000
+    # use feature model without constraints
+    # change feature model file according to the feature model to be created
+    # (e.g., linux.xml, busybox.xml, ea.xml)
+    tree = et.parse(r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea.xml")
     root = tree.getroot()
     linux_features = get_leaf_nodes(root)
-    
+
     for i in range(num_configurations):
         configuration = {}
         for item in linux_features:
@@ -83,20 +89,39 @@ def linux_configuration_create_simple(settings_dict):
             for key, value in configuration.items():
                 file.write(key + " " + value + "\n")
             file.close()
-    
+
     result = subprocess.run(["java", "-jar",
                              r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
-                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\linux-2.6.33.3.xml",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea2468.xml",
                              settings_dict["CONFIGURATION_FILE_PATH"]])
 
     inconsistent, configurations_added, data, columns, configurations, diagnoses = diagnosis_handling_linux(
         settings_dict["DIAGNOSIS_FILE_PATH"])
 
-    df = pd.DataFrame(data, columns=columns)
-    df.to_csv(settings_dict["OUTPUT_FILE_PATH"], index=False)
+    for i in range(len(diagnoses)):
+        # create consistent configurations
+        count = 0
+        for key, value in diagnoses[i].items():
+            if count <= (len(diagnoses[i])):
+                if value == 'true':
+                    configurations[i][key] = 'false'
+                else:
+                    configurations[i][key] = 'true'
+            else:
+                break
+            count += 1
+        with open(settings_dict["CONFIGURATION_FILE_PATH"] + "\\candidate" + str(i) + ".txt", 'w') as file:
+            for key, value in configurations[i].items():
+                file.write(key + " " + value + "\n")
+            file.close()
+
+    result = subprocess.run(["java", "-jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                             r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea2468.xml",
+                             settings_dict["CONFIGURATION_FILE_PATH"]])
 
     return
-
+    
 
 settings_dict = {
     "CONFIGURATION_FILE_PATH": r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\candidate",
