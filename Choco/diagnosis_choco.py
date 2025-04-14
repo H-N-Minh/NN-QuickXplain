@@ -1,6 +1,7 @@
 import subprocess
 
-
+# get a diagnosis from FastDiag, either with a defined order of constraints or without
+# variable_order_file_path: the order of constraints
 def get_diagnosis(variable_order_file_path=None):
     try:
         if variable_order_file_path:

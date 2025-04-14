@@ -24,6 +24,8 @@ def learn_diagnosis(settings):
     pandas_data = pd.read_csv(settings["CONFIGURATION_FILE_PATH"], delimiter=';', dtype='string')
 
     for i in range(num_diagnosis):
+        # create 1 inconsistent config, but its created randomly so it could still be consistent
+        # this func returns true if the config is inconsistent
         if inconsistent_configuration_create(settings):
 
             different_diagnosis = True
@@ -32,10 +34,14 @@ def learn_diagnosis(settings):
             consistency_check_list = []
             property_ordering_list = []
             while different_diagnosis:    # create as many different diagnosis for the invalid configuration as possible
+                # mix up the order of constraints completely randomly
                 property_ordering = configuration_preference_ordering(settings_dict["OUTPUT_XML_FILE_PATH"],
                                                                   settings["VARIABLE_ORDER_FILE_PATH"],
                                                                   settings_dict["IRRELEVANT_FEATURES"])
+                # call FastDiag to get the diagnosis
                 get_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
+
+                
                 new_diagnosis, new_runtime, new_consistency_check = diagnosis_handling('diagnosis_output')
                 if diagnosis_list:
                     for diagnosis in diagnosis_list:
