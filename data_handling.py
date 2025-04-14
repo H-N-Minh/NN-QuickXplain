@@ -1,25 +1,48 @@
 import pandas as pd
 import tensorflow_addons as tfa
 
-
+# Label means st that the model will try to predict, i.e if we try to predict height of student, "height" is label
+# label_names: A list of everything that are considered labels. this might includes label that doesnt exist in training_file_path
+# training_file_path: Path to the CSV file containing the training data.
+# binary_features: (Optional) A file path containing names of labels that should use "sparse_categorical_crossentropy" as loss function.
+# ignore: (Optional) A list of column names to exclude from the dataset.
+# preparing the labels (data model will try to predict):
+# 1. remove all labels collumns, specified in "label_names", from "training_file_path"
+# 2. @return 4 things related to labels 
+#   label_columns: list of the whole collumn (with all data) of each label that we removed from  training_file_path
+#   label_dict: dict, same as label_columns, but each collumn only contains unique values, and they are sorted (collumn name : unique values of that collumn, sorted)
+#   losses: dict, loss function for each label column (collmn name : loss func) (loss func is either "sparse_categorical_crossentropy" or "categorical_crossentropy")
+#   loss_weights: dict, loss weight for each label column (collumn name : 1.0) (all labels have same weight of 1)
 def data_labeling(label_names, training_file_path, binary_features=None, ignore=None):
     pandas_data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
+   
     # Fill NaN cells with default value string
     pandas_data.fillna('noValue', inplace=True)
+
+    # these are variables that we will return
     label_columns = []
-    label_dict = {}
-    losses = {}
+    label_dict = {}       
+    losses = {}   
     loss_weights = {}
+
+    # if there are any columns in ignore list, remove them from pandas_data
     if ignore:
         for name in ignore:
             if name in pandas_data:
                 pandas_data.pop(name)
+
+    # only add labels that exist in the pandas_data (training_file_path)
     for name in label_names:
         if name in pandas_data:
             label_columns.append(pandas_data.pop(name))
+
     for column in label_columns:
-        label_dict[column.name] = column.unique()
+        # fill the dict of unique values of each label column, and a dict of weight for loss functions (1.0 for all labels)
+        label_dict[column.name] = sorted(column.unique())
         loss_weights[column.name] = 1.0
+
+        # if binary_features is provided, all labels that is named in binary_features will use "sparse_categorical_crossentropy"
+        # as loss func, else default loss func is "categorical_crossentropy"
         if binary_features:
             with open(binary_features, "r") as binary:
                 for lines in binary:
@@ -31,8 +54,7 @@ def data_labeling(label_names, training_file_path, binary_features=None, ignore=
         else:
             losses[column.name] = "categorical_crossentropy"
             #losses[column.name] = tfa.losses.TripletSemiHardLoss()
-    for key, value in label_dict.items():
-        label_dict[key] = sorted(value)
+
     return pandas_data, label_columns, label_dict, losses, loss_weights
 
 

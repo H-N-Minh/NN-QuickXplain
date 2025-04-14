@@ -99,10 +99,13 @@ def learn_diagnosis(settings):
 
     # prepare learning data
     print("Preparing neural network model input!")
+    # preparing data for the label of the training (label is what the model trying to predict)
+    # here the label is the collumn "Diagnosis", training data taken from "VALIDATION_FILE_PATH", Binary features defines
+    # which label use what loss function, ignore defines which collumns from "VALIDATION_FILE_PATH" are not used for training
     validation_data, label_columns, label_dict, losses, loss_weights = data_handling.data_labeling(
         ['Diagnosis'], settings["VALIDATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
-
         ignore=['Runtime', 'Consistency check'])
+    
     training_data, label_columns, label_dict, features_dict, losses, loss_weights = data_handling.training_data_labeling(
         ['Diagnosis'], settings["CONFIGURATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
@@ -177,12 +180,15 @@ def learn_diagnosis(settings):
 settings_dict = {
     # 1 csv File with diff configs created randomly from sample of ORIGINAL_FILE_PATH, these configs can be consistent or inconsistent
     "CONFIGURATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_inconsistent_RuleFeatures_multiple.csv",
+    # csv file containing data that can be used for training
     "VALIDATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\ValidationData_inconsistent_RuleFeatures_randomUR3"
                             r""
                             r".csv",
     # file with real world data of different configurations
     "ORIGINAL_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_725_RuleFeatures.csv",
+    # A file containing names of labels that should use "sparse_categorical_crossentropy" as loss function.
     "BINARY_FEATURES": "Learning Data Input/V2_XML/Binary Features.txt",
+    
     "IRRELEVANT_FEATURES": "Learning Data Input/V2_XML/Irrelevant Features_RuleFeatures.txt",
     "VARIABLE_ORDER_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\VariableOrder.txt",
     "INPUT_XML": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Request.xml",
