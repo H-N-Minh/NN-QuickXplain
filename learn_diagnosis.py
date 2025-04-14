@@ -23,6 +23,8 @@ def learn_diagnosis(settings):
     num_different_diagnosis = 0
     pandas_data = pd.read_csv(settings["CONFIGURATION_FILE_PATH"], delimiter=';', dtype='string')
 
+    # create a random config and all the "possible" diagnosis for it, save the ones with at least 3 diagnosis each config
+    # the diag are saved in "CONFIGURATION_FILE_PATH"
     for i in range(num_diagnosis):
         # create 1 inconsistent config, but its created randomly so it could still be consistent
         # this func returns true if the config is inconsistent
@@ -97,7 +99,7 @@ def learn_diagnosis(settings):
     # data_preparation.diagnosis_validation_data_prepare(settings["CONFIGURATION_FILE_PATH"],
                                                        # settings["VALIDATION_FILE_PATH"])
 
-    # prepare learning data
+    # Prepare learning data
     print("Preparing neural network model input!")
     # preparing data for the label of the training (label is what the model trying to predict)
     # here the label is the collumn "Diagnosis", training data taken from "VALIDATION_FILE_PATH", Binary features defines
@@ -106,6 +108,9 @@ def learn_diagnosis(settings):
         ['Diagnosis'], settings["VALIDATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
     
+    # Prepare training_data (should be consisted of only features collumns), the rest is same as above, only difference is
+    # now theres another filer for which labels to use (although here the filter is empty), and features_dict is a new var
+    # (contains unique values of each feature column in training_file_path, sorted)
     training_data, label_columns, label_dict, features_dict, losses, loss_weights = data_handling.training_data_labeling(
         ['Diagnosis'], settings["CONFIGURATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
@@ -180,7 +185,7 @@ def learn_diagnosis(settings):
 settings_dict = {
     # 1 csv File with diff configs created randomly from sample of ORIGINAL_FILE_PATH, these configs can be consistent or inconsistent
     "CONFIGURATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_inconsistent_RuleFeatures_multiple.csv",
-    # csv file containing data that can be used for training
+    # csv file containing data that can be used for training (primary the labels data)
     "VALIDATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\ValidationData_inconsistent_RuleFeatures_randomUR3"
                             r""
                             r".csv",
@@ -188,7 +193,7 @@ settings_dict = {
     "ORIGINAL_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_725_RuleFeatures.csv",
     # A file containing names of labels that should use "sparse_categorical_crossentropy" as loss function.
     "BINARY_FEATURES": "Learning Data Input/V2_XML/Binary Features.txt",
-    
+
     "IRRELEVANT_FEATURES": "Learning Data Input/V2_XML/Irrelevant Features_RuleFeatures.txt",
     "VARIABLE_ORDER_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\VariableOrder.txt",
     "INPUT_XML": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Request.xml",

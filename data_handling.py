@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 
 # Label means st that the model will try to predict, i.e if we try to predict height of student, "height" is label
 # label_names: A list of everything that are considered labels. this might includes label that doesnt exist in training_file_path
-# training_file_path: Path to the CSV file containing the training data.
+# training_file_path: Path to the CSV file containing the training data. Includes columns of either labels or features.
 # binary_features: (Optional) A file path containing names of labels that should use "sparse_categorical_crossentropy" as loss function.
 # ignore: (Optional) A list of column names to exclude from the dataset.
 # preparing the labels (data model will try to predict):
@@ -57,24 +57,39 @@ def data_labeling(label_names, training_file_path, binary_features=None, ignore=
 
     return pandas_data, label_columns, label_dict, losses, loss_weights
 
-
+# ignore: (same as above)
+# binary_features: (same as above)
+# label_names: (same as above)
+# prediction_names: (Optional) A list of labels that the model will ACTUALLY predict. This is used to further filter which labels to use
+# training_file_path: same as above
+# return: pandas_data with the labels collumn removed
+#       : label_columns, label_dict, losses, loss_weights is same as above
+#       : features_dict: contains unique values of each feature column in training_file_path, sorted
 def training_data_labeling(label_names, training_file_path, prediction_names=None, binary_features=None, ignore=None):
     pandas_data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
     # pandas_data = pandas_data.sample(frac=1).reset_index(drop=True)     # shuffle pandas data
-    label_columns = []
-    label_dict = {}
-    features_dict = {}
-    losses = {}
-    loss_weights = {}
+    label_columns = []      # same as above
+    label_dict = {}         # same as above
+    losses = {}             # same as above
+    loss_weights = {}       # same as above
+
+    # exclude all collumns in ignore list from pandas_data (training_file_path)
     if ignore:
         for name in ignore:
             if name in pandas_data:
                 pandas_data.pop(name)
+
+    # collect all relevant labels collumns
     for name in label_names:
         label_columns.append(pandas_data.pop(name))
+
     for column in label_columns:
-        label_dict[column.name] = column.unique()
-        # initialize loss weights to assure higher relevancy of labels to be finally predicted
+        # get sorted unqiue values of each label column
+        label_dict[column.name] = sorted(column.unique())
+
+        # If there is a prediction_names list, only include labels that are in that list
+        # All other labels are ignored, by being assigned a loss weight of 0.0
+        # Else if theres no list, all labels are included
         if prediction_names:
             if column.name in prediction_names:
                 loss_weights[column.name] = 1.0
@@ -82,6 +97,8 @@ def training_data_labeling(label_names, training_file_path, prediction_names=Non
                 loss_weights[column.name] = 0.0
         else:
             loss_weights[column.name] = 1.0
+
+        # choose the type of loss function for each label: if specified in binary_features then use "sparse_categorical_crossentropy"
         if binary_features:
             with open(binary_features, "r") as binary:
                 for lines in binary:
@@ -90,15 +107,12 @@ def training_data_labeling(label_names, training_file_path, prediction_names=Non
                         break
                     else:
                         losses[column.name] = "categorical_crossentropy"
-    for key, value in label_dict.items():
-        label_dict[key] = sorted(value)
 
+    features_dict = {}      # contains unique values of each feature column in training_file_path, sorted
     columns = list(pandas_data)
     for column in columns:
         if column not in label_names:
-            features_dict[column] = pandas_data[column].unique()
-    for key, value in features_dict.items():
-        features_dict[key] = sorted(value)
+            features_dict[column] = sorted(pandas_data[column].unique())
 
     return pandas_data, label_columns, label_dict, features_dict, losses, loss_weights
 
