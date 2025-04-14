@@ -39,7 +39,7 @@ def inconsistent_configurations_create(settings_dict, num_configurations=10):
     # retrieve first row to use as a template
     original_configuration_data = original_Data.head(1)
     
-    # Generate new configurations
+    # Generate new random configurations, add them to target_Data (CONFIGURATION_FILE_PATH)
     for _ in range(num_configurations):
             # Sample a random configuration as a starting point
             sample = original_configuration_data.sample()
