@@ -23,14 +23,43 @@ from similarity_calculation import similarity_calculation
 from neuron_constraint_initializer import NeuronConstraintInitializer
 
 
+
+# multi-branch neural network model , each branch for each label type.
+#The model takes a single input representing configuration data and produces multiple
+                    # outputs, each corresponding to a different label type. This architecture is particularly
+                    # useful for multi-task learning where different but related predictions are made from
+                    # the same input data.
+# 2 or 3 layers
 class ConLearn:
 
     def initialize_weights(self, input_shape):
 
         return
 
-    def build_model(input_shape, label_dict, input_neuron_list, output_neuron_list, rules=None,
-                    last_layer_activation=tf.nn.softmax):
+    def build_model(input_shape, label_dict, input_neuron_list, output_neuron_list, rules=None, last_layer_activation=tf.nn.softmax):
+        """
+        Take a configuration of how a model should be built and return a model.
+        
+        Parameters:
+        -----------
+        input_shape : int
+            The dimensionality of the input data (number of features).
+        label_dict : dict
+            Dictionary mapping label names to lists of possible label values.
+            Each key-value pair will result in a separate output branch.
+        input_neuron_list : list
+            List of integers specifying the number of neurons in each layer of the input branch.
+        output_neuron_list : list
+            List of integers specifying the number of neurons in each layer of each output branch.
+        rules : dict, optional
+            Optional constraints or rules to be applied to the model (default is None).
+        last_layer_activation : function, optional
+            Activation function for the final layer of each branch (default is tf.nn.softmax).
+        Returns:
+        --------
+        model : tf.keras.models.Model
+            A compiled Keras model with the specified architecture.
+        """
 
         inputs = tf.keras.Input(shape=(input_shape,), name="Configuration_data")
         # x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu)(inputs)
@@ -48,6 +77,34 @@ class ConLearn:
 
     def build_branch(input_shape, output_shape, inputs, label_name, input_neuron_list, output_neuron_list,
                      last_layer_activation, rules=None):
+        """
+        Builds a branch of a neural network with either 2 or 3 dense layers depending on the output shape.
+        This function creates a sequential structure of dense layers that can be constrained by rules
+        or use default initializers. The branch is designed to handle both binary/regression tasks (output_shape < 3)
+        and multi-class classification tasks (output_shape >= 3).
+        Parameters:
+        -----------
+        input_shape : int
+            The number of neurons in the hidden layers
+        output_shape : int
+            The number of neurons in the output layer
+        inputs : tf.Tensor
+            The input tensor for the branch
+        label_name : str
+            The name of the output layer, used for identification
+        input_neuron_list : list
+            List of input neurons for constraint initialization
+        output_neuron_list : list
+            List of output neurons for constraint initialization
+        last_layer_activation : callable
+            Activation function for the output layer
+        rules : dict, optional
+            Dictionary containing rules for neuron constraint initialization
+        Returns:
+        --------
+        tf.Tensor
+            The output tensor of the branch
+        """
         if output_shape < 3:
             if rules:
                 x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
@@ -96,9 +153,49 @@ class ConLearn:
                 z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
 
         return z
+    
+
 
     def model_evaluation(model, losses, lossWeights, trainX, testX, trainLabels, testLabels,
                          label_Dict, settings, features_Dict=None, prediction_names=None):
+        """
+        Model evaluation function for training and evaluating a neural network.
+        This function handles the complete machine learning workflow:
+        1. Compiles the provided model with specified losses, loss weights, and optimizer
+        2. Trains the model on training data and validates it on test data
+        3. Saves the trained model to disk with a unique ID
+        4. Generates model architecture visualization
+        5. Creates and saves performance plots (losses and accuracy)
+        Parameters:
+        ----------
+        model : tf.keras.Model
+            The neural network model to be trained and evaluated
+        losses : dict or loss function
+            Loss function(s) to use for training
+        lossWeights : dict or None
+            Weights for different loss components (if using multiple losses)
+        trainX : numpy.ndarray
+            Training data features
+        testX : numpy.ndarray
+            Testing data features
+        trainLabels : list or numpy.ndarray
+            Training data labels (can be multiple outputs)
+        testLabels : list or numpy.ndarray
+            Testing data labels (can be multiple outputs)
+        label_Dict : dict
+            Dictionary mapping label indices to their names/descriptions
+        settings : dict
+            Configuration settings for the model
+        features_Dict : dict, optional
+            Dictionary mapping feature indices to their names/descriptions
+        prediction_names : list, optional
+            Names for the prediction outputs
+        Returns:
+        -------
+        str
+            Unique ID (UUID) for the saved model
+        """
+
         epochs = 64
         # siemens
         lr = 0.0001  # siemens NN:0.000003
@@ -219,6 +316,28 @@ class ConLearn:
         return id
 
     def save_model_csv(id, training_file_path, label_names, model_library_file_path):
+        """
+        Saves model information to a CSV file, creating a library of models with their associated features.
+
+        This function reads the training data file to get column names, then creates or appends to a model library file.
+        It records which columns were used as labels (marked as 1) and which weren't (marked as 0) for the model with the given ID.
+        If the library file is empty, it also writes the header row with column names.
+
+        Parameters:
+        -----------
+        id : str
+            Unique identifier for the model
+        training_file_path : str
+            Path to the CSV file containing the training data
+        label_names : list
+            List of column names used as labels for this model
+        model_library_file_path : str
+            Path to the CSV file where model information will be saved
+
+        Returns:
+        --------
+        None
+        """
         pandas_data = pd.read_csv(training_file_path, delimiter=';', dtype='string')
         with open(model_library_file_path, "a+", newline='') as model_Library:
             if os.stat(model_library_file_path).st_size == 0:
@@ -245,7 +364,35 @@ class ConLearn:
                 writer.writerow(library_entry)
         return
 
+    
+    # this method is not used anywhere
     def model_exists(model_library_file_path, label_names):
+        """
+        Check if a model already exists in the library with the exact same label combinations.
+        
+        This function attempts to find a model in the library file that matches the provided label names.
+        The algorithm iterates through each model in the library and checks if it:
+        1) Has all the labels in label_names set to 1
+        2) Has all other labels set to 0
+        
+        If a matching model is found, its ID is returned, otherwise an empty string is returned.
+        
+        Parameters:
+        -----------
+        model_library_file_path : str
+            Path to the CSV file containing the model library data
+        label_names : list
+            List of label names to check for in the library
+        
+        Returns:
+        --------
+        str
+            Model ID if a matching model exists, empty string otherwise
+        
+        Notes:
+        ------
+        If any exception occurs during file reading or processing, an empty string is returned.
+        """
         id = str()
         try:
             Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
@@ -273,6 +420,24 @@ class ConLearn:
             return id
 
     def model_id_get(model_library_file_path, model_row):
+        """
+        Retrieves a model ID from a model library file based on the specified row index.
+        
+        The function attempts to read a CSV file using the provided file path, then
+        extracts the ID value from the specified row in the 'ID' column. If any exception
+        occurs during this process, it returns the last successfully retrieved ID.
+        
+        Args:
+            model_library_file_path (str): Path to the CSV model library file
+            model_row (int): The row index from which to extract the ID
+        
+        Returns:
+            The ID value from the specified row, or the last retrieved ID if an error occurs
+        
+        Note:
+            The function has a potential issue where 'id' may be referenced before assignment
+            if the try block fails on the first line.
+        """
         try:
             Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
             id = Library_Data.ID[model_row]
@@ -280,7 +445,24 @@ class ConLearn:
         except:
             return id
 
+    
     def model_cleanup(model_library_file_path, model_performance):
+        """
+        Cleans up the model library by retaining only the best-performing model.
+        This method identifies the model with the highest performance from the provided `model_performance` dictionary,
+        removes all other models from the model library CSV file, and rewrites the file to keep only the best model.
+        The main steps are:
+        1. Find the model ID with the highest performance.
+        2. Read the model library from the specified CSV file.
+        3. Identify and remove all models (rows) except the best-performing one.
+        4. Rewrite the CSV file with only the retained model.
+        5. Return the ID of the best-performing model.
+        Args:
+            model_library_file_path (str): Path to the model library CSV file.
+            model_performance (dict): Dictionary mapping model IDs to their performance scores.
+        Returns:
+            The ID of the best-performing model (the one retained in the library).
+        """
         id_to_keep = max(model_performance.items(), key=operator.itemgetter(1))[0]
         id_remove = []
 
@@ -301,6 +483,34 @@ class ConLearn:
 
     def model_predict_diagnosis(id, validation_input, validation_data, label_dict, progress_file_path,
                                         output_file_path, variable_order_file_path):
+        """
+        Evaluates the performance of a neural network model in predicting diagnosis variable orderings and their impact on diagnosis efficiency.
+        This method performs the following main steps:
+        1. Loads a trained neural network model and predicts diagnosis variable orderings for the provided validation input.
+        2. For each unique configuration in the validation data:
+            - Writes the configuration to an XML file.
+            - Applies the predicted variable ordering and runs the diagnosis process.
+            - Compares the new diagnosis results with the original ones (without variable ordering).
+            - Calculates similarity between diagnoses, runtime improvements, and consistency check improvements.
+        3. Aggregates and averages the performance metrics across all configurations.
+        4. Sorts and summarizes performance improvements by diagnosis size.
+        Args:
+            id (str): Identifier for the model to load.
+            validation_input (np.ndarray or list): Input data for model prediction.
+            validation_data (pd.DataFrame): DataFrame containing validation configurations and their original diagnosis results.
+            label_dict (dict): Dictionary mapping label names to their possible values.
+            progress_file_path (str): Path to write progress information.
+            output_file_path (str): Path to write output files.
+            variable_order_file_path (str): Path to write the predicted variable ordering.
+        Returns:
+            tuple: A tuple containing:
+                - average_similarity (float): Average similarity between original and new diagnoses.
+                - average_similar (float): Average indicator of whether diagnoses are considered similar.
+                - average_original_runtime (float): Average runtime of the original diagnosis process.
+                - average_new_runtime (float): Average runtime of the diagnosis process with variable ordering.
+                - average_original_consistency_check (float): Average number of consistency checks in the original process.
+                - average_new_consistency_check (float): Average number of consistency checks with variable ordering.
+        """
         # remove duplicates since it is the same configuration and keep order of list - set() also possible...
         # validation_input = [i for n, i in enumerate(validation_input) if i not in validation_input[:n]]
         # validation_data = [i for n, i in enumerate(validation_data) if i not in validation_data[:n]]

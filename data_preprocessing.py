@@ -9,6 +9,8 @@ from sklearn.compose import ColumnTransformer
 
 
 # pandas_data: features data
+# label_columns: labels data
+# transform features into one hot encoded, labels to binaries encoded, split them into training and testing data.
 def data_preprocessing_learning(pandas_data, label_columns):
     # turns feattures into one-hot encoded values
     one_hot = OneHotEncoder()
