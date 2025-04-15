@@ -75,7 +75,7 @@ def inconsistent_configurations_create(settings_dict, num_configurations=10):
     
     printTimeAndStatus("Configurations validated! Next: Extend training file!")
     
-    # Process validation results and count invalid configurations
+    # Remove all files of valid config
     invalid_configurations = 0
     with open('output', 'r', newline='') as output_file:
         for row in csv.reader(output_file, delimiter=';'):

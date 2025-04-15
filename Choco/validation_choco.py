@@ -5,8 +5,11 @@ import re
 
 from XML_handling import xml_parse
 
-
+# Use FastDiag (chocosolver) to check if the configuration is consistent
+# input is the path to the validation file with all the configs need to be check
+# results for all configs are written to complete_output.csv
 def validate_consistency(validation_file_path):
+    # count number of files (not directory) in validation_file_path
     validation_count = len([f for f in os.listdir(validation_file_path) if
                             os.path.isfile(os.path.join(validation_file_path, f))])
     inconsistent_predictions = 0
@@ -14,7 +17,7 @@ def validate_consistency(validation_file_path):
     try:
         result = subprocess.run(["java", "-jar",
                                 r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\checker.jar",
-                                r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs"],
+                                r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs"],      # same path as validation_file_path
                                 capture_output=True, text=True, timeout=400)
 
         if result.returncode == 0:
@@ -27,7 +30,7 @@ def validate_consistency(validation_file_path):
                     os.remove(os.path.join(validation_file_path, file))
             return
 
-
+        # Print percentage of inconsistent predictions
         with open('output', 'r') as output:
             output_lines = output.readlines()
             for line in output_lines:
