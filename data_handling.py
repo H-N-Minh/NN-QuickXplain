@@ -117,9 +117,13 @@ def training_data_labeling(label_names, training_file_path, prediction_names=Non
     return pandas_data, label_columns, label_dict, features_dict, losses, loss_weights
 
 
+# confirming that "features_data" is a subset of "pandas_data"
+# Problem: but its not complete, because it only checks collumn that exists in both dataframes
+# if a common collum exists, it checks if values in "features_data" is a subset of "pandas_data"
+# as soon as 1 collumn fails, the function will return False
 def data_consistency(pandas_data, features_data):
     consistency = True
-    for column in list(pandas_data.items()):
+    for column in list(pandas_data.items()):    # .items() returns a list of tuples (column name, column data)
         for data in list(features_data.items()):
             if column[0] == data[0]:
                 if not set(data[1].values).issubset(set(column[1].values)):

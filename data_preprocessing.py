@@ -8,12 +8,16 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 
 
+# pandas_data: features data
 def data_preprocessing_learning(pandas_data, label_columns):
-    data_array = np.array(pandas_data)
+    # turns feattures into one-hot encoded values
     one_hot = OneHotEncoder()
-    input_neuron_list = {}
+    data_array = np.array(pandas_data)
     fit_array = one_hot.fit(data_array)
+
+    # create dict input_neuron_list : (feature name : list of unique feature values)
     count = 0
+    input_neuron_list = {}
     for category in fit_array.categories_:
         n_list = []
         for item in category:
@@ -21,12 +25,14 @@ def data_preprocessing_learning(pandas_data, label_columns):
         input_neuron_list[pandas_data.columns[count]] = n_list
         count += 1
 
+    # still one hot encoded but now array type
     data_one_hot = one_hot.fit_transform(data_array).toarray()
     print(data_one_hot)
-    label_one_hot = []
-    output_neuron_list = {}
-    label_binarizer = LabelBinarizer()
 
+    # encode the labels into binary format
+    label_one_hot = []
+    output_neuron_list = {}     # (label name : list of unique label values)
+    label_binarizer = LabelBinarizer()
     for column in label_columns:
         column_array = np.array(column)
         label_fit_array = label_binarizer.fit(column_array)
@@ -38,6 +44,8 @@ def data_preprocessing_learning(pandas_data, label_columns):
         label_one_hot.append(label_binarizer.fit_transform(column_array))
     print(label_one_hot)
 
+    # setting up the training and testing data by splitting the data into 80% training and 20% testing
+    # Since we have multiple labels, we have to do a separate training for each label , hence separate training data
     train_labels = []
     test_labels = []
     for label in label_one_hot:

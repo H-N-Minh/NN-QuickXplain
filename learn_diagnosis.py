@@ -108,19 +108,21 @@ def learn_diagnosis(settings):
         ['Diagnosis'], settings["VALIDATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
     
-    # Prepare training_data (should be consisted of only features collumns), the rest is same as above, only difference is
-    # now theres another filer for which labels to use (although here the filter is empty), and features_dict is a new var
-    # (contains unique values of each feature column in training_file_path, sorted)
+    # Prepare training_data (should be consisted of only features collumns) using the data of the generated config and diagnosis above ("CONFIGURATION_FILE_PATH"), 
+    # the rest is same as above (overwrite), only difference is features_dict is a new var (contains unique values of each feature column in training_file_path, sorted)
     training_data, label_columns, label_dict, features_dict, losses, loss_weights = data_handling.training_data_labeling(
         ['Diagnosis'], settings["CONFIGURATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
 
+    # make sure all collumns that exists in both dataframes have the same values
+    # not sure why its needed, training_data as of now is exactly the same as validation_data
     if not data_handling.data_consistency(training_data, validation_data):
         return 0
 
     # learn model(s)
     for i in range(models_to_learn):
         print("Learning neural network model: " + str(i + 1))
+        # transform features into one hot encoded, labels to binaries encoded, split them into training and testing data.
         train_x, test_x, train_labels, test_labels, input_neuron_list, output_neuron_list = data_preprocessing.data_preprocessing_learning(
             training_data, label_columns)
         model = ConLearn.build_model(train_x.shape[1], label_dict, input_neuron_list, output_neuron_list)
@@ -184,8 +186,9 @@ def learn_diagnosis(settings):
 
 settings_dict = {
     # 1 csv File with diff configs created randomly from sample of ORIGINAL_FILE_PATH, these configs can be consistent or inconsistent
+    # this is later on also containing all diagnosis for each config, this is used as training data
     "CONFIGURATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_inconsistent_RuleFeatures_multiple.csv",
-    # csv file containing data that can be used for training (primary the labels data)
+    # csv file containing data that can be used for validation after training (primary the labels data)
     "VALIDATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\ValidationData_inconsistent_RuleFeatures_randomUR3"
                             r""
                             r".csv",
@@ -195,9 +198,11 @@ settings_dict = {
     "BINARY_FEATURES": "Learning Data Input/V2_XML/Binary Features.txt",
 
     "IRRELEVANT_FEATURES": "Learning Data Input/V2_XML/Irrelevant Features_RuleFeatures.txt",
+    # a file that specify the order of constraints that should be used before constraints are passed to FastDiag
     "VARIABLE_ORDER_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\VariableOrder.txt",
     "INPUT_XML": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Request.xml",
     "PROGRESS_XML_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Progress\Request.xml",
+    # file to store data of the trained model
     "MODEL_LIBRARY_FILE_PATH": "Models/DiagnosisModelLibrary.csv",
     # a folder of xml files, each is a config of CONFIGURATION_FILE_PATH. Config has name as conf_0.xml, conf_1.xml, etc.
     "OUTPUT_XML_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs" 
