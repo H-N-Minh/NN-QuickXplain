@@ -19,43 +19,58 @@ def learn_diagnosis(settings):
     print("Preparing training data!")
     num_diagnosis = 3000
     num_consistent = 0
-    count_diagnosis_per_configuration = {}
+    count_diagnosis_per_configuration = {}  
     num_different_diagnosis = 0
     pandas_data = pd.read_csv(settings["CONFIGURATION_FILE_PATH"], delimiter=';', dtype='string')
 
+    # create a random config and all the "possible" diagnosis for it, save the ones with at least 3 diagnosis each config
+    # the diag are saved in "CONFIGURATION_FILE_PATH"
     for i in range(num_diagnosis):
+        # create 1 inconsistent config, but its created randomly so it could still be consistent
+        # this func returns true if the config is inconsistent
         if inconsistent_configuration_create(settings):
 
             different_diagnosis = True
-            diagnosis_list = []
-            runtime_list = []
-            consistency_check_list = []
-            property_ordering_list = []
+
+            # lists to store the values of each diagnosis:
+            property_ordering_list = []     # the order of constraints fed to FastDiag
+            diagnosis_list = []             # The diagnosis provided by FastDiag
+            runtime_list = []               # run time it takes for FastDiag to compute the diagnosis
+            consistency_check_list = []     # Whether the provided constraints are consistent or not
+
+            # Given the same inconsistent config, we randomize the order of the constraints in the configuration
+            # to try to get different diagnosis. As soon as we get a diagnosis that is the same, we stop
             while different_diagnosis:    # create as many different diagnosis for the invalid configuration as possible
+                # mix up the order of constraints completely randomly
                 property_ordering = configuration_preference_ordering(settings_dict["OUTPUT_XML_FILE_PATH"],
                                                                   settings["VARIABLE_ORDER_FILE_PATH"],
                                                                   settings_dict["IRRELEVANT_FEATURES"])
+                # call FastDiag to get the diagnosis
                 get_diagnosis(settings["VARIABLE_ORDER_FILE_PATH"])
+
+                # extract the result of the diagnosis from FastDiag
                 new_diagnosis, new_runtime, new_consistency_check = diagnosis_handling('diagnosis_output')
+                
+                # store the result in the according lists above
+                # as soon as we get a diagnosis that already exist in the list, we break out of the loop
                 if diagnosis_list:
                     for diagnosis in diagnosis_list:
                         if set(diagnosis) == set(new_diagnosis):
                             different_diagnosis = False
                             break
-                    if different_diagnosis:
-                        diagnosis_list.append(new_diagnosis)
-                        runtime_list.append(new_runtime)
-                        consistency_check_list.append(new_consistency_check)
-                        property_ordering_list.append(property_ordering)
-                else:
-                    diagnosis_list.append(new_diagnosis)
-                    runtime_list.append(new_runtime)
-                    consistency_check_list.append(new_consistency_check)
-                    property_ordering_list.append(property_ordering)
+                diagnosis_list.append(new_diagnosis)
+                runtime_list.append(new_runtime)
+                consistency_check_list.append(new_consistency_check)
+                property_ordering_list.append(property_ordering)
 
-            if len(diagnosis_list) > 3:  # add only those configurations which have more than 3 different possible diagnosis
+            # Add these diagnosis to pandas_data (the csv "CONFIGURATION_FILE_PATH") in the last rows
+            # add only those configurations which have more than 3 different possible diagnosis
+            if len(diagnosis_list) > 3:
+                # First update the csv file (CONFIGURATION_FILE_PATH) with configs in folder (OUTPUT_XML_FILE_PATH)
+                # for each config, filtering out the constraints that are not relevant
                 data_preparation.training_data_from_xml_get(settings_dict["OUTPUT_XML_FILE_PATH"],
                                            settings_dict["CONFIGURATION_FILE_PATH"])
+                # Then we add the new diagnosis to the csv file
                 for j in range(len(diagnosis_list)):
                     data_preparation.diagnosis_training_data_prepare(pandas_data, property_ordering_list[j],
                                                                      diagnosis_list[j], runtime_list[j],
@@ -65,7 +80,8 @@ def learn_diagnosis(settings):
                 num_different_diagnosis += len(diagnosis_list)
             else:
                 print("Configuration had not enough diagnosis! " + str(i + 1) + " Configurations checked!\n")
-
+            
+            # no idea what does count_diagnosis_per_configuration do.
             if len(diagnosis_list) in count_diagnosis_per_configuration.keys():
                 count_diagnosis_per_configuration[len(diagnosis_list)] += 1
             else:
@@ -83,12 +99,18 @@ def learn_diagnosis(settings):
     # data_preparation.diagnosis_validation_data_prepare(settings["CONFIGURATION_FILE_PATH"],
                                                        # settings["VALIDATION_FILE_PATH"])
 
-    # prepare learning data
+    # Prepare learning data
     print("Preparing neural network model input!")
+    # preparing data for the label of the training (label is what the model trying to predict)
+    # here the label is the collumn "Diagnosis", training data taken from "VALIDATION_FILE_PATH", Binary features defines
+    # which label use what loss function, ignore defines which collumns from "VALIDATION_FILE_PATH" are not used for training
     validation_data, label_columns, label_dict, losses, loss_weights = data_handling.data_labeling(
         ['Diagnosis'], settings["VALIDATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
-
         ignore=['Runtime', 'Consistency check'])
+    
+    # Prepare training_data (should be consisted of only features collumns), the rest is same as above, only difference is
+    # now theres another filer for which labels to use (although here the filter is empty), and features_dict is a new var
+    # (contains unique values of each feature column in training_file_path, sorted)
     training_data, label_columns, label_dict, features_dict, losses, loss_weights = data_handling.training_data_labeling(
         ['Diagnosis'], settings["CONFIGURATION_FILE_PATH"], binary_features=settings["BINARY_FEATURES"],
         ignore=['Runtime', 'Consistency check'])
@@ -161,19 +183,24 @@ def learn_diagnosis(settings):
 
 
 settings_dict = {
-    
+    # 1 csv File with diff configs created randomly from sample of ORIGINAL_FILE_PATH, these configs can be consistent or inconsistent
     "CONFIGURATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_inconsistent_RuleFeatures_multiple.csv",
+    # csv file containing data that can be used for training (primary the labels data)
     "VALIDATION_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\ValidationData_inconsistent_RuleFeatures_randomUR3"
                             r""
                             r".csv",
+    # file with real world data of different configurations
     "ORIGINAL_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\TrainingData_725_RuleFeatures.csv",
+    # A file containing names of labels that should use "sparse_categorical_crossentropy" as loss function.
     "BINARY_FEATURES": "Learning Data Input/V2_XML/Binary Features.txt",
+
     "IRRELEVANT_FEATURES": "Learning Data Input/V2_XML/Irrelevant Features_RuleFeatures.txt",
     "VARIABLE_ORDER_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\VariableOrder.txt",
     "INPUT_XML": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Request.xml",
     "PROGRESS_XML_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\ConLearn\Learning Data Input\V2_XML\XML Input\Progress\Request.xml",
     "MODEL_LIBRARY_FILE_PATH": "Models/DiagnosisModelLibrary.csv",
-    "OUTPUT_XML_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs"
+    # a folder of xml files, each is a config of CONFIGURATION_FILE_PATH. Config has name as conf_0.xml, conf_1.xml, etc.
+    "OUTPUT_XML_FILE_PATH": r"C:\Users\mathi\Documents\Studium\Promotion\MF4ChocoSolver-main\ConfigurationChecker\confs" 
 }
 
 learn_diagnosis(settings_dict)
