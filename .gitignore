@@ -9,5 +9,4 @@ __pycache__/
 LinuxConfiguration/fm_conflict.jar
 LinuxConfiguration/fm_diagnoses.jar
 LinuxConfiguration/fm_diagnosis.jar
-TrainingData/TrainingData_all.csv
-TrainingData/ValidationData_all.csv
+TrainingData/

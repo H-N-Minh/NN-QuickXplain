@@ -97,7 +97,7 @@ def linux_configuration_create_simple(settings_dict):
             file.close()
 
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
-                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnoses.jar",
                             #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea2468.xml",
                                 jar_path, fm_path,
                              settings_dict["CONFIGURATION_FILE_PATH"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -123,7 +123,7 @@ def linux_configuration_create_simple(settings_dict):
             file.close()
 
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
-                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnoses.jar",
                             #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\ea2468.xml",
                                 jar_path, fm_path,
                              settings_dict["CONFIGURATION_FILE_PATH"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

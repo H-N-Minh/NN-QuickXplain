@@ -75,7 +75,7 @@ def inconsistent_configurations_create(settings_dict):
     # change feature model file according to the feature model to be created
     # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
-                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                            #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnoses.jar",
                             #  r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
                                 jar_path, fm_path,
                              settings_dict["CANDIDATE_FILE_PATH"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -151,7 +151,7 @@ def defined_inconsistent_configurations_create(settings_dict):
     # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
     # change between busybox and linux!
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
-                            # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnosis.jar",
+                            # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnoses.jar",
                             # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\REAL-FM-4.sxfm",
                                 jar_path, fm_path,
                             settings_dict["INCONSISTENT_FILE_PATH"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
