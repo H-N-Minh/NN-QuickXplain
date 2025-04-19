@@ -1,5 +1,6 @@
 import pandas as pd
-import tensorflow_addons as tfa
+import tensorflow as tf
+
 
 
 def data_labeling(label_names, training_file_path, binary_features=None, ignore=None, delimiter=None):
@@ -30,7 +31,7 @@ def data_labeling(label_names, training_file_path, binary_features=None, ignore=
                         break
                     else:
                         # losses[column.name] = "categorical_crossentropy"
-                        losses[column.name] = tfa.losses.TripletSemiHardLoss()
+                        losses[column.name] = tf.keras.losses.TripletSemiHardLoss()
         else:
             # if no binary features are explicit defined, all features are binary
             # losses[column.name] = "sparse_categorical_crossentropy"
