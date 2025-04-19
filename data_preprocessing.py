@@ -9,6 +9,38 @@ from sklearn.compose import ColumnTransformer
 import pandas as pd
 
 
+# def data_preprocessing_learning():
+#     # Load the input configurations and conflict labels
+#     input_data = pd.read_csv('arcade_small_invalid_confs_410.csv', header=None)
+#     conflict_data = pd.read_csv('arcade_small_conflicts_410.csv', header=None)
+
+#     # Drop the index column (first column)
+#     input_data = input_data.iloc[:, 1:]  # Features: columns 1 to 47
+#     conflict_data = conflict_data.iloc[:, 1:]  # Labels: columns 1 to 47
+
+#     # Map input features: -1 -> 0, 1 -> 1
+#     input_data = input_data.replace({-1: 0, 1: 1})
+
+#     # Map conflict labels: -1 -> 0, 0 -> 0 (1 indicates conflict feature)
+#     conflict_data = conflict_data.replace({-1: 0, 0: 0, 1: 1})
+
+#     # Convert to numpy arrays
+#     train_x = input_data.to_numpy()
+#     train_labels = conflict_data.to_numpy()
+
+#     # Perform train-test split (75% train, 25% test)
+#     train_x, test_x, train_labels, test_labels = train_test_split(
+#         train_x, train_labels, train_size=0.75, shuffle=True
+#     )
+
+#     # Ensure data types are float32 for NN compatibility
+#     train_x = train_x.astype(np.float32)
+#     test_x = test_x.astype(np.float32)
+#     train_labels = train_labels.astype(np.float32)
+#     test_labels = test_labels.astype(np.float32)
+
+#     return train_x, train_labels, test_x, test_labels
+
 def data_preprocessing_learning(pandas_data, label_columns):
     data_array = np.array(pandas_data)
     one_hot = OneHotEncoder()

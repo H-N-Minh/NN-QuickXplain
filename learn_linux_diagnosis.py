@@ -95,8 +95,8 @@ def learn_diagnosis(settings):
 # }
 
 settings_dict = {
-    "TRAINING_FILE_PATH": os.path.join("TrainingData", "TrainingData_all.csv"),
-    "VALIDATION_FILE_PATH": os.path.join("TrainingData", "ValidationData_all.csv"),
+    "TRAINING_FILE_PATH": os.path.join("TrainingData", "Linux_TrainingData_all.csv"),
+    "VALIDATION_FILE_PATH": os.path.join("TrainingData", "Linux_ValidationData_all.csv"),
     "CONFIGURATION_FILE_PATH": os.path.join("candidate"),
     "DIAGNOSIS_FILE_PATH": os.path.join("data"),
     "MODEL_LIBRARY_FILE_PATH": os.path.join("Models", "DiagnosisModelLibrary.csv"),
