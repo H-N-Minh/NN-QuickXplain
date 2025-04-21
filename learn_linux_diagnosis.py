@@ -29,13 +29,15 @@ def learn_diagnosis(settings):
     print("===> Done!! \nValidating neural network model...")
     ConLearn.model_predict_conflict(id, features_dataframe, labels_dataframe)
     print("===> Done!! \nValidation finished!")
-    
+
     print("==> Done Everything...")
 
 
 settings_dict = {
-    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_small_invalid_confs_410.csv"),
-    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_small_conflicts_410.csv"),
+    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
+    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_conflicts_48752.csv"),
+    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_small_invalid_confs_410.csv"),
+    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_small_conflicts_410.csv"),
     "CONFIGURATION_FILE_PATH": os.path.join("candidate"),
     "DIAGNOSIS_FILE_PATH": os.path.join("data"),
     "MODEL_LIBRARY_FILE_PATH": os.path.join("Models", "DiagnosisModelLibrary.csv"),
