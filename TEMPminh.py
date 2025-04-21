@@ -48,17 +48,38 @@ import pandas as pd
 
 # Compare temp1.csv and TrainingData/arcade_small_conflicts_410.csv for exact match
 
-temp1_path = "temp1.csv"
-arcade_conflicts_path = "TrainingData/arcade_small_conflicts_410.csv"
+# temp1_path = "temp1.csv"
+# arcade_conflicts_path = "TrainingData/arcade_small_conflicts_410.csv"
 
-df1 = pd.read_csv(temp1_path, header=None)
-df2 = pd.read_csv(arcade_conflicts_path, header=None)
+# df1 = pd.read_csv(temp1_path, header=None)
+# df2 = pd.read_csv(arcade_conflicts_path, header=None)
 
-if df1.equals(df2):
-    print("The files have exactly the same data.")
-else:
-    print("The files are different. Differences found at (row, column):")
-    diff = df1 != df2
-    diff_indices = list(zip(*diff.to_numpy().nonzero()))
-    for idx in diff_indices:
-        print(f"Row {idx[0]}, Column {idx[1]}: temp1.csv={df1.iat[idx[0], idx[1]]}, arcade_small_conflicts_410.csv={df2.iat[idx[0], idx[1]]}")
+# if df1.equals(df2):
+#     print("The files have exactly the same data.")
+# else:
+#     print("The files are different. Differences found at (row, column):")
+#     diff = df1 != df2
+#     diff_indices = list(zip(*diff.to_numpy().nonzero()))
+#     for idx in diff_indices:
+#         print(f"Row {idx[0]}, Column {idx[1]}: temp1.csv={df1.iat[idx[0], idx[1]]}, arcade_small_conflicts_410.csv={df2.iat[idx[0], idx[1]]}")
+
+
+# Given data
+runtime_ordered = 0.001810  # seconds
+runtime_normal = 0.002922  # seconds
+runtime_improvement = runtime_normal -  runtime_ordered # seconds
+
+print(f"Runtime Improvement: {runtime_improvement:.6f} seconds")
+
+cc_ordered = 7.31
+cc_normal = 13.11
+cc_improvement = cc_normal - cc_ordered
+print(f"CC Improvement: {cc_improvement:.2f}")
+
+# Calculate percentage improvements
+runtime_improvement_percentage = (runtime_improvement / runtime_normal) * 100
+cc_improvement_percentage = (cc_improvement / cc_normal) * 100
+
+# Print results
+print(f"Runtime Improvement: {runtime_improvement_percentage:.2f}%")
+print(f"CC Improvement: {cc_improvement_percentage:.2f}%")
