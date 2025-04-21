@@ -10,7 +10,7 @@ from random import choices
 from random import randint
 from diagnosis_handling import diagnosis_handling_linux
 
-jar_path = os.path.join("LinuxConfiguration", "fm_diagnosis.jar")
+jar_path = os.path.join("LinuxConfiguration", "fm_conflict.jar")
 fm_path = os.path.join("LinuxConfiguration", "REAL-FM-4.sxfm")
 log_dir = os.path.join("LOGS")
 
@@ -71,7 +71,7 @@ def inconsistent_configurations_create(settings_dict):
     print("Next: Check inconsistency!\n")
 
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
-    # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
+    # java -jar fm_conflict.jar linux-2.6.33.3.xml ./fm_confs/
     # change feature model file according to the feature model to be created
     # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
@@ -148,7 +148,7 @@ def defined_inconsistent_configurations_create(settings_dict):
     print("Next: Check inconsistency!\n")
 
     # Ex: identify the preferred diagnosis for Linux configuration files stored in ./fm_confs/
-    # java -jar fm_diagnosis.jar linux-2.6.33.3.xml ./fm_confs/
+    # java -jar fm_conflict.jar linux-2.6.33.3.xml ./fm_confs/
     # change between busybox and linux!
     result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",
                             # r"C:\Users\User\Documents\Studium\Promotion\MF4ChocoSolver-main\LinuxConfiguration\fm_diagnoses.jar",

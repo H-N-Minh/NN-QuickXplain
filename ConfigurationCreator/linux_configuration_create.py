@@ -8,7 +8,7 @@ from random import choices
 from diagnosis_handling import diagnosis_handling_linux
 
 
-jar_path = os.path.join("LinuxConfiguration", "fm_diagnosis.jar")
+jar_path = os.path.join("LinuxConfiguration", "fm_conflict.jar")
 fm_path = os.path.join("LinuxConfiguration", "REAL-FM-4.sxfm")
 log_dir = os.path.join("LOGS")
 

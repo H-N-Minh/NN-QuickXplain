@@ -315,7 +315,7 @@ def evaluate_similarity_regularization_linux(epoch_logs, predictions, label_dict
         variable_dict = dict(sorted(variable_dict.items(), key=lambda item: item[1], reverse=True))
         prediction_list.append(list(variable_dict.keys()))
 
-    training_data = pd.read_csv(settings["TRAINING_FILE_PATH"], delimiter=',', dtype='string')
+    training_data = pd.read_csv(settings["CONSTRAINTS_FILE_PATH"], delimiter=',', dtype='string')
     training_data = training_data[int(len(training_data) * .75):]
     training_data = training_data.reset_index(drop=True)
     training_data.pop("Runtime")

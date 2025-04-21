@@ -1,23 +1,78 @@
-import tensorflow as tf
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import uuid
-import csv
 import os
+import csv
+import uuid
 import heapq
 import operator
 import subprocess
 import timeit
 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.initializers import HeNormal
+from sklearn.metrics import jaccard_score
 from keras.utils import plot_model
 
 from Choco.diagnosis_choco import get_linux_diagnosis
 from diagnosis_handling import diagnosis_handling_linux
 from metric_calculation import similarity_calculation
 from neuron_constraint_initializer import NeuronConstraintInitializer
+import os
 
+
+ARCARD_FEATURE_MODEL = [
+    "Check Previous Best Score",
+    "Save Score",
+    "Save Game",
+    "Exit Game",
+    "Install Game",
+    "Uninstall Game",
+    "List Game",
+    "Puck supply",
+    "Play Brickles",
+    "Play Pong",
+    "Play Bowling",
+    "Sprite Pair",
+    "Pong Board",
+    "Brickles Board",
+    "Bowling Board",
+    "Pong",
+    "Brickles",
+    "Bowling",
+    "Pong Game Menu",
+    "Brickles Game Menu",
+    "Bowling Game Menu",
+    "Animation Loop",
+    "Size",
+    "Point",
+    "Velocity",
+    "Puck",
+    "Bowling Ball",
+    "Bowling Pin",
+    "Brick",
+    "Brick Pile",
+    "Ceiling brickles",
+    "Floor brickles",
+    "Lane",
+    "Gutter",
+    "Edge",
+    "End of Alley",
+    "Rack of Pins",
+    "Score Board",
+    "Floor pong",
+    "Ceiling pong",
+    "Dividing Line",
+    "Top Paddle",
+    "Bottom Paddle",
+    "Left pong",
+    "Right pont",
+    "Left brickles",
+    "Right brickles"
+]
 
 class ConLearn:
 
@@ -25,21 +80,13 @@ class ConLearn:
 
         return
 
-    def build_model(input_shape, label_dict, input_neuron_list, output_neuron_list, rules=None,
-                    last_layer_activation=tf.nn.softmax):
-
-        inputs = tf.keras.Input(shape=(input_shape,), name="Configuration_data")
-        # x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu)(inputs)
-        # y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu)(x)
-        # z = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu)(y)
-        outputs = []
-        for label_name, labels in label_dict.items():
-            output_shape = len(labels)
-            outputs.append(ConLearn.build_branch(input_shape, output_shape, inputs, label_name, input_neuron_list,
-                                                 output_neuron_list, last_layer_activation, rules))
-
-        model = tf.keras.models.Model(inputs=inputs, outputs=outputs, name="ConLearn")
-
+    @staticmethod
+    def create_model(input_shape, output_shape):
+        model = Sequential([
+            Dense(input_shape, activation='relu', kernel_initializer=HeNormal(), input_shape=(input_shape,)),
+            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
+            Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
+        ])
         return model
 
     def build_branch(input_shape, output_shape, inputs, label_name, input_neuron_list, output_neuron_list,
@@ -94,111 +141,71 @@ class ConLearn:
 
         return z
 
-    def model_evaluation(model, losses, lossWeights, trainX, testX, trainLabels, testLabels,
-                         label_Dict, settings, features_Dict=None, prediction_names=None):
-        epochs = 12
-        lr = 0.0005  # siemens NN:0.000003
-        optimizer = tf.optimizers.Adam(learning_rate=lr)
-        model.compile(optimizer=optimizer, loss=losses, loss_weights=lossWeights, metrics=["accuracy"])
+    def train_and_evaluate(train_x, test_x, train_labels, test_labels):
+        input_shape = train_x.shape[1]
+        output_shape = train_labels.shape[1]  # Number of conflict columns
+        
+        print("train_and_evaluate::creating model...")
+        model = ConLearn.create_model(input_shape, output_shape)
+        print("train_and_evaluate:: Done creating model")
 
-        model.summary()
-        if len(trainLabels) == 1:
-            trainLabels = trainLabels[0]
-        if len(testLabels) == 1:
-            testLabels = testLabels[0]
-
-        history = model.fit(trainX, trainLabels, validation_data=(testX, testLabels), epochs=epochs, batch_size=1024,
-                            verbose=1, shuffle=True)
-        # , label_dict=label_Dict, features_dict=features_Dict,
-        #                     prediction_names=prediction_names, defined_epochs=epochs,
-        #                     settings=settings)  # , callbacks=[lr_scheduler])
-
-        # save model
-        id = str(uuid.uuid4())
-        try:
-            os.makedirs("Models/" + id)
-        except:
-            print("Directory " + "Models/" + id + " already exists!")
-        model.save("Models/" + id + "/model")
-
-        # print model diagrams
-
-        plot_model(model, "Models/" + id + "/model.png", show_shapes=True, show_layer_names=True)
-
-        print('\nhistory dict:', history.history)
-
-        history_losses = []
-        history_accuracy = []
-        for item in history.history:
-            if 'val' in item:
-                continue
-            elif 'loss' in item:
-                history_losses.append(item)
-            elif 'accuracy' in item:
-                history_accuracy.append(item)
-            else:
-                print('Unknown history item' + item)
-
-        plt.style.use("ggplot")
-
-        # print loss
-        (fig, ax) = plt.subplots(len(history_losses), 1, figsize=(15, len(history_losses) * 3))
-        # loop over the loss names
-
-        for (i, l) in enumerate(history_losses):
-            # plot the loss for both the training and validation data
-            title = "Loss for {}".format(l) if l != "loss" else "Total loss"
-            if len(history_losses) > 1:
-                ax[i].set_title(title)
-                ax[i].set_xlabel("Epoch #")
-                ax[i].set_ylabel("Loss")
-                ax[i].plot(np.arange(0, epochs), history.history[l], label=l)
-                ax[i].plot(np.arange(0, epochs), history.history["val_" + l], label="val_" + l)
-                ax[i].legend()
-            else:
-                ax.set_title(title)
-                ax.set_xlabel("Epoch #")
-                ax.set_ylabel("Loss")
-                ax.plot(np.arange(0, epochs), history.history[l], label=l)
-                ax.plot(np.arange(0, epochs), history.history["val_" + l], label="val_" + l)
-                ax.legend()
-
-        # save the losses figure
-        plt.tight_layout()
-        plt.savefig("Models/" + id + "/losses.png")
+        print("train_and_evaluate::compiling model and train it...")
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
+            loss="binary_crossentropy",
+            metrics=['accuracy']
+        )
+        
+        history = model.fit(
+            train_x, train_labels,
+            epochs=12,
+            batch_size=1024,
+            validation_data=(test_x, test_labels),
+            verbose=1
+        )
+        print("train_and_evaluate:: Done training model")
+        
+        # Save model
+        model_id = str(uuid.uuid4())
+        model_dir = f'Models/{model_id}'
+        os.makedirs(model_dir, exist_ok=True)
+        model.save(f'{model_dir}/model.keras')
+        
+        # Save training history plots
+        plt.figure()
+        plt.plot(history.history['loss'], label='Training Loss')
+        plt.plot(history.history['val_loss'], label='Validation Loss')
+        plt.title('Model Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.savefig(f'{model_dir}/losses.png')
         plt.close()
-
-        # print accuracy
-        (fig, ax) = plt.subplots(len(history_accuracy), 1, figsize=(15, len(history_accuracy) * 3))
-        # loop over the loss names
-        for (i, l) in enumerate(history_accuracy):
-            # plot the loss for both the training and validation data
-            title = "Accuracy of {}".format(l) if l != "accuracy" else "Total accuracy"
-            if len(history_accuracy) > 1:
-                ax[i].set_title(title)
-                ax[i].set_xlabel("Epoch #")
-                ax[i].set_ylabel("Accuracy")
-                ax[i].plot(np.arange(0, epochs), history.history[l], label=l)
-                ax[i].plot(np.arange(0, epochs), history.history["val_" + l], label="val_" + l)
-                ax[i].legend()
-            else:
-                ax.set_title(title)
-                ax.set_xlabel("Epoch #")
-                ax.set_ylabel("Accuracy")
-                ax.plot(np.arange(0, epochs), history.history[l], label=l)
-                ax.plot(np.arange(0, epochs), history.history["val_" + l], label="val_" + l)
-                ax.legend()
-        # save the losses figure
-        plt.tight_layout()
-        plt.savefig("Models/" + id + "/accuracy.png")
+        
+        plt.figure()
+        plt.plot(history.history['accuracy'], label='Training Accuracy')
+        plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+        plt.title('Model Accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.savefig(f'{model_dir}/accuracy.png')
         plt.close()
+        
+        # Update model library
+        model_library = pd.DataFrame({
+            'ID': [model_id],
+            **{col: [0] for col in range(input_shape)},
+            'Conflict': [1]
+        })
+        model_library.to_csv('ConflictModelLibrary.csv', index=False)
+        
+        return model_id, history.history
 
-        return id
-
-    def save_model_csv(id, training_file_path, label_names, model_library_file_path, delimiter=None):
+    def save_model_csv(id, CONSTRAINTS_FILE_PATH, label_names, model_library_file_path, delimiter=None):
         if not delimiter:
             delimiter = ';'
-        pandas_data = pd.read_csv(training_file_path, delimiter=delimiter, dtype='string')
+        pandas_data = pd.read_csv(CONSTRAINTS_FILE_PATH, delimiter=delimiter, dtype='string')
         with open(model_library_file_path, "a+", newline='') as model_Library:
             if os.stat(model_library_file_path).st_size == 0:
                 head_data = ['ID']
@@ -258,202 +265,267 @@ class ConLearn:
             return id
         except:
             return id
+        
+    def model_cleanup(model_performance):
+        # Select model with highest runtime improvement
+        best_model_id = max(model_performance, key=model_performance.get)
+        best_performance = model_performance[best_model_id]
+        
+        # Delete other models
+        for model_id in model_performance:
+            if model_id != best_model_id:
+                shutil.rmtree(f'Models/{model_id}')
+        
+        # Update model library
+        model_library = pd.read_csv('ConflictModelLibrary.csv')
+        model_library = model_library[model_library['ID'] == best_model_id]
+        model_library.to_csv('ConflictModelLibrary.csv', index=False)
+        
+        print(f'Selected model achieved a runtime improvement of {best_performance:.6f} s')
 
-    def model_cleanup(model_library_file_path, model_performance):
-        id_to_keep = max(model_performance.items(), key=operator.itemgetter(1))[0]
-        id_remove = []
+    @staticmethod
+    def get_NN_performance(features_dataframe, predictions):
+        # Build input_constraints_dict: list of dicts mapping feature names to values for each row
+        input_constraints_dict = []   # { name of constraint : value of constraint 1 or -1}. each dict is a config
+        feature_names = ARCARD_FEATURE_MODEL
+        for _, row in features_dataframe.iterrows():
+            row_dict = {feature_names[i]: row.iloc[i] for i in range(len(feature_names))}
+            input_constraints_dict.append(row_dict)
 
-        Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
-        for index, row in Library_Data.iterrows():
-            if row.ID in model_performance.keys() and row.ID != id_to_keep:
-                id_remove.append(index)
-        for i in range(len(id_remove)):
-            Library_Data = Library_Data.drop([id_remove[i]])
-        Library_Data.reset_index(drop=True)
-        with open(model_library_file_path, "w", newline='') as model_Library:
-            writer = csv.writer(model_Library, delimiter=';')
-            writer.writerow(Library_Data.columns.values)
-            for i in range(Library_Data.values.shape[0]):
-                writer.writerow(Library_Data.values[i])
-        return id_to_keep
+        # Create feature_order_dicts: list of dicts for each row in predictions
+        feature_order_dicts = []  # { probability : name of constraint}. each dict is a config
+        for row in predictions:
+            row_dict = {row[i]: ARCARD_FEATURE_MODEL[i] for i in range(len(ARCARD_FEATURE_MODEL))}
+            feature_order_dicts.append(row_dict)
 
-    def model_predict_linux_diagnosis(id, validation_input, validation_data, label_dict, configuration_file_path,
-                                      diagnosis_file_path):
+        # print("First 3 rows of features_dataframe:")
+        # print(features_dataframe.head(3))
+        # print("First 3 dicts of input_constraints_dict:")
+        # print(input_constraints_dict[:3])
 
-        # predict based on neural network model
-        model = tf.keras.models.load_model("Models/" + id + "/model")
-        predictions = model.predict(validation_input)
+        # Create ordered_features_list: each row is a list of values from the dict, sorted by key
+        ordered_features_list = []
+        for d in feature_order_dicts:
+            # Sort the dict by key (probability), get the values (feature names) in order
+            sorted_items = sorted(d.items(), key=lambda x: x[0], reverse=True)
+            ordered_features_list.append([v for k, v in sorted_items])
 
-        # create diagnosis variable ordering
-        variable_list = list(label_dict['Diagnosis'])
-        variable_ordering_list = []
-        for pred in predictions:
-            variable_dict = {}
-            for i in range(len(variable_list)):
-                variable_dict[variable_list[i]] = pred[i]
-            # variable_dict = dict(sorted(variable_dict.items(), key=lambda item: item[1]))
-            variable_dict = sorted(variable_dict, key=variable_dict.get, reverse=False)
-            variable_ordering_list.append(variable_dict)
+        print("model_predict_conflict::creating configs")
+        os.makedirs('candidate', exist_ok=True)
+        for idx, config_row in enumerate(ordered_features_list):
+            file_path = os.path.join('candidate', f'conf{idx}.txt')
+            with open(file_path, 'w') as f:
+                for constraint_name in config_row:
+                    constraint_value = "true" if input_constraints_dict[idx][constraint_name] == 1 else "false"
+                    f.write(f"{constraint_name} {constraint_value}\n")
+        print("model_predict_conflict:: Done creating configs")
+        
 
-        # create configuration
-        original_runtime_list = validation_data['Runtime'].tolist()
-        original_consistency_check_list = validation_data['Consistency check'].tolist()
-        original_diagnosis_list = validation_data['Diagnosis'].tolist()
-        validation_data = validation_data.drop('Runtime', axis=1)
-        validation_data = validation_data.drop('Consistency check', axis=1)
-        validation_data = validation_data.drop('Diagnosis', axis=1)
+        print("model_predict_conflict::getting diagnosis...")
+        get_linux_diagnosis(os.path.join("candidate"))
+        print("model_predict_conflict:: Done getting diagnosis")
 
-        print("model_predict_linux_diagnosis:: Creating configuration files for diagnosis!")
-        for i in range(len(validation_data)):
-            if i < 1 or not validation_data.iloc[i].equals(
-                    validation_data.iloc[i - 1]):  # only check unique configurations
-                # print("Create configuration: " + str(i) + " of " + str(len(validation_data)))
-                with open(configuration_file_path + "\\" + "conf" + str(i) + ".txt", 'w') as f:
-                    for k, v in validation_data.iloc[i].to_dict().items():
-                        if k not in variable_ordering_list[i]:
-                            f.writelines(k + " " + v + "\n")
-                    for diagnosis_item in variable_ordering_list[i]:
-                        for k, v in validation_data.iloc[i].to_dict().items():
-                            if k == diagnosis_item:
-                                f.writelines(k + " " + v + "\n")
-                                break
+        # extract runtime and cc
+        data_folder = "Data"
+        runtime_list = []
+        cc_list = []
+        for filename in os.listdir(data_folder):
+            file_p = os.path.join(data_folder, filename)
+            with open(file_p, "r") as f:
+                lines = f.readlines()
+                runtime = None
+                cc = None
+                for line in lines:
+                    if line.startswith("Runtime:"):
+                        try:
+                            runtime = float(line.split()[1])
+                        except Exception:
+                            continue
+                    elif line.startswith("CC:"):
+                        try:
+                            cc = int(line.split()[1])
+                        except Exception:
+                            continue
+                    if runtime is not None:
+                        runtime_list.append(runtime)
+                    if cc is not None:
+                        cc_list.append(cc)
+        avg_runtime = np.mean(runtime_list) if runtime_list else 0
+        avg_cc = np.mean(cc_list) if cc_list else 0
+        print(f"Average runtime for ordered: {avg_runtime:.6f} seconds")
+        print(f"Average CC for ordered: {avg_cc:.2f}")
+        return avg_runtime, avg_cc
 
-        # perform diagnosis
-        original_runtime_list_unique = []
-        original_consistency_check_list_unique = []
-        new_runtime_list_unique = []
-        new_consistency_check_list_unique = []
-        similarity_list = []
-        sum_original_runtime = 0
-        sum_new_runtime = 0
-        sum_original_consistency_check = 0
-        sum_new_consistency_check = 0
-        sum_similarity = 0
-        sum_similar = 0
+    @staticmethod
+    def get_normal_performance(features_dataframe):
+        # print("==========First 2 rows of features_dataframe:")
+        # print(features_dataframe.head(2))
 
-        print("model_predict_linux_diagnosis:: getting diagnosis!")
-        get_linux_diagnosis(configuration_file_path)
-        print("model_predict_linux_diagnosis:: --> Done!")
-        print("model_predict_linux_diagnosis:: Handling diagnosis results!")
-        inconsistent, configurations_added, data, columns, configurations, diagnoses = diagnosis_handling_linux(
-            diagnosis_file_path)
-        print("model_predict_linux_diagnosis:: --> Done!")
-        new_validation_data = pd.DataFrame(data, columns=columns)
+        os.makedirs('candidate', exist_ok=True)
+        for idx, row in features_dataframe.iterrows():
+            file_path = os.path.join('candidate', f'conf{idx}.txt')
+            with open(file_path, 'w') as f:
+                for col_idx, feature_name in enumerate(ARCARD_FEATURE_MODEL):
+                    value = row.iloc[col_idx]
+                    constraint_value = "true" if value == 1 else "false"
+                    f.write(f"{feature_name} {constraint_value}\n")
+        print("model_predict_conflict:: Done creating configs")
+        
 
-        # compare diagnosis results
-        new_runtime_list = new_validation_data['Runtime'].tolist()
-        new_consistency_check_list = new_validation_data['Consistency check'].tolist()
-        new_diagnosis_list = new_validation_data['Diagnosis'].tolist()
-        new_validation_data = new_validation_data.drop('Runtime', axis=1)
-        new_validation_data = new_validation_data.drop('Consistency check', axis=1)
-        new_validation_data = new_validation_data.drop('Diagnosis', axis=1)
-        new_diagnosis = []
-        original_diagnosis = []
-        original_diagnosis_sorted = []
-        new_diagnosis_sorted = []
-        diagnosis_size_list = []
-        diagnosis_size = 1
-        similar_configurations = 0
+        print("model_predict_conflict::getting diagnosis...")
+        get_linux_diagnosis(os.path.join("candidate"))
+        print("model_predict_conflict:: Done getting diagnosis")
 
-        for i in range(len(validation_data)):
-            if i == len(validation_data) - 1 or not validation_data.iloc[i].equals(
-                    validation_data.iloc[i + 1]):  # only check unique configurations
-                if i >= 1:
-                    diagnosis_size_list.append(diagnosis_size)
-                    diagnosis_size = 1
-                original_diagnosis.append(original_diagnosis_list[i])
-                original_diagnosis_sorted.append(original_diagnosis)
-                original_diagnosis = []
-                original_runtime_list_unique.append(original_runtime_list[i])
-                original_consistency_check_list_unique.append((original_consistency_check_list[i]))
-            else:
-                original_diagnosis.append(original_diagnosis_list[i])
-                similar_configurations += 1
-                diagnosis_size += 1
+        # extract runtime and cc
+        data_folder = "Data"
+        runtime_list = []
+        cc_list = []
+        for filename in os.listdir(data_folder):
+            file_p = os.path.join(data_folder, filename)
+            with open(file_p, "r") as f:
+                lines = f.readlines()
+                runtime = None
+                cc = None
+                for line in lines:
+                    if line.startswith("Runtime:"):
+                        try:
+                            runtime = float(line.split()[1])
+                        except Exception:
+                            continue
+                    elif line.startswith("CC:"):
+                        try:
+                            cc = int(line.split()[1])
+                        except Exception:
+                            continue
+                    if runtime is not None:
+                        runtime_list.append(runtime)
+                    if cc is not None:
+                        cc_list.append(cc)
+        avg_runtime = np.mean(runtime_list) if runtime_list else 0
+        avg_cc = np.mean(cc_list) if cc_list else 0
+        print(f"Average runtime for normal: {avg_runtime:.6f} seconds")
+        print(f"Average CC for normal: {avg_cc:.2f}")
+        return avg_runtime, avg_cc
 
-        for i in range(len(new_validation_data)):
-            if i == len(new_validation_data) - 1 or not new_validation_data.iloc[i].equals(
-                    new_validation_data.iloc[i + 1]):  # only check unique configurations
-                new_diagnosis.append(new_diagnosis_list[i])
-                new_diagnosis_sorted.append(new_diagnosis)
-                new_diagnosis = []
-                new_runtime_list_unique.append(new_runtime_list[i])
-                new_consistency_check_list_unique.append((new_consistency_check_list[i]))
-            else:
-                new_diagnosis.append(new_diagnosis_list[i])
 
-        print("model_predict_linux_diagnosis:: Comparing diagnosis results!")
-        for i in range(len(original_diagnosis_sorted)):
-            similarity, similar = similarity_calculation(new_diagnosis_sorted[i], original_diagnosis_sorted[i])
-            similarity_list.append(similarity)
 
-            # print("Similarity of original and new diagnosis: " + str(similarity_list[i]))
-            # print("The diagnosis was similar to the original preferred one: " + str(similar))
-            # print("Original runtime was: " + str(original_runtime_list_unique[i]) + "s!")
-            # print("New runtime was: " + str(new_runtime_list_unique[i]) + "s!")
-            runtime_improvement = float(original_runtime_list_unique[i]) - float(new_runtime_list_unique[i])
-            # print("Original number of consistency checks were: " + str(original_consistency_check_list_unique[i]))
-            # print("New number of consistency checks were: " + str(new_consistency_check_list_unique[i]))
-            consistency_check_improvement = float(original_consistency_check_list_unique[i]) - float(
-                new_consistency_check_list_unique[i])
-            # print("Runtime has been improved by: " + str(runtime_improvement) + "s!")
-            # print("Number of consistency checks has been improved by: " + str(consistency_check_improvement) + "\n")
+    def model_predict_conflict(model_id, features_dataframe, labels_dataframe):
+        # Load model
+        model = tf.keras.models.load_model(f'Models/{model_id}/model.keras')
+        
+        # Predict conflict sets
+        predictions = model.predict(features_dataframe.values)
+        # print("Predictions shape:", predictions.shape)
+        # print("First 3 rows of predictions:\n", predictions[:3])
+        # print("First row of features_dataframe:")
+        # print(features_dataframe.iloc[0])
+        nn_runtime, nn_cc = ConLearn.get_NN_performance(features_dataframe, predictions)
 
-            sum_similarity += float(similarity_list[i])
-            sum_similar += float(similar)
-            sum_original_runtime += float(original_runtime_list_unique[i])
-            sum_new_runtime += float(new_runtime_list_unique[i])
-            sum_original_consistency_check += float(original_consistency_check_list_unique[i])
-            sum_new_consistency_check += float(new_consistency_check_list_unique[i])
+        normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
 
-        # average similarity, runtime and consistency checks of original diagnosis and variable ordering diagnosis
-        average_similarity = sum_similarity / len(similarity_list)
-        average_similar = sum_similar / len(similarity_list)
-        average_original_runtime = sum_original_runtime / len(new_runtime_list_unique)
-        average_new_runtime = sum_new_runtime / len(new_runtime_list_unique)
-        average_original_consistency_check = sum_original_consistency_check / len(new_consistency_check_list_unique)
-        average_new_consistency_check = sum_new_consistency_check / len(new_consistency_check_list_unique)
+        print(f"Runtime improvement (normal - NN): {normal_runtime - nn_runtime:.6f} seconds")
+        print(f"CC improvement (normal - NN): {normal_cc - nn_cc:.2f}")
 
-        # sort performance by diagnosis size
-        sorted_runtime = {}
-        sorted_consistency_checks = {}
-        sorted_runtime_o = {}
-        sorted_consistency_checks_o = {}
-        sorted_runtime_n = {}
-        sorted_consistency_checks_n = {}
-        amount_diagnosis_size = {}
-        for i in range(len(diagnosis_size_list)):
-            if diagnosis_size_list[i] in sorted_runtime:
-                sorted_runtime[diagnosis_size_list[i]] = sorted_runtime[diagnosis_size_list[i]] + (
-                        float(original_runtime_list_unique[i]) - float(new_runtime_list_unique[i]))
-                sorted_consistency_checks[diagnosis_size_list[i]] = sorted_consistency_checks[
-                                                                        diagnosis_size_list[i]] + (
-                                                                            float(
-                                                                                original_consistency_check_list_unique[
-                                                                                    i]) - float(
-                                                                        new_consistency_check_list_unique[i]))
-                sorted_runtime_o[diagnosis_size_list[i]] = sorted_runtime_o[diagnosis_size_list[i]] + (
-                    float(original_runtime_list_unique[i]))
-                sorted_consistency_checks_o[diagnosis_size_list[i]] = sorted_consistency_checks_o[
-                                                                          diagnosis_size_list[i]] + (
-                                                                          float(original_consistency_check_list_unique[
-                                                                                    i]))
-                sorted_runtime_n[diagnosis_size_list[i]] = sorted_runtime_n[diagnosis_size_list[i]] + (
-                    float(new_runtime_list_unique[i]))
-                sorted_consistency_checks_n[diagnosis_size_list[i]] = sorted_consistency_checks_n[
-                                                                          diagnosis_size_list[i]] + (
-                                                                          float(new_consistency_check_list_unique[i]))
-                amount_diagnosis_size[diagnosis_size_list[i]] += 1
-            else:
-                sorted_runtime[diagnosis_size_list[i]] = float(original_runtime_list_unique[i]) - float(
-                    new_runtime_list_unique[i])
-                sorted_consistency_checks[diagnosis_size_list[i]] = float(original_consistency_check_list_unique[i]) - \
-                                                                    float(new_consistency_check_list_unique[i])
-                sorted_runtime_o[diagnosis_size_list[i]] = float(original_runtime_list_unique[i])
-                sorted_consistency_checks_o[diagnosis_size_list[i]] = float(original_consistency_check_list_unique[i])
-                sorted_runtime_n[diagnosis_size_list[i]] = float(new_runtime_list_unique[i])
-                sorted_consistency_checks_n[diagnosis_size_list[i]] = float(new_consistency_check_list_unique[i])
-                amount_diagnosis_size[diagnosis_size_list[i]] = 1
 
-        return average_similarity, average_similar, average_original_runtime, average_new_runtime, \
-            average_original_consistency_check, average_new_consistency_check
+        
+
+
+        # # Evaluate on validation data
+        # results = []
+        # unique_configs = features_dataframe.drop_duplicates().index
+        
+        # for idx in unique_configs:
+        #     config = features_dataframe.loc[idx].values
+        #     config = np.where(config == -1, 0, config)  # Map -1 to 0
+        #     original_conflict = labels_dataframe.loc[idx].values
+        #     predicted_conflict = predictions[idx]
+            
+        #     # Write configuration to file
+        #     config_file = f'conf{idx}.txt'
+        #     with open(config_file, 'w') as f:
+        #         for i, val in enumerate(config):
+        #             f.write(f'feature_{i}={val}\n')
+            
+        #     # Get conflict using fm_conflict.jar
+        #     new_conflict, new_runtime, new_cc = ConLearn.get_conflict(config_file, model_file)
+            
+        #     # Read original metrics (assuming stored in separate file or computed)
+        #     original_runtime = 0.05  # Placeholder (replace with actual data)
+        #     original_cc = 60  # Placeholder (replace with actual data)
+            
+        #     # Compute similarity (Jaccard score for binary vectors)
+        #     similarity = jaccard_score(original_conflict, new_conflict)
+        #     similar = 1 if similarity >= 0.995 else 0
+            
+        #     results.append({
+        #         'similarity': similarity,
+        #         'similar': similar,
+        #         'runtime_improvement': original_runtime - new_runtime,
+        #         'cc_improvement': original_cc - new_cc
+        #     })
+            
+        #     # Clean up
+        #     os.remove(config_file)
+        
+        # # Compute averages
+        # avg_similarity = np.mean([r['similarity'] for r in results])
+        # avg_similar = np.mean([r['similar'] for r in results])
+        # avg_runtime_improvement = np.mean([r['runtime_improvement'] for r in results])
+        # avg_cc_improvement = np.mean([r['cc_improvement'] for r in results])
+        
+        # # Save performance
+        # performance_file = f'Models/{model_id}/performance.txt'
+        # with open(performance_file, 'w') as f:
+        #     f.write(f'Results for model {model_id}:\n')
+        #     f.write(f'Average similarity of the original and new conflict = {avg_similarity:.3f}\n')
+        #     f.write(f'Average similar conflict as the original = {avg_similar:.3f}\n')
+        #     f.write(f'Average runtime improvement = {avg_runtime_improvement:.6f} s\n')
+        #     f.write(f'Average consistency check improvement = {avg_cc_improvement:.1f}\n')
+        
+        # return avg_runtime_improvement
+    
+    
+
+def conflictOutputToCSV(conflict_file_path, output_csv_path):
+
+    # convert output of conflict detection system to csv file
+
+    # Create temp1.csv from Data/conf*_output.txt files
+    data_folder = "Data"
+    num_files = 410  # conf0_output.txt to conf409_output.txt
+    num_features = len(ARCARD_FEATURE_MODEL)
+    output_rows = []
+    for i in range(num_files):
+        row = [0] * (num_features + 1)  # First column is counter, rest are features
+        row[0] = i
+        file_path = os.path.join(data_folder, f"conf{i}_output.txt")
+        try:
+            with open(file_path, "r") as f:
+                lines = f.readlines()
+                if len(lines) >= 3:
+                    cs_line = lines[2].strip()
+                    if cs_line.startswith("CS: [") and cs_line.endswith("]"):
+                        cs_content = cs_line[5:-1]  # Remove "CS: [" and "]"
+                        if cs_content:
+                            pairs = cs_content.split(", ")
+                            for pair in pairs:
+                                if "=" in pair:
+                                    key, value = pair.split("=")
+                                    value = value.lower()
+                                    key = key.strip()
+                                    if key in ARCARD_FEATURE_MODEL:
+                                        idx = ARCARD_FEATURE_MODEL.index(key)
+                                        row[idx + 1] = 1 if value == "true" else -1
+        except FileNotFoundError:
+            pass  # If file does not exist, leave row as zeros
+        output_rows.append(row)
+
+    # Write to temp1.csv
+    with open("temp1.csv", "w", newline="") as csvfile:
+        writer = csv.writer(csvfile)
+        # Write header
+        header = ["counter"] + ARCARD_FEATURE_MODEL
+        writer.writerow(header)
+        # Write data
+        writer.writerows(output_rows)
+
