@@ -14,7 +14,7 @@ def read_data(constraints_file, conflict_file):
     
     # Replace -1 with 0 in configurations for binary input
     features_dataframe = features_dataframe.replace(-1, 0)
-    labels_dataframe = labels_dataframe.replace(-1, 0)
+    labels_dataframe = labels_dataframe.replace(-1, 1)
     
     # renaming all collumns of constraints to feature_0, feature_1, feature_2, ... , feature_n
     feature_columns = [f'feature_{i}' for i in range(features_dataframe.shape[1])]

@@ -423,49 +423,19 @@ class ConLearn:
 
         normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
 
-        print(f"Runtime improvement (normal - NN): {normal_runtime - nn_runtime:.6f} seconds")
-        print(f"CC improvement (normal - NN): {normal_cc - nn_cc:.2f}")
+        runtime_improvement = normal_runtime -  nn_runtime # seconds
+        cc_improvement = normal_cc - nn_cc
 
+
+        # Calculate percentage improvements
+        runtime_improvement_percentage = (runtime_improvement / normal_runtime) * 100
+        cc_improvement_percentage = (cc_improvement / normal_cc) * 100
+
+        # Print results
+        print(f"Runtime Improvement: {runtime_improvement_percentage:.2f}%")
+        print(f"CC Improvement: {cc_improvement_percentage:.2f}%")
 
         
-
-
-        # # Evaluate on validation data
-        # results = []
-        # unique_configs = features_dataframe.drop_duplicates().index
-        
-        # for idx in unique_configs:
-        #     config = features_dataframe.loc[idx].values
-        #     config = np.where(config == -1, 0, config)  # Map -1 to 0
-        #     original_conflict = labels_dataframe.loc[idx].values
-        #     predicted_conflict = predictions[idx]
-            
-        #     # Write configuration to file
-        #     config_file = f'conf{idx}.txt'
-        #     with open(config_file, 'w') as f:
-        #         for i, val in enumerate(config):
-        #             f.write(f'feature_{i}={val}\n')
-            
-        #     # Get conflict using fm_conflict.jar
-        #     new_conflict, new_runtime, new_cc = ConLearn.get_conflict(config_file, model_file)
-            
-        #     # Read original metrics (assuming stored in separate file or computed)
-        #     original_runtime = 0.05  # Placeholder (replace with actual data)
-        #     original_cc = 60  # Placeholder (replace with actual data)
-            
-        #     # Compute similarity (Jaccard score for binary vectors)
-        #     similarity = jaccard_score(original_conflict, new_conflict)
-        #     similar = 1 if similarity >= 0.995 else 0
-            
-        #     results.append({
-        #         'similarity': similarity,
-        #         'similar': similar,
-        #         'runtime_improvement': original_runtime - new_runtime,
-        #         'cc_improvement': original_cc - new_cc
-        #     })
-            
-        #     # Clean up
-        #     os.remove(config_file)
         
         # # Compute averages
         # avg_similarity = np.mean([r['similarity'] for r in results])
