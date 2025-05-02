@@ -6,6 +6,8 @@ import operator
 import subprocess
 import timeit
 
+import time
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -73,6 +75,66 @@ ARCARD_FEATURE_MODEL = [
     "Left brickles",
     "Right brickles"
 ]
+
+
+from concurrent.futures import ProcessPoolExecutor
+import os
+
+def process_file(file_path):
+    try:
+        with open(file_path, "r") as f:
+            lines = []
+            for i, line in enumerate(f):
+                lines.append(line)
+                if i >= 4:  # We only need lines 4 and 5
+                    break
+            
+            runtime = None
+            cc = None
+            
+            if len(lines) > 3 and lines[3].startswith("Runtime:"):
+                try:
+                    runtime = float(lines[3].split()[1])
+                except (ValueError, IndexError):
+                    pass
+                    
+            if len(lines) > 4 and lines[4].startswith("CC:"):
+                try:
+                    cc = int(lines[4].split()[1])
+                except (ValueError, IndexError):
+                    pass
+                    
+            return runtime, cc
+    except:
+        return None, None
+
+def extract_metrics_optimized(data_folder):
+    # Only include _output.txt files
+    file_paths = [os.path.join(data_folder, f) for f in os.listdir(data_folder) 
+                 if f.endswith("_output.txt")]
+    
+    runtime_sum = 0.0
+    cc_sum = 0
+    valid_count = 0
+    
+    # Use multiple processors
+    with ProcessPoolExecutor() as executor:
+        results = executor.map(process_file, file_paths)
+        
+        for runtime, cc in results:
+            if runtime is not None:
+                runtime_sum += runtime
+                valid_count += 1
+            if cc is not None:
+                cc_sum += cc
+    
+    avg_runtime = runtime_sum / valid_count if valid_count > 0 else 0
+    avg_cc = cc_sum / valid_count if valid_count > 0 else 0
+    
+    print(f"Average runtime: {avg_runtime:.6f} seconds")
+    print(f"Average CC: {avg_cc:.2f}")
+    
+    return avg_runtime, avg_cc
 
 class ConLearn:
 
@@ -309,7 +371,8 @@ class ConLearn:
             # Sort the dict by key (probability), get the values (feature names) in order
             sorted_items = sorted(d.items(), key=lambda x: x[0], reverse=True)
             ordered_features_list.append([v for k, v in sorted_items])
-
+        
+        before_config = time.time()
         print("model_predict_conflict::creating configs")
         os.makedirs('candidate', exist_ok=True)
         for idx, config_row in enumerate(ordered_features_list):
@@ -318,42 +381,27 @@ class ConLearn:
                 for constraint_name in config_row:
                     constraint_value = "true" if input_constraints_dict[idx][constraint_name] == 1 else "false"
                     f.write(f"{constraint_name} {constraint_value}\n")
-        print("model_predict_conflict:: Done creating configs")
+        after_config = time.time()
+        config_time = after_config - before_config
+        print(f"===> Done!! creating config took {config_time:.2f} seconds")
         
-
+        before_diagnosis = time.time()
         print("model_predict_conflict::getting diagnosis...")
         get_linux_diagnosis(os.path.join("candidate"))
-        print("model_predict_conflict:: Done getting diagnosis")
+        after_diagnosis = time.time()
+        diagnosis_time = after_diagnosis - before_diagnosis
+        print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")
 
         # extract runtime and cc
         data_folder = "Data"
-        runtime_list = []
-        cc_list = []
-        for filename in os.listdir(data_folder):
-            file_p = os.path.join(data_folder, filename)
-            with open(file_p, "r") as f:
-                lines = f.readlines()
-                runtime = None
-                cc = None
-                for line in lines:
-                    if line.startswith("Runtime:"):
-                        try:
-                            runtime = float(line.split()[1])
-                        except Exception:
-                            continue
-                    elif line.startswith("CC:"):
-                        try:
-                            cc = int(line.split()[1])
-                        except Exception:
-                            continue
-                    if runtime is not None:
-                        runtime_list.append(runtime)
-                    if cc is not None:
-                        cc_list.append(cc)
-        avg_runtime = np.mean(runtime_list) if runtime_list else 0
-        avg_cc = np.mean(cc_list) if cc_list else 0
+        before_extract = time.time()
+        print("model_predict_conflict::extracting metrics...")
+        avg_runtime, avg_cc = extract_metrics_optimized(data_folder)
+        after_extract = time.time()
+        extract_time = after_extract - before_extract
         print(f"Average runtime for ordered: {avg_runtime:.6f} seconds")
         print(f"Average CC for ordered: {avg_cc:.2f}")
+        print(f"===> Done!! extracting metrics took {extract_time:.2f} seconds")
         return avg_runtime, avg_cc
 
     @staticmethod
@@ -361,6 +409,8 @@ class ConLearn:
         # print("==========First 2 rows of features_dataframe:")
         # print(features_dataframe.head(2))
 
+        print("model_predict_conflict::creating configs")
+        before_config = time.time()
         os.makedirs('candidate', exist_ok=True)
         for idx, row in features_dataframe.iterrows():
             file_path = os.path.join('candidate', f'conf{idx}.txt')
@@ -369,42 +419,27 @@ class ConLearn:
                     value = row.iloc[col_idx]
                     constraint_value = "true" if value == 1 else "false"
                     f.write(f"{feature_name} {constraint_value}\n")
-        print("model_predict_conflict:: Done creating configs")
+        after_config = time.time()
+        config_time = after_config - before_config
+        print(f"===> Done!! creating config took {config_time:.2f} seconds")
         
 
         print("model_predict_conflict::getting diagnosis...")
+        before_diagnosis = time.time()
         get_linux_diagnosis(os.path.join("candidate"))
-        print("model_predict_conflict:: Done getting diagnosis")
+        after_diagnosis = time.time()
+        diagnosis_time = after_diagnosis - before_diagnosis
+        print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")
 
         # extract runtime and cc
         data_folder = "Data"
-        runtime_list = []
-        cc_list = []
-        for filename in os.listdir(data_folder):
-            file_p = os.path.join(data_folder, filename)
-            with open(file_p, "r") as f:
-                lines = f.readlines()
-                runtime = None
-                cc = None
-                for line in lines:
-                    if line.startswith("Runtime:"):
-                        try:
-                            runtime = float(line.split()[1])
-                        except Exception:
-                            continue
-                    elif line.startswith("CC:"):
-                        try:
-                            cc = int(line.split()[1])
-                        except Exception:
-                            continue
-                    if runtime is not None:
-                        runtime_list.append(runtime)
-                    if cc is not None:
-                        cc_list.append(cc)
-        avg_runtime = np.mean(runtime_list) if runtime_list else 0
-        avg_cc = np.mean(cc_list) if cc_list else 0
+        before_extract = time.time()
+        avg_runtime, avg_cc = extract_metrics_optimized(data_folder)
+        after_extract = time.time()
+        extract_time = after_extract - before_extract
         print(f"Average runtime for normal: {avg_runtime:.6f} seconds")
         print(f"Average CC for normal: {avg_cc:.2f}")
+        print(f"===> Done!! extracting metrics took {extract_time:.2f} seconds")
         return avg_runtime, avg_cc
 
 
@@ -413,6 +448,9 @@ class ConLearn:
         # Load model
         model = tf.keras.models.load_model(f'Models/{model_id}/model.keras')
         
+        # Ensure the Data folder exists before running predictions and extracting metrics
+        if not os.path.exists("Data"):
+            os.makedirs("Data")
         # Predict conflict sets
         predictions = model.predict(features_dataframe.values)
         # print("Predictions shape:", predictions.shape)

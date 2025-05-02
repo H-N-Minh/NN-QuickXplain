@@ -3,6 +3,7 @@ import data_preprocessing
 import shutil
 import os
 import pandas as pd
+import time
 
 
 from Choco.diagnosis_choco import get_linux_diagnosis
@@ -11,27 +12,52 @@ import csv
 
 
 
+
 def learn_diagnosis(settings):
+    # Start timing the entire function
+    overall_start_time = time.time()
     models_to_learn = 1
 
     # # prepare learning data
     print("Extracting data from csv files...")
+    data_start_time = time.time()
     features_dataframe, labels_dataframe = data_handling.read_data(settings["CONSTRAINTS_FILE_PATH"], settings["CONFLICT_FILE_PATH"])
-
-    print("==> Done!! \npreparing data for learning...")
-
-
-    train_x, test_x, train_labels, test_labels = data_preprocessing.data_preprocessing_learning(features_dataframe, labels_dataframe)
-
-    print("==> Done!! \nStart training...")
-    id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
+    data_end_time = time.time()
+    data_time = data_end_time - data_start_time
     
-    print("===> Done!! \nValidating neural network model...")
+    print("preparing data for learning...")
+    preprocess_start_time = time.time()
+    train_x, test_x, train_labels, test_labels = data_preprocessing.data_preprocessing_learning(features_dataframe, labels_dataframe)
+    preprocess_end_time = time.time()
+    preprocess_time = preprocess_end_time - preprocess_start_time
+
+    print("Start training...")
+    training_start_time = time.time()
+    id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
+    training_end_time = time.time()
+    training_time = training_end_time - training_start_time
+    
+    print("Validating neural network model...")
+    validation_start_time = time.time()
     ConLearn.model_predict_conflict(id, features_dataframe, labels_dataframe)
-    print("===> Done!! \nValidation finished!")
-
+    validation_end_time = time.time()
+    validation_time = validation_end_time - validation_start_time
+    
+    # Calculate overall execution time
+    overall_end_time = time.time()
+    overall_time = overall_end_time - overall_start_time
+    
+    # Print execution time summary
+    print("\n===== EXECUTION TIME SUMMARY =====")
+    print(f"Data Extraction:    {data_time:.2f} seconds ({(data_time/overall_time)*100:.1f}%)")
+    print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
+    print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
+    print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
+    print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
+    print("=================================")
+    
     print("==> Done Everything...")
-
+    return overall_time
 
 settings_dict = {
     "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
@@ -50,4 +76,5 @@ settings_dict = {
 
 # TODO: add fm_conflict.jar to the path, as well as arcade-game.splx
 
-learn_diagnosis(settings_dict)
+if __name__ == "__main__":
+    learn_diagnosis(settings_dict)
