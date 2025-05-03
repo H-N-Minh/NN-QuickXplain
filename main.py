@@ -1,4 +1,4 @@
-import data_handling
+import DataHandling
 import os
 import time
 import yaml
@@ -42,11 +42,11 @@ def main():
 
     # Import
     settings = importSettings()
-    features_dataframe, labels_dataframe = data_handling.importTrainingData(settings)
+    features_dataframe, labels_dataframe = DataHandling.importTrainingData(settings)
     import_end_time = time.time()
     
     # Preprocess
-    features_dataframe, labels_dataframe = data_handling.preprocessTrainingData(features_dataframe, labels_dataframe)
+    features_dataframe, labels_dataframe = DataHandling.preprocessTrainingData(features_dataframe, labels_dataframe)
     preprocess_end_time = time.time()
 
     # Train model

@@ -147,14 +147,6 @@ class ConLearn:
 
         return
 
-    @staticmethod
-    def create_model(input_shape, output_shape):
-        model = Sequential([
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal(), input_shape=(input_shape,)),
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
-            Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
-        ])
-        return model
 
 
     @staticmethod
@@ -305,47 +297,3 @@ class ConLearn:
         # return avg_runtime_improvement
     
     
-
-def conflictOutputToCSV(TRAINDATA_OUTPUT_PATH, output_csv_path):
-
-    # convert output of conflict detection system to csv file
-
-    # Create temp1.csv from Data/conf*_output.txt files
-    data_folder = "Data"
-    num_files = 410  # conf0_output.txt to conf409_output.txt
-    num_features = len(ARCARD_FEATURE_MODEL)
-    output_rows = []
-    for i in range(num_files):
-        row = [0] * (num_features + 1)  # First column is counter, rest are features
-        row[0] = i
-        file_path = os.path.join(data_folder, f"conf{i}_output.txt")
-        try:
-            with open(file_path, "r") as f:
-                lines = f.readlines()
-                if len(lines) >= 3:
-                    cs_line = lines[2].strip()
-                    if cs_line.startswith("CS: [") and cs_line.endswith("]"):
-                        cs_content = cs_line[5:-1]  # Remove "CS: [" and "]"
-                        if cs_content:
-                            pairs = cs_content.split(", ")
-                            for pair in pairs:
-                                if "=" in pair:
-                                    key, value = pair.split("=")
-                                    value = value.lower()
-                                    key = key.strip()
-                                    if key in ARCARD_FEATURE_MODEL:
-                                        idx = ARCARD_FEATURE_MODEL.index(key)
-                                        row[idx + 1] = 1 if value == "true" else -1
-        except FileNotFoundError:
-            pass  # If file does not exist, leave row as zeros
-        output_rows.append(row)
-
-    # Write to temp1.csv
-    with open("temp1.csv", "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        # Write header
-        header = ["counter"] + ARCARD_FEATURE_MODEL
-        writer.writerow(header)
-        # Write data
-        writer.writerows(output_rows)
-

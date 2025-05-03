@@ -198,7 +198,13 @@ class ConflictNN:
     def evaluate(self, val_loader, validation_total_size):
         """
         Helper func for train()
-        Evaluate the model on the validation data. Calculation of the loss is same as with training loss
+        Evaluate the model on the validation data: 
+        - compute the prediction using the validation input
+        - calculate the loss in comparision with true labels
+
+        Args:
+            val_loader (DataLoader): Validation data loader, has input and true labels
+            validation_total_size (int): size of validation data
 
         Returns:
             float: Average loss on the dataset
@@ -255,7 +261,7 @@ class ConflictNN:
         with torch.no_grad():   # make sure the model's params wont be modified
             for inputs, targets in test_data_loader:     # loop through each batch
                 inputs = inputs.to(self.device_)
-                
+
                 # make the prediction and add it to the list
                 outputs = self.model_(inputs)
                 all_preds.append(outputs.cpu().numpy())
@@ -275,25 +281,27 @@ class ConflictNN:
         Returns:
             dict: Dictionary of performance metrics
         """
-        print("\n Testing model...")
-        y_pred_prob, y_true = self.predict(test_loader)
+        print("\nTesting model...")
+        y_pred_prob, y_true = self.predictTestData(test_loader)
+
+        
 
         # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
         
         # # Calculate metrics
-        # metrics = {
-        #     'accuracy': accuracy_score(y_true.flatten(), y_pred.flatten()),
-        #     'precision': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
+        # test_result = {
+        #     'accuracy (% of predictions that are correct, higher is better)': accuracy_score(y_true.flatten(), y_pred.flatten()),
+        #     'precision (% of true positives, higher is better)': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
         #     'recall': recall_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
         #     'f1': f1_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
         #     'loss': self.evaluate(test_loader)
         # }
         
-        # print("Test Metrics:")
-        # for metric, value in metrics.items():
+        # print("Test result:")
+        # for metric, value in test_result.items():
         #     print(f"{metric}: {value:.4f}")
         
-        # return metrics
+        # return test_result
     
     # def save_model(self, folder_path, run_id=None):
     #     """

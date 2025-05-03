@@ -9,3 +9,7 @@ Any other values will be considered as unknown and result in error
 
 input 1 and -1 is converted to 1 and 0. This is so its suitable for NN and should result in no dataloss
 output 0, 1 and -1: 1 and -1 converted to 1, representing 100% to be in the conflict set, 0 remains 0, representing not part of conflict set.
+
+in Solver/Precomputed folder: this folder is for input and output that never changes (default ordering of constraints), so they
+are computed once and will be stored here to avoid recomputation in every training. (since with same ordering, we always get the same
+output from QuickXplain). 

@@ -5,6 +5,9 @@ Path:
 
   SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
   SOLVER_OUTPUT_PATH: "Solver/Output"   # conflicts computed by the solver (each conflict is a text file)
+  # precomputed files to avoid recomputing them every training, since these files are not changed
+  SOLVER_PRECOMPUTED_ARCADE_INPUT_PATH: "Solver/Precomputed/Arcade/Input" # invalid configs with default ordering (precomputed to speed up the process)
+  SOLVER_PRECOMPUTED_ARCADE_OUTPUT_PATH: "Solver/Precomputed/Arcade/Output" # conflicts computed by the solver (also precomputed to save time)
 
   SOLVER_PATH: "Solver/fm_conflict.jar"     # the solver's code (JAR file)
   SOLVER_FM_PATH: "Solver/arcade-game.splx"   # the feature model (SPLX file)
@@ -13,3 +16,7 @@ Clear:
   Logs: true            # clear the logs folder (if any) before running the script
   Solver's input/output: true       # clear the solver's input/output folders (if any) before running the script
   Models: false           # clear all trained models from the past
+  PRECOMPUTED_ARCADE: false # clear all precomputed files (both input and output folder) for arcade
+  PRECOMPUTED_BUSYBOX: false # clear all precomputed files (both input and output folder) for busybox
+
+TRAINING_TYPE: "Arcade" # "Arcade" or "Busybox", used to select the right precomputed folder in Solver/Precomputed
