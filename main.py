@@ -45,12 +45,15 @@ def main():
     features_dataframe, labels_dataframe = data_handling.importTrainingData(settings)
     import_end_time = time.time()
     
-    train_x, test_x, train_labels, test_labels = data_handling.preprocessTrainingData(features_dataframe, labels_dataframe)
+    # Preprocess
+    features_dataframe, labels_dataframe = data_handling.preprocessTrainingData(features_dataframe, labels_dataframe)
     preprocess_end_time = time.time()
 
+    # Train model
     # id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
     constraint_size = features_dataframe.shape[1] # Number of features/labels
     NN_model = Model.ConflictNN(constraint_size)
+    train_loader, val_loader, test_loader = NN_model.prepareData(features_dataframe, labels_dataframe)
     training_end_time = time.time()
     
     # print("Validating neural network model...")

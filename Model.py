@@ -16,8 +16,7 @@ class ConflictNN:
         Initialize the ConflictNN model.
         
         Args:
-            input_size (int): Number of input features (constraints)
-            output_size (int): Number of output labels
+            constraints_size (int): Number of constraints total
             hidden_size (int): Number of neurons in each hidden layer
             learning_rate (float): Learning rate for optimizer
             batch_size (int): Batch size for training
@@ -49,13 +48,13 @@ class ConflictNN:
         self.weight_decay_ = 0.0
 
         # Create model
-        self.model_ = self._build_model()
+        self.model_ = self._buildModel()
         
         # Define loss function and optimizer
         self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=learning_rate)    # Adam optimizer to optimize the loss func
         
-    def _build_model(self):
+    def _buildModel(self):
         """Build the neural network model."""
         model = nn.Sequential(
             nn.Linear(self.input_size_, self.hidden_size_),
@@ -74,45 +73,47 @@ class ConflictNN:
                 
         return model.to(self.device_)        # to stands for train on (either CPU or GPU)
     
-    # def prepare_data(self, X, y, train_ratio=0.7, val_ratio=0.2, test_ratio=0.1):
-    #     """
-    #     Prepare and split the data into training, validation, and test sets.
+    def prepareData(self, features_dataframe, labels_dataframe, train_ratio=0.7, val_ratio=0.2, test_ratio=0.1):
+        """
+        Prepare and split the data into training, validation, and test sets.
+        Default is 70% for training, 20% for validation during training, 10% for testing after training
         
-    #     Args:
-    #         X (numpy.ndarray): Input features
-    #         y (numpy.ndarray): Target labels
-    #         train_ratio (float): Ratio of data for training
-    #         val_ratio (float): Ratio of data for validation
-    #         test_ratio (float): Ratio of data for testing
+        Args:
+            features_dataframe (panda dataframe): Input features
+            labels_dataframe (panda dataframe): Target labels
+            train_ratio (float): Ratio of data for training
+            val_ratio (float): Ratio of data for validation
+            test_ratio (float): Ratio of data for testing
             
-    #     Returns:
-    #         tuple: Training, validation, and test DataLoader objects
-    #     """
-    #     # Convert numpy arrays to PyTorch tensors
-    #     X_tensor = torch.FloatTensor(X)
-    #     y_tensor = torch.FloatTensor(y)
+        Returns:
+            tuple: Training, validation, and test DataLoader objects. (this object makes it easier to load data during training)
+        """
+
+        # Convert panda dataframe to PyTorch tensors
+        X_tensor = torch.FloatTensor(features_dataframe.values)
+        y_tensor = torch.FloatTensor(labels_dataframe.values)
         
-    #     # Create TensorDataset
-    #     dataset = TensorDataset(X_tensor, y_tensor)
+        # Create TensorDataset
+        dataset = TensorDataset(X_tensor, y_tensor)
         
-    #     # Calculate split sizes
-    #     dataset_size = len(dataset)
-    #     train_size = int(train_ratio * dataset_size)
-    #     val_size = int(val_ratio * dataset_size)
-    #     test_size = dataset_size - train_size - val_size
+        # Calculate split sizes
+        dataset_size = len(dataset)
+        train_size = int(train_ratio * dataset_size)
+        val_size = int(val_ratio * dataset_size)
+        test_size = dataset_size - train_size - val_size
         
-    #     # Split the dataset
-    #     train_dataset, val_dataset, test_dataset = random_split(
-    #         dataset, [train_size, val_size, test_size],
-    #         generator=torch.Generator().manual_seed(42)  # For reproducibility
-    #     )
+        # Split the dataset
+        train_dataset, val_dataset, test_dataset = random_split(
+            dataset, [train_size, val_size, test_size],
+            generator=torch.Generator().manual_seed(42)  # For reproducibility
+        )
         
-    #     # Create DataLoader objects
-    #     train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-    #     val_loader = DataLoader(val_dataset, batch_size=self.batch_size)
-    #     test_loader = DataLoader(test_dataset, batch_size=self.batch_size)
+        # Create DataLoader objects. No shuffle for validation and test data, to make it consistent report 
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size_)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size_)
         
-    #     return train_loader, val_loader, test_loader
+        return train_loader, val_loader, test_loader
     
     # def train(self, train_loader, val_loader):
     #     """
@@ -889,7 +890,7 @@ class ConflictNN:
 #     base_model = ConflictNN(input_size=input_size, output_size=output_size)
     
 #     # Prepare data
-#     train_loader, val_loader, test_loader = base_model.prepare_data(X, y)
+#     train_loader, val_loader, test_loader = base_model.prepareData(X, y)
     
 #     # Train the base model
 #     print("\nTraining base model...")
@@ -909,7 +910,7 @@ class ConflictNN:
 #         faster_model.increase_learning_rate(0.005)
         
 #         # Prepare data
-#         train_loader, val_loader, test_loader = faster_model.prepare_data(X, y)
+#         train_loader, val_loader, test_loader = faster_model.prepareData(X, y)
         
 #         # Train and test
 #         faster_model.train(train_loader, val_loader)
@@ -925,7 +926,7 @@ class ConflictNN:
 #         dropout_model.add_dropout(0.2)
         
 #         # Prepare data
-#         train_loader, val_loader, test_loader = dropout_model.prepare_data(X, y)
+#         train_loader, val_loader, test_loader = dropout_model.prepareData(X, y)
         
 #         # Train and test
 #         dropout_model.train(train_loader, val_loader)

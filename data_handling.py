@@ -68,7 +68,6 @@ def importTrainingData(settings):
 def preprocessTrainingData(features_dataframe, labels_dataframe):
     """
     The values of these files are converted to 0 and 1 so they can be used for neural network learning.
-    training data split into 10% test and 90% training data.
     """
     print("\nPreprocessing data for learning...")
     
@@ -82,10 +81,5 @@ def preprocessTrainingData(features_dataframe, labels_dataframe):
     if not labels_dataframe.isin([0, 1]).all().all():
         raise ValueError("Error:importTrainingData:: TRAINDATA_OUTPUT_PATH file contains values other than -1, 0 and 1. See README.md for more information.")
     
-    # Split data into training and test sets
-    features = features_dataframe.values
-    labels = labels_dataframe.values
-    train_x, test_x, train_labels, test_labels = train_test_split(features, labels, test_size=0.1, random_state=42)
-    
-    return train_x, test_x, train_labels, test_labels
+    return features_dataframe, labels_dataframe
 
