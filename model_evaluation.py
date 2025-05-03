@@ -17,57 +17,6 @@ from neuron_constraint_initializer import NeuronConstraintInitializer
 import os
 
 
-ARCARD_FEATURE_MODEL = [
-    "Check Previous Best Score",
-    "Save Score",
-    "Save Game",
-    "Exit Game",
-    "Install Game",
-    "Uninstall Game",
-    "List Game",
-    "Puck supply",
-    "Play Brickles",
-    "Play Pong",
-    "Play Bowling",
-    "Sprite Pair",
-    "Pong Board",
-    "Brickles Board",
-    "Bowling Board",
-    "Pong",
-    "Brickles",
-    "Bowling",
-    "Pong Game Menu",
-    "Brickles Game Menu",
-    "Bowling Game Menu",
-    "Animation Loop",
-    "Size",
-    "Point",
-    "Velocity",
-    "Puck",
-    "Bowling Ball",
-    "Bowling Pin",
-    "Brick",
-    "Brick Pile",
-    "Ceiling brickles",
-    "Floor brickles",
-    "Lane",
-    "Gutter",
-    "Edge",
-    "End of Alley",
-    "Rack of Pins",
-    "Score Board",
-    "Floor pong",
-    "Ceiling pong",
-    "Dividing Line",
-    "Top Paddle",
-    "Bottom Paddle",
-    "Left pong",
-    "Right pont",
-    "Left brickles",
-    "Right brickles"
-]
-
-
 from concurrent.futures import ProcessPoolExecutor
 import os
 
@@ -129,72 +78,11 @@ def extract_metrics_optimized(data_folder):
 
 class ConLearn:
 
-    def initialize_weights(self, input_shape):
-
-        return
-
-    @staticmethod
-    def create_model(input_shape, output_shape):
-        model = Sequential([
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal(), input_shape=(input_shape,)),
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
-            Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
-        ])
-        return model
-
-    def build_branch(input_shape, output_shape, inputs, label_name, input_neuron_list, output_neuron_list,
-                     last_layer_activation, rules=None):
-        if output_shape < 3:
-            if rules:
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="output_layer"))(y)
-            else:
-                # He initializer is recommended for ReLu activation function layers
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-
-        else:
-            if rules:
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="output_layer"))(x)
-            else:
-                # He initializer is recommended for ReLu activation function layers
-                # w = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                # kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                # y = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(x)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(x)
-                # z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-
-        return z
-
     def train_and_evaluate(train_x, test_x, train_labels, test_labels):
+        """
+        create mode, start training, save in model folder, save performance in same folder"""
+        
+        print("Start training...")
         input_shape = train_x.shape[1]
         output_shape = train_labels.shape[1]  # Number of conflict columns
         
@@ -255,86 +143,19 @@ class ConLearn:
         
         return model_id, history.history
 
-    def save_model_csv(id, TRAINDATA_INPUT_PATH, label_names, model_library_file_path, delimiter=None):
-        if not delimiter:
-            delimiter = ';'
-        pandas_data = pd.read_csv(TRAINDATA_INPUT_PATH, delimiter=delimiter, dtype='string')
-        with open(model_library_file_path, "a+", newline='') as model_Library:
-            if os.stat(model_library_file_path).st_size == 0:
-                head_data = ['ID']
-                for column in pandas_data.columns:
-                    head_data.append(column)
-                library_entry = [id]
-                for column in pandas_data.columns:
-                    if column in label_names:
-                        library_entry.append(1)
-                    else:
-                        library_entry.append(0)
-                writer = csv.writer(model_Library, delimiter=';')
-                writer.writerow(head_data)
-                writer.writerow(library_entry)
-            else:
-                library_entry = [id]
-                for column in pandas_data.columns:
-                    if column in label_names:
-                        library_entry.append(1)
-                    else:
-                        library_entry.append(0)
-                writer = csv.writer(model_Library, delimiter=';')
-                writer.writerow(library_entry)
+    def initialize_weights(self, input_shape):
+
         return
 
-    def model_exists(model_library_file_path, label_names):
-        id = str()
-        try:
-            Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
-            model_exists = 0
-            for i in range(Library_Data.shape[0]):
-                for element in Library_Data:
-                    if element in label_names:
-                        if Library_Data[element][i] == 1:
-                            model_exists = 1
-                            continue
-                        else:
-                            model_exists = 0
-                            break
-                    else:
-                        if Library_Data[element][i] == 1:
-                            model_exists = 0
-                            break
-                        else:
-                            continue
-                if model_exists:
-                    id = Library_Data['ID'][i]
-                    break
-            return id
-        except:
-            return id
+    @staticmethod
+    def create_model(input_shape, output_shape):
+        model = Sequential([
+            Dense(input_shape, activation='relu', kernel_initializer=HeNormal(), input_shape=(input_shape,)),
+            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
+            Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
+        ])
+        return model
 
-    def model_id_get(model_library_file_path, model_row):
-        try:
-            Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
-            id = Library_Data.ID[model_row]
-            return id
-        except:
-            return id
-        
-    def model_cleanup(model_performance):
-        # Select model with highest runtime improvement
-        best_model_id = max(model_performance, key=model_performance.get)
-        best_performance = model_performance[best_model_id]
-        
-        # Delete other models
-        for model_id in model_performance:
-            if model_id != best_model_id:
-                shutil.rmtree(f'Models/{model_id}')
-        
-        # Update model library
-        model_library = pd.read_csv('ConflictModelLibrary.csv')
-        model_library = model_library[model_library['ID'] == best_model_id]
-        model_library.to_csv('ConflictModelLibrary.csv', index=False)
-        
-        print(f'Selected model achieved a runtime improvement of {best_performance:.6f} s')
 
     @staticmethod
     def get_NN_performance(features_dataframe, predictions):

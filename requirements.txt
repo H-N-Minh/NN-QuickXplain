@@ -1,7 +1,9 @@
 # To install these dependencies, run:
 # pip install -r requirements.txt
 
-tensorflow
+torch
+torchvision
+torchaudio
 pandas
 numpy
 scikit-learn

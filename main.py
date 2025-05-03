@@ -1,9 +1,8 @@
 import data_handling
 import os
 import time
-from model_evaluation import ConLearn
 import yaml
-import pprint
+import Model
 
 DEFAULT_SETTINGS = {
     # "TRAINDATA_INPUT_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
@@ -49,11 +48,10 @@ def main():
     train_x, test_x, train_labels, test_labels = data_handling.preprocessTrainingData(features_dataframe, labels_dataframe)
     preprocess_end_time = time.time()
 
-    # print("Start training...")
-    # training_start_time = time.time()
     # id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
-    # training_end_time = time.time()
-    # training_time = training_end_time - training_start_time
+    constraint_size = features_dataframe.shape[1] # Number of features/labels
+    NN_model = Model.ConflictNN(constraint_size)
+    training_end_time = time.time()
     
     # print("Validating neural network model...")
     # validation_start_time = time.time()
@@ -68,10 +66,11 @@ def main():
     # Print execution time summary
     import_time = import_end_time - overall_start_time
     preprocess_time = preprocess_end_time - import_end_time
+    training_time = training_end_time - preprocess_end_time
     print("\n===== EXECUTION TIME SUMMARY =====")
     print(f"Data Extraction:    {import_time:.2f} seconds ({(import_time/overall_time)*100:.1f}%)")
     print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
-    # print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
+    print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
     # print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
     # print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
     # print("=================================")
