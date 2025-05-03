@@ -1,14 +1,9 @@
 import os
 import csv
 import uuid
-import heapq
-import operator
-import subprocess
-import timeit
 
 import time
 
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -16,12 +11,8 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import HeNormal
-from sklearn.metrics import jaccard_score
-from keras.utils import plot_model
 
 from Solver.solver_caller import get_linux_diagnosis
-from diagnosis_handling import diagnosis_handling_linux
-from metric_calculation import similarity_calculation
 from neuron_constraint_initializer import NeuronConstraintInitializer
 import os
 

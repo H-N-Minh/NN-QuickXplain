@@ -1,8 +1,14 @@
-TRAINDATA_INPUT_PATH: "TrainingData/arcade_small_invalid_confs_410.csv"
-TRAINDATA_OUTPUT_PATH: "TrainingData/arcade_small_conflicts_410.csv"
-SOLVER_INPUT_PATH: "candidate"
-SOLVER_OUTPUT_PATH: "data"
-MODEL_LIBRARY_FILE_PATH: "Models/DiagnosisModelLibrary.csv"
-PROGRESS_XML_FILE_PATH: "LinuxConfiguration/progress.xml"
-OUTPUT_XML_FILE_PATH: "LinuxConfiguration/output"
-VARIABLE_ORDER_FILE_PATH: "LinuxConfiguration/variable_order.txt"
+Path:
+  TRAINDATA_INPUT_PATH: "TrainingData/arcade/arcade_small_invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/arcade_small_conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+
+  SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
+  SOLVER_OUTPUT_PATH: "Solver/Output"   # conflicts computed by the solver (each conflict is a text file)
+
+  SOLVER_PATH: "Solver/fm_conflict.jar"     # the solver's code (JAR file)
+  SOLVER_FM_PATH: "Solver/arcade-game.splx"   # the feature model (SPLX file)
+
+Clear:
+  Logs: true            # clear the logs folder (if any) before running the script
+  Solver's input/output: true       # clear the solver's input/output folders (if any) before running the script
