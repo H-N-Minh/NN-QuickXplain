@@ -9,15 +9,22 @@ import os
 def importTrainingData(settings):
     """
     Requires 3 files: TRAINDATA_INPUT_PATH, TRAINDATA_OUTPUT_PATH and TRAINDATA_CONSTRAINTS_NAME_PATH.
-    Import training data from CSV files, this includes invalid configs and their corresponding conflicts.
-    These files are stored in settings (TRAINDATA_INPUT_PATH and TRAINDATA_OUTPUT_PATH).
-    The values of these files are converted to 0 and 1 so they can be used for neural network learning.
+    Import training data from CSV files:
+    - TRAINDATA_INPUT_PATH: csv file, contains invalid configurations.
+    - TRAINDATA_OUTPUT_PATH: csv file, contains conflicts for the invalid configurations.
+
     The first column of the CSV files is dropped, as it is an index column.
-    The column names are set to the names of the features/labels, which are read from a separate file, also read
-    from the settings (TRAINDATA_CONSTRAINTS_NAME_PATH).
-    @return: features_dataframe, labels_dataframe
+    The column names are set to the names of the features/labels, which are read from a separate file (TRAINDATA_CONSTRAINTS_NAME_PATH).
+
+    Returns
+    -------
+    features_dataframe : panda dataframe
+        containing invalid configurations.
+    -------
+    labels_dataframe : panda dataframe
+        containing conflict set.
     """
-    print("Importing training data from csv files...")
+    print("\nImporting training data...")
     
     constraints_file = settings["Path"]["TRAINDATA_INPUT_PATH"]
     conflict_file = settings["Path"]["TRAINDATA_OUTPUT_PATH"]
@@ -38,17 +45,7 @@ def importTrainingData(settings):
     # Drop index column (first column)
     features_dataframe = features_dataframe.iloc[:, 1:]
     labels_dataframe = labels_dataframe.iloc[:, 1:]
-    
-    # Convert values to 0 or 1 so it can be used for NN learning
-    features_dataframe = features_dataframe.replace(-1, 0)
-    labels_dataframe = labels_dataframe.replace(-1, 1)
 
-    # make sure there no unexpected values in the dataframe
-    if not features_dataframe.isin([0, 1]).all().all():
-        raise ValueError("Error:importTrainingData:: TRAINDATA_INPUT_PATH file contains values other than -1 and 1. See README.md for more information.")
-    if not labels_dataframe.isin([0, 1]).all().all():
-        raise ValueError("Error:importTrainingData:: TRAINDATA_OUTPUT_PATH file contains values other than -1, 0 and 1. See README.md for more information.")
-    
     # renaming all collumns to their corresponding feature/label name
     column_names_list = []
     with open(name_file, 'r') as f:
@@ -68,21 +65,27 @@ def importTrainingData(settings):
 
 
 
-def data_preprocessing_learning(features_dataframe, labels_dataframe):
-    # Convert features to NumPy array (already binary 0/1)
-    features = features_dataframe.values
-    labels = labels_dataframe.values
+def preprocessTrainingData(features_dataframe, labels_dataframe):
+    """
+    The values of these files are converted to 0 and 1 so they can be used for neural network learning.
+    training data split into 10% test and 90% training data.
+    """
+    print("\nPreprocessing data for learning...")
     
+    # Convert values to 0 or 1 so it is suitable for NN learning (see README.md for more information)
+    features_dataframe = features_dataframe.replace(-1, 0)
+    labels_dataframe = labels_dataframe.replace(-1, 1)
+
+    # make sure there no unexpected values in the dataframe
+    if not features_dataframe.isin([0, 1]).all().all():
+        raise ValueError("Error:importTrainingData:: TRAINDATA_INPUT_PATH file contains values other than -1 and 1. See README.md for more information.")
+    if not labels_dataframe.isin([0, 1]).all().all():
+        raise ValueError("Error:importTrainingData:: TRAINDATA_OUTPUT_PATH file contains values other than -1, 0 and 1. See README.md for more information.")
     
     # Split data into training and test sets
-    train_x, test_x, train_labels, test_labels = train_test_split(
-        features, labels, test_size=0.25, random_state=42
-    )
-
-    print("train_x shape:", train_x.shape)
-    print("test_x shape:", test_x.shape)
-    print("train_labels shape:", train_labels.shape)
-    print("test_labels shape:", test_labels.shape)
+    features = features_dataframe.values
+    labels = labels_dataframe.values
+    train_x, test_x, train_labels, test_labels = train_test_split(features, labels, test_size=0.1, random_state=42)
     
     return train_x, test_x, train_labels, test_labels
 

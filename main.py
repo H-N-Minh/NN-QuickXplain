@@ -42,17 +42,12 @@ def main():
     overall_start_time = time.time()
 
     # Import
-    import_start_time = time.time()
     settings = importSettings()
     features_dataframe, labels_dataframe = data_handling.importTrainingData(settings)
     import_end_time = time.time()
-    import_time = import_end_time - import_start_time
     
-    # print("preparing data for learning...")
-    # preprocess_start_time = time.time()
-    # train_x, test_x, train_labels, test_labels = data_handling.data_preprocessing_learning(features_dataframe, labels_dataframe)
-    # preprocess_end_time = time.time()
-    # preprocess_time = preprocess_end_time - preprocess_start_time
+    train_x, test_x, train_labels, test_labels = data_handling.preprocessTrainingData(features_dataframe, labels_dataframe)
+    preprocess_end_time = time.time()
 
     # print("Start training...")
     # training_start_time = time.time()
@@ -71,9 +66,11 @@ def main():
     overall_time = overall_end_time - overall_start_time
     
     # Print execution time summary
+    import_time = import_end_time - overall_start_time
+    preprocess_time = preprocess_end_time - import_end_time
     print("\n===== EXECUTION TIME SUMMARY =====")
     print(f"Data Extraction:    {import_time:.2f} seconds ({(import_time/overall_time)*100:.1f}%)")
-    # print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
+    print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
     # print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
     # print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
     # print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
