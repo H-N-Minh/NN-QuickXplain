@@ -12,3 +12,4 @@ Path:
 Clear:
   Logs: true            # clear the logs folder (if any) before running the script
   Solver's input/output: true       # clear the solver's input/output folders (if any) before running the script
+  Models: false           # clear all trained models from the past

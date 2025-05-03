@@ -9,6 +9,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from datetime import datetime
 import json
 
+# Threshold for binary classification, if probability is > than this threshold, it will be considered
+# to be part of the conflict set
+PREDICTION_THRESHOLD = 0.5  
+
 class ConflictNN:
     def __init__(self, constraints_size, hidden_size=64, learning_rate=0.001,
                  batch_size=32, max_epochs=100, patience=10):
@@ -193,6 +197,7 @@ class ConflictNN:
     
     def evaluate(self, val_loader, validation_total_size):
         """
+        Helper func for train()
         Evaluate the model on the validation data. Calculation of the loss is same as with training loss
 
         Returns:
@@ -202,7 +207,7 @@ class ConflictNN:
         self.model_.eval()      
         
         total_loss = 0.0
-        with torch.no_grad():
+        with torch.no_grad():   # make sure the model's params wont be modified 
             for inputs, targets in val_loader:  # inputs and targets has "batch"-size (32 samples) 
                 inputs, targets = inputs.to(self.device_), targets.to(self.device_)
                 
@@ -213,58 +218,82 @@ class ConflictNN:
         
         return total_loss / validation_total_size
     
-    # def predict(self, data_loader):
-    #     """
-    #     Make predictions using the trained model.
+    def predict(self, inputs):
+        """
+        make predictions using the trained model
+
+        Args:
+            inputs (2D PyTorch tensor): batch of input values representing invalid configs
         
-    #     Args:
-    #         data_loader (DataLoader): Data loader for prediction
+        Returns:
+            predictions (2D PyTorch tensor): predictions, each value is a probability [0, 1]
+        """
+        # Set the model to evaluation mode
+        self.model_.eval()
+
+        # make sure the model's params wont be modified
+        with torch.no_grad():    
+            inputs = inputs.to(self.device_)
+            return self.model_(inputs)
+
+    def predictTestData(self, test_data_loader):
+        """
+        Helper func for test()
+        Make predictions on the test data
+        
+        Args:
+            test_data_loader (DataLoader): Data loader including both input values and true labels.
             
-    #     Returns:
-    #         tuple: Predicted probabilities and true labels
-    #     """
-    #     self.model_.eval()
-    #     all_preds = []
-    #     all_targets = []
+        Returns:
+            tuple: Predicted probabilities and true labels (each is 2d NumPy array)
+        """
+        # Set the model to evaluation mode
+        self.model_.eval()
         
-    #     with torch.no_grad():
-    #         for inputs, targets in data_loader:
-    #             inputs = inputs.to(self.device)
+        all_preds = []      # 2D, each row is 1 conflict set
+        all_targets = []    # 2D, each row is 1 conflict set
+        with torch.no_grad():   # make sure the model's params wont be modified
+            for inputs, targets in test_data_loader:     # loop through each batch
+                inputs = inputs.to(self.device_)
                 
-    #             outputs = self.model_(inputs)
-    #             all_preds.append(outputs.cpu().numpy())
-    #             all_targets.append(targets.numpy())
+                # make the prediction and add it to the list
+                outputs = self.model_(inputs)
+                all_preds.append(outputs.cpu().numpy())
+                all_targets.append(targets.numpy())
         
-    #     return np.vstack(all_preds), np.vstack(all_targets)
+        # each row represent 1 samples, we use vstack to concatenates all samples, so result is still 2D each
+        return np.vstack(all_preds), np.vstack(all_targets)     
     
-    # def test(self, test_loader, threshold=0.5):
-    #     """
-    #     Test the model and compute metrics.
+    def test(self, test_loader):
+        """
+        Test the model and compute metrics.
         
-    #     Args:
-    #         test_loader (DataLoader): Test data loader
-    #         threshold (float): Threshold for binary classification
+        Args:
+            test_loader (DataLoader): Test data loader
+            PREDICTION_THRESHOLD (float): PREDICTION_THRESHOLD for binary classification
             
-    #     Returns:
-    #         dict: Dictionary of performance metrics
-    #     """
-    #     y_pred_prob, y_true = self.predict(test_loader)
-    #     y_pred = (y_pred_prob >= threshold).astype(int)
+        Returns:
+            dict: Dictionary of performance metrics
+        """
+        print("\n Testing model...")
+        y_pred_prob, y_true = self.predict(test_loader)
+
+        # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
         
-    #     # Calculate metrics
-    #     metrics = {
-    #         'accuracy': accuracy_score(y_true.flatten(), y_pred.flatten()),
-    #         'precision': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #         'recall': recall_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #         'f1': f1_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #         'loss': self.evaluate(test_loader)
-    #     }
+        # # Calculate metrics
+        # metrics = {
+        #     'accuracy': accuracy_score(y_true.flatten(), y_pred.flatten()),
+        #     'precision': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
+        #     'recall': recall_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
+        #     'f1': f1_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
+        #     'loss': self.evaluate(test_loader)
+        # }
         
-    #     print("Test Metrics:")
-    #     for metric, value in metrics.items():
-    #         print(f"{metric}: {value:.4f}")
+        # print("Test Metrics:")
+        # for metric, value in metrics.items():
+        #     print(f"{metric}: {value:.4f}")
         
-    #     return metrics
+        # return metrics
     
     # def save_model(self, folder_path, run_id=None):
     #     """

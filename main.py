@@ -58,8 +58,7 @@ def main():
     training_end_time = time.time()
 
     # Test model
-    
-    # id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
+    NN_model.test(test_loader)
     # Test the base model
     # metrics = base_model.test(test_loader)
     
