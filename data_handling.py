@@ -1,5 +1,14 @@
 import pandas as pd
 import tensorflow as tf
+from __future__ import absolute_import, division, print_function, unicode_literals
+import numpy as np
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.model_selection import train_test_split
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+import pandas as pd
 
 
 
@@ -30,85 +39,24 @@ def read_data(constraints_file, conflict_file):
     
     return features_dataframe, labels_dataframe
 
-def training_data_labeling(
-    label_names, 
-    CONSTRAINTS_FILE_PATH, 
-    prediction_names=None, 
-    binary_features=None, 
-    ignore=None,
-    delimiter=None
-):
-    """
-    Reads a CSV file, separates label columns from feature columns, and prepares
-    dictionaries for unique label/feature values and loss functions for each label.
 
-    Args:
-        label_names (list): List of column names to be used as labels.
-        CONSTRAINTS_FILE_PATH (str): Path to the CSV file.
-        prediction_names (list, optional): Columns to be predicted (for loss weighting).
-        binary_features (str, optional): Path to file listing binary feature names.
-        ignore (list, optional): Columns to ignore/remove from data.
-        delimiter (str, optional): CSV delimiter (default ';').
 
-    Returns:
-        pandas_data (DataFrame): DataFrame of features (labels removed).
-        label_columns (list): List of Series for each label column.
-        label_dict (dict): Unique values for each label column.
-        features_dict (dict): Unique values for each feature column.
-        losses (dict): Loss function for each label column.
-        loss_weights (dict): Loss weight for each label column.
-    """
-    if not delimiter:
-        delimiter = ';'
-    # Read CSV as strings, fill missing values with 'None'
-    pandas_data = pd.read_csv(CONSTRAINTS_FILE_PATH, delimiter=delimiter, dtype='string')
-    pandas_data.fillna('None', inplace=True)
 
-    # Remove ignored columns
-    if ignore:
-        for name in ignore:
-            pandas_data.pop(name)
+def data_preprocessing_learning(features_dataframe, labels_dataframe):
+    # Convert features to NumPy array (already binary 0/1)
+    features = features_dataframe.values
+    labels = labels_dataframe.values
+    
+    
+    # Split data into training and test sets
+    train_x, test_x, train_labels, test_labels = train_test_split(
+        features, labels, test_size=0.25, random_state=42
+    )
 
-    label_columns = [pandas_data.pop(name) for name in label_names]
-    label_dict = {col.name: sorted(col.unique()) for col in label_columns}
-
-    # Assign loss weights: 1.0 for prediction_names, else 0.0 (or 1.0 if not specified)
-    loss_weights = {
-        col.name: 1.0 if not prediction_names or col.name in prediction_names else 0.0
-        for col in label_columns
-    }
-
-    # Assign loss functions: use binary/categorical crossentropy depending on binary_features
-    losses = {}
-    binary_set = set()
-    if binary_features:
-        with open(binary_features, "r") as f:
-            binary_set = set(line.strip() for line in f)
-    for col in label_columns:
-        if not binary_features or col.name in binary_set:
-            losses[col.name] = "sparse_categorical_crossentropy"
-        else:
-            losses[col.name] = "categorical_crossentropy"
-
-    # Prepare features_dict: unique sorted values for each feature column
-    features_dict = {col: sorted(pandas_data[col].unique()) for col in pandas_data.columns}
-
-    return pandas_data, label_columns, label_dict, features_dict, losses, loss_weights
-
-def data_consistency(pandas_data, features_data):
-    consistency = True
-    for column in list(pandas_data.items()):
-        for data in list(features_data.items()):
-            if column[0] == data[0]:
-                if not set(data[1].values).issubset(set(column[1].values)):
-                    consistency = False
-                    print('Inconsistent feature: ' + data[0] + ': ' + data[1].values)
-                    # return consistency
-                if not set(column[1].values).issubset(set(data[1].values)):
-                    consistency = False
-                    print('Inconsistent feature: ' + column[0] + ': ' + column[1].values)
-                    # return consistency
-                break
-    return consistency
-
+    print("train_x shape:", train_x.shape)
+    print("test_x shape:", test_x.shape)
+    print("train_labels shape:", train_labels.shape)
+    print("test_labels shape:", test_labels.shape)
+    
+    return train_x, test_x, train_labels, test_labels
 

@@ -19,7 +19,7 @@ from tensorflow.keras.initializers import HeNormal
 from sklearn.metrics import jaccard_score
 from keras.utils import plot_model
 
-from Choco.diagnosis_choco import get_linux_diagnosis
+from Solver.solver_caller import get_linux_diagnosis
 from diagnosis_handling import diagnosis_handling_linux
 from metric_calculation import similarity_calculation
 from neuron_constraint_initializer import NeuronConstraintInitializer
@@ -264,10 +264,10 @@ class ConLearn:
         
         return model_id, history.history
 
-    def save_model_csv(id, CONSTRAINTS_FILE_PATH, label_names, model_library_file_path, delimiter=None):
+    def save_model_csv(id, TRAINDATA_INPUT_PATH, label_names, model_library_file_path, delimiter=None):
         if not delimiter:
             delimiter = ';'
-        pandas_data = pd.read_csv(CONSTRAINTS_FILE_PATH, delimiter=delimiter, dtype='string')
+        pandas_data = pd.read_csv(TRAINDATA_INPUT_PATH, delimiter=delimiter, dtype='string')
         with open(model_library_file_path, "a+", newline='') as model_Library:
             if os.stat(model_library_file_path).st_size == 0:
                 head_data = ['ID']
@@ -494,7 +494,7 @@ class ConLearn:
     
     
 
-def conflictOutputToCSV(conflict_file_path, output_csv_path):
+def conflictOutputToCSV(TRAINDATA_OUTPUT_PATH, output_csv_path):
 
     # convert output of conflict detection system to csv file
 

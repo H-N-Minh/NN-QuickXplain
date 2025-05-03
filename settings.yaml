@@ -1,0 +1,8 @@
+TRAINDATA_INPUT_PATH: "TrainingData/arcade_small_invalid_confs_410.csv"
+TRAINDATA_OUTPUT_PATH: "TrainingData/arcade_small_conflicts_410.csv"
+SOLVER_INPUT_PATH: "candidate"
+SOLVER_OUTPUT_PATH: "data"
+MODEL_LIBRARY_FILE_PATH: "Models/DiagnosisModelLibrary.csv"
+PROGRESS_XML_FILE_PATH: "LinuxConfiguration/progress.xml"
+OUTPUT_XML_FILE_PATH: "LinuxConfiguration/output"
+VARIABLE_ORDER_FILE_PATH: "LinuxConfiguration/variable_order.txt"

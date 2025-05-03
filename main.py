@@ -1,33 +1,36 @@
 import data_handling
 import data_preprocessing
-import shutil
 import os
-import pandas as pd
 import time
-
-
-from Choco.diagnosis_choco import get_linux_diagnosis
 from model_evaluation import ConLearn
-import csv
+import yaml
 
 
 
 
-def learn_diagnosis(settings):
+def main(settings):
     # Start timing the entire function
     overall_start_time = time.time()
-    models_to_learn = 1
 
-    # # prepare learning data
+    # Load settings from a YAML file if it exists
+    yaml_settings_path = "_settings.yaml"
+    if os.path.exists(yaml_settings_path):
+        with open(yaml_settings_path, "r") as f:
+            yaml_settings = yaml.safe_load(f)
+        settings.update(yaml_settings)
+    else:
+        print(f"Warning: setting file  not found at {yaml_settings_path}. Using default settings.")
+
+    # prepare learning data
     print("Extracting data from csv files...")
     data_start_time = time.time()
-    features_dataframe, labels_dataframe = data_handling.read_data(settings["CONSTRAINTS_FILE_PATH"], settings["CONFLICT_FILE_PATH"])
+    features_dataframe, labels_dataframe = data_handling.read_data(settings["TRAINDATA_INPUT_PATH"], settings["TRAINDATA_OUTPUT_PATH"])
     data_end_time = time.time()
     data_time = data_end_time - data_start_time
     
     print("preparing data for learning...")
     preprocess_start_time = time.time()
-    train_x, test_x, train_labels, test_labels = data_preprocessing.data_preprocessing_learning(features_dataframe, labels_dataframe)
+    train_x, test_x, train_labels, test_labels = data_handling.data_preprocessing_learning(features_dataframe, labels_dataframe)
     preprocess_end_time = time.time()
     preprocess_time = preprocess_end_time - preprocess_start_time
 
@@ -55,26 +58,26 @@ def learn_diagnosis(settings):
     print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
     print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
     print("=================================")
-    
-    print("==> Done Everything...")
-    return overall_time
 
-settings_dict = {
-    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
-    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_conflicts_48752.csv"),
-    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_small_invalid_confs_410.csv"),
-    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_small_conflicts_410.csv"),
-    "CONFIGURATION_FILE_PATH": os.path.join("candidate"),
-    "DIAGNOSIS_FILE_PATH": os.path.join("data"),
-    "MODEL_LIBRARY_FILE_PATH": os.path.join("Models", "DiagnosisModelLibrary.csv"),
+DEFAULT_SETTINGS = {
+    # "TRAINDATA_INPUT_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
+    # "TRAINDATA_OUTPUT_PATH": os.path.join("TrainingData", "arcade_conflicts_48752.csv"),
+    "TRAINDATA_INPUT_PATH": os.path.join("TrainingData", "arcade_small_invalid_confs_410.csv"),
+    "TRAINDATA_OUTPUT_PATH": os.path.join("TrainingData", "arcade_small_conflicts_410.csv"),
 
-    # Add missing keys for evaluate_choco.py
-    "PROGRESS_XML_FILE_PATH": os.path.join("LinuxConfiguration", "progress.xml"),  # Adjust to your XML file
-    "OUTPUT_XML_FILE_PATH": os.path.join("LinuxConfiguration", "output"),  # Adjust to output directory
-    "VARIABLE_ORDER_FILE_PATH": os.path.join("LinuxConfiguration", "variable_order.txt"),
+    "SOLVER_INPUT_PATH": os.path.join("solver_input"),
+    "SOLVER_OUTPUT_PATH": os.path.join("solver_output"),
+
+    "SOLVER_PATH": os.path.join("Solver", "fm_conflict.jar"),
+    "SOLVER_FM_PATH": os.path.join("Solver", "arcade-game.splx"),
+
+    "clear logs": True,
+    "clear solver input/output": True,
 }
 
 # TODO: add fm_conflict.jar to the path, as well as arcade-game.splx
 
+
+
 if __name__ == "__main__":
-    learn_diagnosis(settings_dict)
+    main()
