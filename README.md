@@ -1,4 +1,5 @@
-# Requirement: need arcade-game.splx and fm_conflict.jar
+
+Requirement: need arcade-game.splx and fm_conflict.jar
 
 To modify or tweak anything, use the settings.yaml file
 

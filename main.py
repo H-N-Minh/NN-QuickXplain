@@ -50,7 +50,6 @@ def main():
     preprocess_end_time = time.time()
 
     # Train model
-    # id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
     constraint_size = features_dataframe.shape[1] # Number of features/labels
     NN_model = Model.ConflictNN(constraint_size)
     train_loader, val_loader, test_loader = NN_model.prepareData(features_dataframe, labels_dataframe)
@@ -58,7 +57,9 @@ def main():
     NN_model.train(train_loader, val_loader)
     training_end_time = time.time()
 
+    # Test model
     
+    # id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
     # Test the base model
     # metrics = base_model.test(test_loader)
     

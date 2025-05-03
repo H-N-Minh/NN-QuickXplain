@@ -191,7 +191,6 @@ class ConflictNN:
         if best_model_weights is not None:
             self.model_.load_state_dict(best_model_weights)
     
-
     def evaluate(self, val_loader, validation_total_size):
         """
         Evaluate the model on the validation data. Calculation of the loss is same as with training loss
