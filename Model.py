@@ -28,12 +28,12 @@ class ConflictNN:
         self.hidden_size_ = hidden_size
         self.output_size_ = constraints_size
 
-        # Keep track of progress during training
+        # Keep track of progress during training (after each epoch)
         self.progress_history_ = {
             'train_loss': [],
             'val_loss': [],
             'epochs_no_improve': 0,         # number of epochs that we get no/minimal improvement
-            'best_val_loss': float('inf'),
+            'best_val_loss': float('inf'),  # best validation loss so far (smaller is better), initialized with infinity
             'best_epoch': 0
         }
 
@@ -53,7 +53,7 @@ class ConflictNN:
         # Define loss function and optimizer
         self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=learning_rate)    # Adam optimizer to optimize the loss func
-        
+
     def _buildModel(self):
         """Build the neural network model."""
         model = nn.Sequential(
@@ -115,97 +115,104 @@ class ConflictNN:
         
         return train_loader, val_loader, test_loader
     
-    # def train(self, train_loader, val_loader):
-    #     """
-    #     Train the model.
+    def train(self, train_loader, val_loader):
+        """
+        Train the model: 
+        After each batch: calculate loss and update weights.
+        After each epoch: evaluate performance using validation data, store progress to .progress_history_
+        If after many epochs and we dont see an improvement, stop training
+        The best performance during the whole training will be restored 
         
-    #     Args:
-    #         train_loader (DataLoader): Training data loader
-    #         val_loader (DataLoader): Validation data loader
+        Args:
+            train_loader (DataLoader): Training data loader
+            val_loader (DataLoader): Validation data loader
             
-    #     Returns:
-    #         dict: Training history
-    #     """
-    #     self.model.train()
-    #     best_model_weights = None
+        Returns:
+            dict: Training history
+        """
+        print("\nTraining model...")
         
-    #     for epoch in range(self.max_epochs):
-    #         # Training phase
-    #         self.model.train()
-    #         running_loss = 0.0
-            
-    #         for inputs, targets in train_loader:
-    #             inputs, targets = inputs.to(self.device), targets.to(self.device)
-                
-    #             # Zero the parameter gradients
-    #             self.optimizer.zero_grad()
-                
-    #             # Forward pass
-    #             outputs = self.model(inputs)
-    #             loss = self.loss_func_(outputs, targets)
-                
-    #             # Backward pass and optimize
-    #             loss.backward()
-    #             self.optimizer.step()
-                
-    #             running_loss += loss.item() * inputs.size(0)
-            
-    #         epoch_train_loss = running_loss / len(train_loader.dataset)
-    #         self.history['train_loss'].append(epoch_train_loss)
-            
-    #         # Validation phase
-    #         val_loss = self.evaluate(val_loader)
-    #         self.history['val_loss'].append(val_loss)
-            
-    #         # Print progress
-    #         print(f'Epoch {epoch+1}/{self.max_epochs} - '
-    #               f'Train Loss: {epoch_train_loss:.4f}, '
-    #               f'Val Loss: {val_loss:.4f}')
-            
-    #         # Check if this is the best model so far
-    #         if val_loss < self.history['best_val_loss']:
-    #             self.history['best_val_loss'] = val_loss
-    #             self.history['best_epoch'] = epoch
-    #             self.history['epochs_no_improve'] = 0
-    #             best_model_weights = self.model.state_dict().copy()
-    #         else:
-    #             self.history['epochs_no_improve'] += 1
-            
-    #         # Early stopping check
-    #         if self.history['epochs_no_improve'] >= self.patience:
-    #             print(f'Early stopping triggered at epoch {epoch+1}')
-    #             break
+        training_total_size = len(train_loader.dataset)
+        validation_total_size = len(val_loader.dataset)
         
-    #     # Restore best model weights
-    #     if best_model_weights is not None:
-    #         self.model.load_state_dict(best_model_weights)
-    #         print(f"Restored best model from epoch {self.history['best_epoch']+1}")
+        best_model_weights = None
+        # stops at max_epochs_ if not stopped earlier
+        for epoch in range(self.max_epochs_):
+            self.model_.train()      # set model to training mode
+            total_loss = 0.0       # total loss over all batches in 1 epoch
+            
+            # go through each batch of 1 epoch (inputs and targets has "batch"-size (32 samples))
+            for inputs, targets in train_loader:        
+                inputs, targets = inputs.to(self.device_), targets.to(self.device_)     # make sure we train on CPU
+                
+                # Zero the parameter gradients
+                self.optimizer_.zero_grad()
+                
+                # Forward pass
+                outputs = self.model_(inputs)
+                loss = self.loss_func_(outputs, targets)
+                
+                # Backward pass and optimize
+                loss.backward()             # calculate gradients of each param and store in their .grad attribute
+                self.optimizer_.step()      # update model's params based on .grad
+                
+                # some batch has different size, so we normalize by multiply loss with batch size
+                loss_per_batch = loss.item() * inputs.size(0)
+                total_loss += loss_per_batch
+            
+            # Up till here, 1 epoch has completed
+
+            # Evaluate performance using validation data, store progress to .progress_history_ 
+            epoch_train_loss = total_loss / training_total_size
+            self.progress_history_['train_loss'].append(epoch_train_loss)
+            epoch_val_loss = self.evaluate(val_loader, validation_total_size)
+            self.progress_history_['val_loss'].append(epoch_val_loss)
+            
+            # Print progress (every 5 epochs to prevent spamming)
+            if ((epoch+1) % 5 == 0):
+                print(f'===> Epoch {epoch+1}/{self.max_epochs_}: Train Loss: {epoch_train_loss:.4f},  Val Loss: {epoch_val_loss:.4f}')
+            
+            # Check if this is the best model so far
+            if epoch_val_loss < self.progress_history_['best_val_loss']:
+                self.progress_history_['best_val_loss'] = epoch_val_loss
+                self.progress_history_['best_epoch'] = epoch
+                self.progress_history_['epochs_no_improve'] = 0
+                best_model_weights = self.model_.state_dict().copy()    # copy the current params of the model
+            else:
+                self.progress_history_['epochs_no_improve'] += 1
+            
+            # Early stopping check
+            epochs_no_improve = self.progress_history_['epochs_no_improve']
+            if epochs_no_improve >= self.patience_:
+                print(f'Early stopping triggered at epoch {epoch+1}. (no improvement in last {epochs_no_improve} epochs)')
+                break
         
-    #     return self.history
+        # Restore best model weights
+        if best_model_weights is not None:
+            self.model_.load_state_dict(best_model_weights)
     
-    # def evaluate(self, data_loader):
-    #     """
-    #     Evaluate the model on the given data.
+
+    def evaluate(self, val_loader, validation_total_size):
+        """
+        Evaluate the model on the validation data. Calculation of the loss is same as with training loss
+
+        Returns:
+            float: Average loss on the dataset
+        """
+        # Sets the model to evaluation mode
+        self.model_.eval()      
         
-    #     Args:
-    #         data_loader (DataLoader): Data loader for evaluation
-            
-    #     Returns:
-    #         float: Average loss on the dataset
-    #     """
-    #     self.model.eval()
-    #     running_loss = 0.0
-        
-    #     with torch.no_grad():
-    #         for inputs, targets in data_loader:
-    #             inputs, targets = inputs.to(self.device), targets.to(self.device)
+        total_loss = 0.0
+        with torch.no_grad():
+            for inputs, targets in val_loader:  # inputs and targets has "batch"-size (32 samples) 
+                inputs, targets = inputs.to(self.device_), targets.to(self.device_)
                 
-    #             outputs = self.model(inputs)
-    #             loss = self.loss_func_(outputs, targets)
+                outputs = self.model_(inputs)
+                loss = self.loss_func_(outputs, targets)
                 
-    #             running_loss += loss.item() * inputs.size(0)
+                total_loss += loss.item() * inputs.size(0)
         
-    #     return running_loss / len(data_loader.dataset)
+        return total_loss / validation_total_size
     
     # def predict(self, data_loader):
     #     """
@@ -217,7 +224,7 @@ class ConflictNN:
     #     Returns:
     #         tuple: Predicted probabilities and true labels
     #     """
-    #     self.model.eval()
+    #     self.model_.eval()
     #     all_preds = []
     #     all_targets = []
         
@@ -225,7 +232,7 @@ class ConflictNN:
     #         for inputs, targets in data_loader:
     #             inputs = inputs.to(self.device)
                 
-    #             outputs = self.model(inputs)
+    #             outputs = self.model_(inputs)
     #             all_preds.append(outputs.cpu().numpy())
     #             all_targets.append(targets.numpy())
         
@@ -275,7 +282,7 @@ class ConflictNN:
     #     os.makedirs(save_dir, exist_ok=True)
         
     #     # Save model weights
-    #     torch.save(self.model.state_dict(), os.path.join(save_dir, "model_weights.pth"))
+    #     torch.save(self.model_.state_dict(), os.path.join(save_dir, "model_weights.pth"))
         
     #     # Save configuration
     #     with open(os.path.join(save_dir, "config.json"), 'w') as f:
@@ -285,11 +292,11 @@ class ConflictNN:
     #     with open(os.path.join(save_dir, "history.json"), 'w') as f:
     #         # Convert training history to serializable format
     #         serializable_history = {
-    #             'train_loss': self.history['train_loss'],
-    #             'val_loss': self.history['val_loss'],
-    #             'best_val_loss': float(self.history['best_val_loss']),
-    #             'epochs_no_improve': self.history['epochs_no_improve'],
-    #             'best_epoch': self.history['best_epoch']
+    #             'train_loss': self.progress_history_['train_loss'],
+    #             'val_loss': self.progress_history_['val_loss'],
+    #             'best_val_loss': float(self.progress_history_['best_val_loss']),
+    #             'epochs_no_improve': self.progress_history_['epochs_no_improve'],
+    #             'best_epoch': self.progress_history_['best_epoch']
     #         }
     #         json.dump(serializable_history, f, indent=4)
         
@@ -322,25 +329,25 @@ class ConflictNN:
         
     #     # Build model based on config
     #     if self.config.get('model_type') == 'standard':
-    #         self.model = self._build_model()
+    #         self.model_ = self._build_model()
     #     elif self.config.get('model_type') == 'with_dropout':
-    #         self.model = self._build_model_with_dropout(self.config.get('dropout_rate', 0.2))
+    #         self.model_ = self._build_model_with_dropout(self.config.get('dropout_rate', 0.2))
     #     elif self.config.get('model_type') == 'with_batch_norm':
-    #         self.model = self._build_model_with_batch_norm()
+    #         self.model_ = self._build_model_with_batch_norm()
     #     elif self.config.get('model_type') == 'tanh_output':
-    #         self.model = self._build_model_tanh_output()
+    #         self.model_ = self._build_model_tanh_output()
     #     else:
-    #         self.model = self._build_model()
+    #         self.model_ = self._build_model()
         
     #     # Load model weights
-    #     self.model.load_state_dict(torch.load(os.path.join(folder_path, "model_weights.pth"), 
+    #     self.model_.load_state_dict(torch.load(os.path.join(folder_path, "model_weights.pth"), 
     #                                          map_location=self.device))
         
     #     # Load history if available
     #     history_path = os.path.join(folder_path, "history.json")
     #     if os.path.exists(history_path):
     #         with open(history_path, 'r') as f:
-    #             self.history = json.load(f)
+    #             self.progress_history_ = json.load(f)
         
     #     print(f"Model loaded from {folder_path}")
     
@@ -352,10 +359,10 @@ class ConflictNN:
     #         save_dir (str): Directory to save the plot
     #     """
     #     plt.figure(figsize=(10, 6))
-    #     plt.plot(self.history['train_loss'], label='Training Loss')
-    #     plt.plot(self.history['val_loss'], label='Validation Loss')
-    #     plt.axvline(x=self.history['best_epoch'], color='r', linestyle='--', 
-    #                 label=f'Best Epoch: {self.history["best_epoch"]+1}')
+    #     plt.plot(self.progress_history_['train_loss'], label='Training Loss')
+    #     plt.plot(self.progress_history_['val_loss'], label='Validation Loss')
+    #     plt.axvline(x=self.progress_history_['best_epoch'], color='r', linestyle='--', 
+    #                 label=f'Best Epoch: {self.progress_history_["best_epoch"]+1}')
     #     plt.xlabel('Epoch')
     #     plt.ylabel('Loss')
     #     plt.title('Learning Curves')
@@ -379,13 +386,13 @@ class ConflictNN:
     #     Returns:
     #         bool: True if converging well, False otherwise
     #     """
-    #     if len(self.history['train_loss']) < 10:
+    #     if len(self.progress_history_['train_loss']) < 10:
     #         return True  # Not enough epochs to determine
         
     #     # Calculate convergence rate
-    #     initial_loss = self.history['train_loss'][0]
-    #     final_loss = self.history['train_loss'][-1]
-    #     num_epochs = len(self.history['train_loss'])
+    #     initial_loss = self.progress_history_['train_loss'][0]
+    #     final_loss = self.progress_history_['train_loss'][-1]
+    #     num_epochs = len(self.progress_history_['train_loss'])
     #     conv_rate = (initial_loss - final_loss) / num_epochs
         
     #     # Check if convergence is slow
@@ -394,7 +401,7 @@ class ConflictNN:
     #         return False
         
     #     # Check if training stopped too early
-    #     if num_epochs < 20 and self.history['epochs_no_improve'] >= self.patience:
+    #     if num_epochs < 20 and self.progress_history_['epochs_no_improve'] >= self.patience:
     #         print(f"Training stopped early after {num_epochs} epochs")
     #         return False
         
@@ -407,12 +414,12 @@ class ConflictNN:
     #     Returns:
     #         bool: True if overfitting, False otherwise
     #     """
-    #     if len(self.history['train_loss']) < 5:
+    #     if len(self.progress_history_['train_loss']) < 5:
     #         return False  # Not enough epochs to determine
         
     #     # Compare training and validation loss trends
-    #     train_trend = self.history['train_loss'][-5:]
-    #     val_trend = self.history['val_loss'][-5:]
+    #     train_trend = self.progress_history_['train_loss'][-5:]
+    #     val_trend = self.progress_history_['val_loss'][-5:]
         
     #     # Calculate if training loss is decreasing but validation loss is increasing
     #     train_decreasing = train_trend[0] > train_trend[-1]
@@ -500,15 +507,15 @@ class ConflictNN:
     #     self.config['model_type'] = f'increased_hidden_{new_hidden_size}'
         
     #     # Create new model with increased hidden size
-    #     self.model = self._build_model()
+    #     self.model_ = self._build_model()
         
     #     # Update optimizer
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=self.learning_rate)
         
     #     print(f"Increased hidden layer size from {old_hidden_size} to {new_hidden_size}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -530,7 +537,7 @@ class ConflictNN:
     #     print(f"Increased batch size from {old_batch_size} to {new_batch_size}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -563,12 +570,12 @@ class ConflictNN:
     #     self.config['learning_rate'] = new_lr
         
     #     # Update optimizer with new learning rate
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=new_lr)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=new_lr)
         
     #     print(f"Increased learning rate from {old_lr} to {new_lr}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -593,7 +600,7 @@ class ConflictNN:
     #         weight_decay (float): Weight decay parameter for L2 regularization
     #     """
     #     self.optimizer = optim.AdamW(
-    #         self.model.parameters(), lr=self.learning_rate, weight_decay=weight_decay
+    #         self.model_.parameters(), lr=self.learning_rate, weight_decay=weight_decay
     #     )
     #     self.config['optimizer'] = 'AdamW'
     #     self.config['weight_decay'] = weight_decay
@@ -601,7 +608,7 @@ class ConflictNN:
     #     print(f"Switched to AdamW optimizer with weight_decay={weight_decay}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -616,17 +623,17 @@ class ConflictNN:
     #     Args:
     #         dropout_rate (float): Dropout rate
     #     """
-    #     self.model = self._build_model_with_dropout(dropout_rate)
+    #     self.model_ = self._build_model_with_dropout(dropout_rate)
     #     self.config['model_type'] = 'with_dropout'
     #     self.config['dropout_rate'] = dropout_rate
         
     #     # Update optimizer
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=self.learning_rate)
         
     #     print(f"Added dropout with rate {dropout_rate}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -636,17 +643,17 @@ class ConflictNN:
     
     # def add_batch_normalization(self):
     #     """Add batch normalization to the model."""
-    #     self.model = self._build_model_with_batch_norm()
+    #     self.model_ = self._build_model_with_batch_norm()
     #     self.config['model_type'] = 'with_batch_norm'
     #     self.config['use_batch_norm'] = True
         
     #     # Update optimizer
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=self.learning_rate)
         
     #     print("Added batch normalization")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -656,7 +663,7 @@ class ConflictNN:
     
     # def switch_to_tanh_output(self):
     #     """Switch to tanh activation for output layer (-1 to 1 range)."""
-    #     self.model = self._build_model_tanh_output()
+    #     self.model_ = self._build_model_tanh_output()
     #     self.config['model_type'] = 'tanh_output'
     #     self.config['output_range'] = '-1-1'
         
@@ -665,12 +672,12 @@ class ConflictNN:
     #     self.loss_func_ = nn.MSELoss()
         
     #     # Update optimizer
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=self.learning_rate)
         
     #     print("Switched to tanh output activation (-1 to 1 range)")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),
@@ -691,15 +698,15 @@ class ConflictNN:
     #     self.config['model_type'] = f'reduced_hidden_{new_hidden_size}'
         
     #     # Create new model with reduced hidden size
-    #     self.model = self._build_model()
+    #     self.model_ = self._build_model()
         
     #     # Update optimizer
-    #     self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+    #     self.optimizer = optim.Adam(self.model_.parameters(), lr=self.learning_rate)
         
     #     print(f"Reduced hidden layer size from {old_hidden_size} to {new_hidden_size}")
         
     #     # Reset history for new training
-    #     self.history = {
+    #     self.progress_history_ = {
     #         'train_loss': [],
     #         'val_loss': [],
     #         'best_val_loss': float('inf'),

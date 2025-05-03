@@ -54,7 +54,14 @@ def main():
     constraint_size = features_dataframe.shape[1] # Number of features/labels
     NN_model = Model.ConflictNN(constraint_size)
     train_loader, val_loader, test_loader = NN_model.prepareData(features_dataframe, labels_dataframe)
+    prepare_end_time = time.time()
+    NN_model.train(train_loader, val_loader)
     training_end_time = time.time()
+
+    
+    # Test the base model
+    # metrics = base_model.test(test_loader)
+    
     
     # print("Validating neural network model...")
     # validation_start_time = time.time()
@@ -69,14 +76,16 @@ def main():
     # Print execution time summary
     import_time = import_end_time - overall_start_time
     preprocess_time = preprocess_end_time - import_end_time
-    training_time = training_end_time - preprocess_end_time
+    prepare_time = prepare_end_time - preprocess_end_time
+    training_time = training_end_time - prepare_end_time
     print("\n===== EXECUTION TIME SUMMARY =====")
     print(f"Data Extraction:    {import_time:.2f} seconds ({(import_time/overall_time)*100:.1f}%)")
     print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
+    print(f"Data Preparation:   {prepare_time:.2f} seconds ({(prepare_time/overall_time)*100:.1f}%)")
     print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
     # print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
     # print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
-    # print("=================================")
+    print("=================================")
 
 
 
