@@ -139,7 +139,12 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
         "Error:createSolverInput:: test_input must be a non-empty 2D numpy array."
     assert constraint_name_list is not None and isinstance(constraint_name_list, list) and len(constraint_name_list) > 0, \
         "Error:createSolverInput:: constraint_name_list must be a non-empty list."
-    
+    if test_pred is not None:
+        assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
+            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
+    assert len(constraint_name_list) == test_input.shape[1], \
+        "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
+
     # Ensure output directory exists and is empty
     if os.path.exists(output_dir):
         if os.listdir(output_dir):

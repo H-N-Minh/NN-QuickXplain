@@ -2,13 +2,14 @@
 # this includes: 
 # - comparing ordered and unordered constraints (runtime) (this will be used as main benchmark on how well the model performs)
 # - test for overfitting/underfitting
-# - test on how similar the predictions are to the true labels (this will be used to improve the model)
+# - test on how similar the predictions are to the true labels (this will be used to improve the model) (f1, accuracy, precision, recall)
 
 import numpy as np
 import time
 from DataHandling import createSolverInput
 from DataHandling import processOutputFile
 import Solver.RunQuickXplain as Solver
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 def predictTestData(model):
     """
@@ -71,20 +72,20 @@ def test(model):
     runtime_improv, cc_improv = testModelRealImprovement(test_input, test_pred, model)
 
 
-    # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
+    y_pred = (test_pred >= 0.5).astype(int)
     
-    # # Calculate metrics
-    # test_result = {
-    #     'accuracy (% of predictions that are correct, higher is better)': accuracy_score(y_true.flatten(), y_pred.flatten()),
-    #     'precision (% of true positives, higher is better)': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #     'recall': recall_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #     'f1': f1_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-    #     'loss': self.evaluate(test_loader)
-    # }
+    # Calculate metrics
+    test_result = {
+        'accuracy (% of predictions that are correct, higher is better)': accuracy_score(test_true.flatten(), y_pred.flatten()),
+        'precision (% of true positives, higher is better)': precision_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
+        'recall': recall_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
+        'f1': f1_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
+        'loss': model.evaluate(model.test_data_, test_input.shape[0])
+    }
     
     # print("Test result:")
-    # for metric, value in test_result.items():
-    #     print(f"{metric}: {value:.4f}")
+    for metric, value in test_result.items():
+        print(f"{metric}: {value:.4f}")
     
     # return test_result
     
@@ -106,7 +107,6 @@ def testModelRealImprovement(test_input, test_pred, model):
     Returns:
         tuple: (runtime improvement, CC improvement) (in %)
     """
-    
     # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
     createSolverInput(test_input, test_pred, 
                       output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
