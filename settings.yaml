@@ -1,4 +1,4 @@
-Path:
+PATHS:
   TRAINDATA_INPUT_PATH: "TrainingData/arcade/arcade_small_invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
   TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/arcade_small_conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
   TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
@@ -12,10 +12,12 @@ Path:
   SOLVER_PATH: "Solver/fm_conflict.jar"     # the solver's code (JAR file)
   SOLVER_FM_PATH: "Solver/arcade-game.splx"   # the feature model (SPLX file)
 
-Clear:
-  Logs: true            # clear the logs folder (if any) before running the script
+  SOLVER_LOGS_PATH: "Solver/Logs"     # store the logs of the solver (if any)
+
+CLEAR:
+  LOGS: true            # clear the logs folder (if any) before running the script
   Solver's input/output: true       # clear the solver's input/output folders (if any) before running the script
-  Models: false           # clear all trained models from the past
+  MODELS: false           # clear all trained models from the past
   PRECOMPUTED_ARCADE: false # clear all precomputed files (both input and output folder) for arcade
   PRECOMPUTED_BUSYBOX: false # clear all precomputed files (both input and output folder) for busybox
 

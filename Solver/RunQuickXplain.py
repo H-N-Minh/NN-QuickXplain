@@ -3,15 +3,16 @@ import os
 import glob
 import shutil
 
-def get_linux_diagnosis(SOLVER_INPUT_PATH):
+def getConflict(settings):
     try:
         # change feature model file according to the feature model to be diagnosed
         # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
-        jar_path = os.path.join("LinuxConfiguration", "fm_conflict.jar")
-        fm_path = os.path.join("LinuxConfiguration", "arcade-game.splx")
-        log_dir = os.path.join("LOGS")  # Change this to your desired log directory
+        jar_path = settings["PATHS"]["SOLVER_PATH"]
+        fm_path = settings["PATHS"]["SOLVER_FM_PATH"]
+        log_dir = settings["PATHS"]["SOLVER_LOGS_PATH"]
+        solver_input_path = settings["PATHS"]["SOLVER_INPUT_PATH"]
         os.makedirs(log_dir, exist_ok=True)
-        result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, SOLVER_INPUT_PATH], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # move the logs to LOGS folder
         for log_file in glob.glob("*.log"):
@@ -20,7 +21,16 @@ def get_linux_diagnosis(SOLVER_INPUT_PATH):
             shutil.move(zip_file, os.path.join(log_dir, zip_file))
         for tmp_file in glob.glob("*.tmp"):
             shutil.move(tmp_file, os.path.join(log_dir, tmp_file))
-        # print(result.stdout)
+            
+        # moving the output folder to Solver/output folder
+        output_folder = settings["PATHS"]["SOLVER_OUTPUT_PATH"]
+        data_folder = "data"
+
+        if os.path.exists(output_folder):
+            shutil.rmtree(output_folder)
+
+        shutil.move(data_folder, output_folder)
+
         return result
     except:
         print('Subprocess did not answer! Continue with another try...')

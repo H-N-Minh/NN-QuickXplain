@@ -8,6 +8,10 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from datetime import datetime
 import json
+from DataHandling import createSolverInput
+from Solver.RunQuickXplain import getConflict
+
+import time
 
 # Threshold for binary classification, if probability is > than this threshold, it will be considered
 # to be part of the conflict set
@@ -50,6 +54,7 @@ class ConflictNN:
         self.dropout_rate_ = 0.0
         self.use_batch_norm_ = False 
         self.weight_decay_ = 0.0
+        self.constraint_name_list_ = [] # list of constraint names, used to create input for QuickXplain
 
         # Create model
         self.model_ = self._buildModel()
@@ -256,6 +261,7 @@ class ConflictNN:
         # Set the model to evaluation mode
         self.model_.eval()
         
+        all_inputs = []
         all_preds = []      # 2D, each row is 1 conflict set
         all_targets = []    # 2D, each row is 1 conflict set
         with torch.no_grad():   # make sure the model's params wont be modified
@@ -264,13 +270,15 @@ class ConflictNN:
 
                 # make the prediction and add it to the list
                 outputs = self.model_(inputs)
+
+                all_inputs.append(inputs.numpy())
                 all_preds.append(outputs.cpu().numpy())
                 all_targets.append(targets.numpy())
         
         # each row represent 1 samples, we use vstack to concatenates all samples, so result is still 2D each
-        return np.vstack(all_preds), np.vstack(all_targets)     
+        return np.vstack(all_inputs), np.vstack(all_preds), np.vstack(all_targets)     
     
-    def test(self, test_loader):
+    def test(self, test_loader, settings):
         """
         Test the model and compute metrics.
         
@@ -281,10 +289,18 @@ class ConflictNN:
         Returns:
             dict: Dictionary of performance metrics
         """
-        print("\nTesting model...")
-        y_pred_prob, y_true = self.predictTestData(test_loader)
-
+        overall_start_time = time.time()
         
+        print("\nTesting model...")
+        test_input, test_pred, test_true = self.predictTestData(test_loader)
+
+        # generate input for QuickXplain, constraints are ordered based on probability highest to lowest
+        createSolverInput(test_input, test_pred, settings, self.constraint_name_list_)
+        done_create_ordered = time.time()
+
+        # Runs QuickXplain to analyze conflicts
+        getConflict(settings)
+        done_get_ordered = time.time()
 
         # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
         
@@ -302,6 +318,12 @@ class ConflictNN:
         #     print(f"{metric}: {value:.4f}")
         
         # return test_result
+        create_ordered_time = done_create_ordered - overall_start_time
+        get_ordered_time = done_get_ordered - done_create_ordered
+        return create_ordered_time, get_ordered_time
+
+
+
     
     # def save_model(self, folder_path, run_id=None):
     #     """

@@ -6,7 +6,9 @@ import pandas as pd
 from tqdm import tqdm
 import concurrent.futures
 import multiprocessing
-import time
+import numpy as np
+import shutil
+import traceback
 
 
 # Task of this file: 
@@ -35,9 +37,9 @@ def importTrainingData(settings):
     """
     print("\nImporting training data...")
     
-    constraints_file = settings["Path"]["TRAINDATA_INPUT_PATH"]
-    conflict_file = settings["Path"]["TRAINDATA_OUTPUT_PATH"]
-    name_file = settings["Path"]["TRAINDATA_CONSTRAINTS_NAME_PATH"]
+    constraints_file = settings["PATHS"]["TRAINDATA_INPUT_PATH"]
+    conflict_file = settings["PATHS"]["TRAINDATA_OUTPUT_PATH"]
+    name_file = settings["PATHS"]["TRAINDATA_CONSTRAINTS_NAME_PATH"]
 
     # Check if the files exist
     if not os.path.exists(constraints_file):
@@ -94,79 +96,102 @@ def preprocessTrainingData(features_dataframe, labels_dataframe):
 
 
 
-def export_constraints_optimized(features_dataframe, y_pred_prob, output_dir="Solver/Input/", 
-                               num_workers=None, chunk_size=1000):
+def createSolverInput(test_input, test_pred, settings, constraint_name_list):
     """
-    Highly optimized function to export constraint data as text files sorted by probability.
-    Designed specifically for efficiently handling very large datasets (40K+ samples).
+    Generate text files that will be used as input for QuickXplain.
+    If y_pred_prob is given, the constraints will be sorted by their predicted probabilities (highest first).
     
     Args:
-        features_dataframe (pd.DataFrame): DataFrame containing constraint values (1 or -1)
-        y_pred_prob (np.ndarray): Predicted probabilities from the model
-        output_dir (str): Directory to save the output files
-        num_workers (int, optional): Number of processes to use. Defaults to CPU count.
-        chunk_size (int): Number of samples to process in each worker batch
+        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1)
+        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints. "None" for no sorting.
+        settings (dict): used to get the output directory
+        constraint_name_list (list): List of constraint names
     """
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+
+    # Ensure output directory exists and is empty
+    output_dir = settings["PATHS"]["SOLVER_INPUT_PATH"]
+    if os.path.exists(output_dir):
+        if os.listdir(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir, exist_ok=True)
     
-    # Use all available CPUs if not specified
-    if num_workers is None:
-        num_workers = max(1, multiprocessing.cpu_count() - 1)
+    # Get the number of samples to write to text files
+    num_samples = test_input.shape[0]
+
+    # Some settings for multiprocessing
+    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
+    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
+    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
+             for i in range(0, num_samples, chunk_size)]
     
-    # Get constraint column names
-    constraint_names = features_dataframe.columns.tolist()
+    print(f"...Exporting {num_samples} input text files using {num_workers} workers (sorted by predicted probabilities)...")
+
+    # Use ProcessPoolExecutor for true parallelism
+    total_processed = 0
+    with tqdm(total=len(chunks), desc="Processing batches") as pbar:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            # Submit tasks to the executor for each chunk
+            for chunk_data in chunks:
+                future = executor.submit(
+                    processChunk,
+                    chunk_data=chunk_data,
+                    features_array=test_input,
+                    test_pred=test_pred,
+                    constraint_name_list=constraint_name_list,
+                    output_dir=output_dir
+                )
+                futures.append(future)
+
+            # print status of each chunk as it is completed
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    total_processed += future.result()
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"...Error processing chunk: {e}")
+                    print(traceback.format_exc())
     
-    # Total number of samples
-    num_samples = len(features_dataframe)
+    # Verify all samples were processed
+    print(f"...Total processed samples: {total_processed} out of {num_samples}...")
+    if total_processed != num_samples:
+        print("WARNING: Not all samples were processed!")
     
-    print(f"Exporting {num_samples} constraint files using {num_workers} workers...")
-    start_time = time.time()
-    
-    # Convert dataframes to numpy arrays for better performance in multiprocessing
-    features_array = features_dataframe.values
-    
-    def process_chunk(chunk_data):
-        """Process a chunk of samples concurrently"""
+
+# Func for parallel processing in createSolverInput()
+def processChunk(chunk_data, features_array, test_pred, constraint_name_list, output_dir):
+    """Process a chunk of samples concurrently"""
+    try:
         start_idx, end_idx = chunk_data
+        processed_count = 0
         
-        for idx in range(start_idx, min(end_idx, num_samples)):
-            # Get the feature values for this sample
+        # go through the right section of samples
+        for idx in range(start_idx, end_idx):
+            # Get data for this sample
             feature_values = features_array[idx]
+            probabilities = test_pred[idx]
             
-            # Get predicted probabilities
-            probabilities = y_pred_prob[idx]
-            
-            # Create data for sorting
-            constraints_data = [(constraint_names[i], 
-                               "true" if feature_values[i] == 1 else "false", 
-                               probabilities[i]) 
-                              for i in range(len(constraint_names))]
+            # Create list for sorting (tuple of (name, boolean_str, probability))
+            constraints_data = []
+            for i in range(len(constraint_name_list)):
+                name = constraint_name_list[i]
+                boolean_str = "true" if feature_values[i] == 1 else "false"
+                prob = probabilities[i]
+                constraints_data.append((name, boolean_str, prob))
             
             # Sort by probability (descending)
             constraints_data.sort(key=lambda x: x[2], reverse=True)
             
-            # Write to file efficiently
+            # Write name and boolean string to text file
             output_file = os.path.join(output_dir, f"conf{idx}.txt")
             with open(output_file, 'w') as f:
                 for name, boolean_str, _ in constraints_data:
                     f.write(f"{name} {boolean_str}\n")
-    
-    # Create chunks for parallel processing
-    chunks = [(i, min(i + chunk_size, num_samples)) 
-             for i in range(0, num_samples, chunk_size)]
-    
-    # Use ProcessPoolExecutor for true parallelism
-    with tqdm(total=len(chunks), desc="Processing batches") as pbar:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = [executor.submit(process_chunk, chunk) for chunk in chunks]
             
-            for _ in concurrent.futures.as_completed(futures):
-                pbar.update(1)
-    
-    elapsed_time = time.time() - start_time
-    avg_time_per_file = elapsed_time / num_samples * 1000  # in milliseconds
-    
-    print(f"Successfully exported {num_samples} files in {elapsed_time:.2f} seconds")
-    print(f"Average time per file: {avg_time_per_file:.2f} ms")
-    print(f"Output files stored in: {os.path.abspath(output_dir)}")
+            processed_count += 1
+
+        return processed_count
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return 0
