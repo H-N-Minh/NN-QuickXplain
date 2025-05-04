@@ -32,6 +32,9 @@ class ConflictNN:
             settings (dict): the imported settings from file settings.yalm
             constraint_name_list (1d list): list of constraint names, used to create input for QuickXplain
         """
+        assert constraints_size != 0, "Error: constraints_size is 0, cant create a model with 0 input neurons"
+        assert len(constraint_name_list) > 0, "Error: constraint_name_list is empty, we need a name for each constraint"
+
         # size of each layers
         self.input_size_ = constraints_size
         self.hidden_size_ = hidden_size

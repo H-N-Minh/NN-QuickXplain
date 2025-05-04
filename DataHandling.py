@@ -52,6 +52,10 @@ def importTrainingData(settings):
     # Read configuration and conflict CSV files
     features_dataframe = pd.read_csv(constraints_file, header=None, delimiter=',')
     labels_dataframe = pd.read_csv(conflict_file, header=None, delimiter=',')
+
+    # make sure the files are not empty
+    assert features_dataframe.empty == False, "Error:importTrainingData:: TRAINDATA_INPUT_PATH file is empty."
+    assert labels_dataframe.empty == False, "Error:importTrainingData:: TRAINDATA_OUTPUT_PATH file is empty."
     
     # Drop index column (first column)
     features_dataframe = features_dataframe.iloc[:, 1:]
@@ -80,6 +84,9 @@ def preprocessTrainingData(features_dataframe, labels_dataframe):
     """
     The values of these files are converted to 0 and 1 so they can be used for neural network learning.
     """
+    assert features_dataframe.empty == False, "Error:preprocessTrainingData:: features_dataframe is empty."
+    assert labels_dataframe.empty == False, "Error:preprocessTrainingData:: labels_dataframe is empty."
+    
     print("\nPreprocessing data for learning...")
     
     # Convert values to 0 or 1 so it is suitable for NN learning (see README.md for more information)
