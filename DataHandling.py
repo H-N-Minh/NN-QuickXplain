@@ -146,10 +146,9 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
         "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
 
     # Ensure output directory exists and is empty
-    if os.path.exists(output_dir):
-        if os.listdir(output_dir):
-            shutil.rmtree(output_dir)
-        os.makedirs(output_dir, exist_ok=True)
+    if os.path.exists(output_dir) and os.listdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
     
     # Get the number of samples aka number of text files to be generated
     num_samples = test_input.shape[0]

@@ -106,6 +106,7 @@ def testModelRealImprovement(test_input, test_pred, model):
 
     Returns:
         tuple: (runtime improvement, CC improvement) (in %)
+        NOTE: runtime improvement here is how much faster the model is, not how much less time it takes to run. Its different.
     """
     # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
     createSolverInput(test_input, test_pred, 
