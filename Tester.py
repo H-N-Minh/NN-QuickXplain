@@ -70,7 +70,6 @@ def test(model):
     # This test is main benchmark to evaluate the model's performance
     runtime_improv, cc_improv = testModelRealImprovement(test_input, test_pred, model)
 
-    # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.
 
     # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
     
@@ -119,8 +118,19 @@ def testModelRealImprovement(test_input, test_pred, model):
     # process the output of QuickXplain (get average runtime and cc)
     avg_ordered_runtime, avg_ordered_cc = processOutputFile(model.settings_["PATHS"]["SOLVER_OUTPUT_PATH"])
 
-    # # calculate the improvement in percentage
-    # runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100
-    # cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100
+    # same process again but with unordered constraints (default ordering)
+    createSolverInput(test_input, test_pred= None, 
+                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
+                      constraint_name_list= model.constraint_name_list_)
+    
+    Solver.getConflict(model.settings_)
+
+    avg_unordered_runtime, avg_unordered_cc = processOutputFile(model.settings_["PATHS"]["SOLVER_OUTPUT_PATH"])
+
+    # calculate the improvement in percentage
+    runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100
+    cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100
+    print(f"Runtime improvement: {runtime_improv:.2f}% (ordered: {avg_ordered_runtime:.2f}s, unordered: {avg_unordered_runtime:.2f}s)")
+    print(f"CC improvement: {cc_improv:.2f}% (ordered: {avg_ordered_cc:.2f}, unordered: {avg_unordered_cc:.2f})")
     # return runtime_improv, cc_improv
     return 0, 0

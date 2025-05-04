@@ -23,6 +23,7 @@ def getConflict(settings):
             raise FileNotFoundError(f"Input directory does not exist or is empty: {solver_input_path}")
 
         # running the .jar file to get the conflicts
+        print("...Running QuickXplain...")
         result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Processing output of QuickXplain: move the logs to LOGS folder and output folder to Solver/output folder
