@@ -302,6 +302,8 @@ class ConflictNN:
         getConflict(settings)
         done_get_ordered = time.time()
 
+        # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.
+
         # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
         
         # # Calculate metrics
