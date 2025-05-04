@@ -7,6 +7,7 @@
 import numpy as np
 import time
 from DataHandling import createSolverInput
+from DataHandling import
 import Solver.RunQuickXplain as Solver
 
 def predictTestData(model):
@@ -62,20 +63,12 @@ def test(model):
     Returns:
         dict: the test report
     """
-    overall_start_time = time.time()
     print("\nTesting model...")
 
     test_input, test_pred, test_true = predictTestData(model)
 
-    # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
-    createSolverInput(test_input, test_pred, 
-                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
-                      constraint_name_list= model.constraint_name_list_)
-    done_create_ordered = time.time()
 
-    # Runs QuickXplain to analyze conflicts
-    Solver.getConflict(model.settings_)
-    done_get_ordered = time.time()
+    create_ordered_time, get_ordered_time = testModelRealImprovement(test_input, test_pred, model)
 
     # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.
 
@@ -95,6 +88,41 @@ def test(model):
     #     print(f"{metric}: {value:.4f}")
     
     # return test_result
+    
+    return create_ordered_time, get_ordered_time
+
+def testModelRealImprovement(test_input, test_pred, model):
+    """
+    Use predictions of model to generate input for QuickXplain, then run it and get the runtime.
+    Then do the same but with default constraint odering, and get the runtime.
+    The 2 runtimes are compared to see how much the model improves or not.
+
+    This improvement on runtime and CC is the main benchmark to evaluate the model.
+
+    Args:
+        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
+        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints.
+        model (Model): The trained model
+
+    Returns:
+        tuple: (runtime improvement, CC improvement) (in %)
+    """
+    overall_start_time = time.time()
+    
+    # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
+    createSolverInput(test_input, test_pred, 
+                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
+                      constraint_name_list= model.constraint_name_list_)
+    done_create_ordered = time.time()
+
+    # Runs QuickXplain to analyze conflicts
+    Solver.getConflict(model.settings_)
+    done_get_ordered = time.time()
+
+    # process the output of QuickXplain (get average runtime and cc)
+    avg_runtime, avg_cc = 
+
+
     create_ordered_time = done_create_ordered - overall_start_time
     get_ordered_time = done_get_ordered - done_create_ordered
     return create_ordered_time, get_ordered_time
