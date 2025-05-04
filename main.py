@@ -46,6 +46,8 @@ def main():
     # Test model
     create_ordered_time, get_ordered_time = Tester.test(NN_model)
     testing_end_time = time.time()
+
+    # todo: get detailed runtime for test
     # Test the base model
     # metrics = base_model.test(test_loader)
     
@@ -66,13 +68,13 @@ def main():
     preprocess_time = preprocess_end_time - import_end_time
     prepare_time = prepare_end_time - preprocess_end_time
     training_time = training_end_time - prepare_end_time
-    # testing_time = testing_end_time - training_end_time
+    testing_time = testing_end_time - training_end_time
     print("\n===== EXECUTION TIME SUMMARY =====")
     print(f"Data Extraction:    {import_time:.2f} seconds ({(import_time/overall_time)*100:.1f}%)")
     print(f"Data Preprocessing: {preprocess_time:.2f} seconds ({(preprocess_time/overall_time)*100:.1f}%)")
     print(f"Data Preparation:   {prepare_time:.2f} seconds ({(prepare_time/overall_time)*100:.1f}%)")
     print(f"Model Training:     {training_time:.2f} seconds ({(training_time/overall_time)*100:.1f}%)")
-    # print(f"Model Testing:      {testing_time:.2f} seconds ({(testing_time/overall_time)*100:.1f}%)")
+    print(f"Model Testing:      {testing_time:.2f} seconds ({(testing_time/overall_time)*100:.1f}%)")
     # print(f"--> create ordered input: {create_ordered_time:.2f} seconds ({(create_ordered_time/testing_time)*100:.1f}%)")
     # print(f"--> get ordered output: {get_ordered_time:.2f} seconds ({(get_ordered_time/testing_time)*100:.1f}%)")
     # print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")

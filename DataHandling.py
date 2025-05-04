@@ -10,7 +10,9 @@ import numpy as np
 import shutil
 import traceback
 import yaml
-
+import glob
+from concurrent.futures import ProcessPoolExecutor
+import re
 
 # Task of this file: 
 # - import and preprocess training data for the neural network.
@@ -153,12 +155,12 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
              for i in range(0, num_samples, chunk_size)]
     
-    print(f"...Exporting {num_samples} input text files using {num_workers} workers (multiprocessing)...")
-    print("--(constraints sorted by predicted probabilities)--" if test_pred is not None else "--(default constraints ordering)--") 
+    print(f"...Creating {num_samples} text files as input for QuickXplain", end=' ')
+    print("(constraints sorted by predicted probabilities)..." if test_pred is not None else "(default constraints ordering)...")
 
     # Use ProcessPoolExecutor for true parallelism
     total_processed = 0
-    with tqdm(total=len(chunks), desc="Processing batches") as pbar:
+    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
         with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             # Submit tasks to the executor for each chunk
@@ -183,7 +185,6 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
                     print(traceback.format_exc())
     
     # Verify all samples were processed
-    print(f"...Done! Total processed samples: {total_processed} out of {num_samples}...")
     assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
     
 
@@ -225,3 +226,82 @@ def processChunk(chunk_data, features_array, test_pred, constraint_name_list, ou
     except Exception as e:
         print(traceback.format_exc())
         return 0
+
+
+def processOutputFile(directory_path):
+    """
+    Process all output files of QuickXplain in the given directory. Use multiprocessing for faster processing.
+    
+    Args:
+        directory_path (str): Path to the directory containing QuickXplain output files.
+    
+    Returns:
+        tuple: (average runtime, average CC) of all processed files.
+    """
+    
+    # Get all conf*_output.txt files
+    pattern = os.path.join(directory_path, "conf*_output.txt")
+    all_files = glob.glob(pattern)
+    
+    total_files = len(all_files)
+    print(f"...Reading {total_files} output files from QuickXplain...")
+    
+    # Use ProcessPoolExecutor for parallel processing
+    runtime_sum = 0.0
+    cc_sum = 0
+    valid_files = 0
+    
+    # Determine optimal number of workers (typically CPU cores)
+    max_workers = os.cpu_count()
+    
+    # Process files in chunks to avoid memory issues with very large directories
+    chunk_size = 10000
+    
+    with tqdm(total=total_files, desc=f">> Multiprocessing with {max_workers} workers") as pbar:
+        for i in range(0, len(all_files), chunk_size):
+            chunk_files = all_files[i:i+chunk_size]
+            
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                results = list(executor.map(extractDataFromFile, chunk_files))
+            
+            # Process results
+            for result in results:
+                if result:
+                    runtime, cc = result
+                    runtime_sum += runtime
+                    cc_sum += cc
+                    valid_files += 1
+
+            # Update progress bar
+            pbar.update(len(chunk_files))
+
+    # make sure all files were processed
+    assert valid_files == total_files, f"Error:processOutputFile:: Not all files were processed. {total_files - valid_files} files failed."
+
+    # Calculate averages
+    avg_runtime = runtime_sum / valid_files
+    avg_cc = cc_sum / valid_files
+    
+    return avg_runtime, avg_cc
+
+
+def extractDataFromFile(filepath):
+    """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
+    try:
+        with open(filepath, 'r') as f:
+            # Skip the first 3 lines
+            for _ in range(3):
+                next(f)
+            
+            # Get runtime from 4th line
+            runtime_line = next(f)
+            runtime = float(re.search(r'Runtime: (\d+\.\d+)', runtime_line).group(1))
+            
+            # Get CC from 5th line
+            cc_line = next(f)
+            cc = int(re.search(r'CC: (\d+)', cc_line).group(1))
+            
+            return runtime, cc
+    except Exception as e:
+        print(f"Error processing {filepath}: {e}")
+        return None

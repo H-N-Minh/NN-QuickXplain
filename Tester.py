@@ -7,7 +7,7 @@
 import numpy as np
 import time
 from DataHandling import createSolverInput
-from DataHandling import
+from DataHandling import processOutputFile
 import Solver.RunQuickXplain as Solver
 
 def predictTestData(model):
@@ -67,8 +67,8 @@ def test(model):
 
     test_input, test_pred, test_true = predictTestData(model)
 
-
-    create_ordered_time, get_ordered_time = testModelRealImprovement(test_input, test_pred, model)
+    # This test is main benchmark to evaluate the model's performance
+    runtime_improv, cc_improv = testModelRealImprovement(test_input, test_pred, model)
 
     # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.
 
@@ -89,7 +89,7 @@ def test(model):
     
     # return test_result
     
-    return create_ordered_time, get_ordered_time
+    return 0, 0  # Placeholder for the test result
 
 def testModelRealImprovement(test_input, test_pred, model):
     """
@@ -107,22 +107,20 @@ def testModelRealImprovement(test_input, test_pred, model):
     Returns:
         tuple: (runtime improvement, CC improvement) (in %)
     """
-    overall_start_time = time.time()
     
     # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
     createSolverInput(test_input, test_pred, 
                       output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
                       constraint_name_list= model.constraint_name_list_)
-    done_create_ordered = time.time()
 
     # Runs QuickXplain to analyze conflicts
     Solver.getConflict(model.settings_)
-    done_get_ordered = time.time()
 
     # process the output of QuickXplain (get average runtime and cc)
-    avg_runtime, avg_cc = 
+    avg_ordered_runtime, avg_ordered_cc = processOutputFile(model.settings_["PATHS"]["SOLVER_OUTPUT_PATH"])
 
-
-    create_ordered_time = done_create_ordered - overall_start_time
-    get_ordered_time = done_get_ordered - done_create_ordered
-    return create_ordered_time, get_ordered_time
+    # # calculate the improvement in percentage
+    # runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100
+    # cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100
+    # return runtime_improv, cc_improv
+    return 0, 0
