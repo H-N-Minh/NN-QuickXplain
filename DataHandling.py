@@ -9,12 +9,29 @@ import multiprocessing
 import numpy as np
 import shutil
 import traceback
+import yaml
 
 
 # Task of this file: 
 # - import and preprocess training data for the neural network.
 # - produce input text files for QuickXplain
 # - process output of QuickXplain
+
+
+
+def importSettings(DEFAULT_SETTINGS):
+    """
+    Import settings from a YAML file or use default settings if the file does not exist.
+    """
+    # Load settings from a YAML file if it exists
+    if os.path.exists("settings.yaml"):
+        with open("settings.yaml", "r") as f:
+            settings = yaml.safe_load(f)
+    else:
+        print(f"\nWarning: setting file  not found at 'settings.yaml'. Using default settings.")
+        settings = DEFAULT_SETTINGS
+
+    return settings
 
 
 def importTrainingData(settings):
@@ -103,26 +120,31 @@ def preprocessTrainingData(features_dataframe, labels_dataframe):
 
 
 
-def createSolverInput(test_input, test_pred, settings, constraint_name_list):
+def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     """
     Generate text files that will be used as input for QuickXplain.
-    If y_pred_prob is given, the constraints will be sorted by their predicted probabilities (highest first).
+    If test_pred is given, the constraints will be sorted by their predicted probabilities (highest first), else default ordering
+    Text files are generated using multiprocessing for faster processing.
     
     Args:
-        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1)
+        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
         test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints. "None" for no sorting.
-        settings (dict): used to get the output directory
+        output_dir (string): directory for the text files that will be generated.
         constraint_name_list (list): List of constraint names
     """
-
+    # Error handling
+    assert test_input is not None and isinstance(test_input, np.ndarray) and test_input.ndim == 2 and test_input.size > 0, \
+        "Error:createSolverInput:: test_input must be a non-empty 2D numpy array."
+    assert constraint_name_list is not None and isinstance(constraint_name_list, list) and len(constraint_name_list) > 0, \
+        "Error:createSolverInput:: constraint_name_list must be a non-empty list."
+    
     # Ensure output directory exists and is empty
-    output_dir = settings["PATHS"]["SOLVER_INPUT_PATH"]
     if os.path.exists(output_dir):
         if os.listdir(output_dir):
             shutil.rmtree(output_dir)
         os.makedirs(output_dir, exist_ok=True)
     
-    # Get the number of samples to write to text files
+    # Get the number of samples aka number of text files to be generated
     num_samples = test_input.shape[0]
 
     # Some settings for multiprocessing
@@ -131,7 +153,8 @@ def createSolverInput(test_input, test_pred, settings, constraint_name_list):
     chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
              for i in range(0, num_samples, chunk_size)]
     
-    print(f"...Exporting {num_samples} input text files using {num_workers} workers (sorted by predicted probabilities)...")
+    print(f"...Exporting {num_samples} input text files using {num_workers} workers (multiprocessing)...")
+    print("--(constraints sorted by predicted probabilities)--" if test_pred is not None else "--(default constraints ordering)--") 
 
     # Use ProcessPoolExecutor for true parallelism
     total_processed = 0
@@ -150,7 +173,7 @@ def createSolverInput(test_input, test_pred, settings, constraint_name_list):
                 )
                 futures.append(future)
 
-            # print status of each chunk as it is completed
+            # save status of each chunk as it is completed
             for future in concurrent.futures.as_completed(futures):
                 try:
                     total_processed += future.result()
@@ -160,9 +183,8 @@ def createSolverInput(test_input, test_pred, settings, constraint_name_list):
                     print(traceback.format_exc())
     
     # Verify all samples were processed
-    print(f"...Total processed samples: {total_processed} out of {num_samples}...")
-    if total_processed != num_samples:
-        print("WARNING: Not all samples were processed!")
+    print(f"...Done! Total processed samples: {total_processed} out of {num_samples}...")
+    assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
     
 
 # Func for parallel processing in createSolverInput()
@@ -172,22 +194,23 @@ def processChunk(chunk_data, features_array, test_pred, constraint_name_list, ou
         start_idx, end_idx = chunk_data
         processed_count = 0
         
-        # go through the right section of samples
+        # process only the specified chunk of samples
         for idx in range(start_idx, end_idx):
             # Get data for this sample
             feature_values = features_array[idx]
-            probabilities = test_pred[idx]
+            probabilities = test_pred[idx] if test_pred is not None else None
             
             # Create list for sorting (tuple of (name, boolean_str, probability))
             constraints_data = []
             for i in range(len(constraint_name_list)):
                 name = constraint_name_list[i]
                 boolean_str = "true" if feature_values[i] == 1 else "false"
-                prob = probabilities[i]
+                prob = probabilities[i] if probabilities is not None else 0.0
                 constraints_data.append((name, boolean_str, prob))
             
-            # Sort by probability (descending)
-            constraints_data.sort(key=lambda x: x[2], reverse=True)
+            # Sort by probability (descending) (only if test_pred is not None)
+            if test_pred is not None:
+                constraints_data.sort(key=lambda x: x[2], reverse=True)
             
             # Write name and boolean string to text file
             output_file = os.path.join(output_dir, f"conf{idx}.txt")

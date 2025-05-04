@@ -4,11 +4,12 @@
 # - test for overfitting/underfitting
 # - test on how similar the predictions are to the true labels (this will be used to improve the model)
 
-import np
+import numpy as np
 import time
 from DataHandling import createSolverInput
+import Solver.RunQuickXplain as Solver
 
-def predictTestData(model, test_data_loader):
+def predictTestData(model):
     """
     Get predictions of the test data
     
@@ -24,7 +25,11 @@ def predictTestData(model, test_data_loader):
     all_inputs = []    
     all_preds = []      
     all_targets = [] 
-    
+
+    test_data_loader = model.test_data_
+    assert test_data_loader is not None, "Error: predictTestData:: test_data_loader is None."
+    assert len(test_data_loader) > 0, "Error: predictTestData:: test_data_loader is empty."
+
     for inputs, targets in test_data_loader:     # loop through each batch
         # make the prediction
         prediction = model.predict(inputs)
@@ -38,28 +43,38 @@ def predictTestData(model, test_data_loader):
     # each row represent 1 samples, we use vstack to concatenates all samples, so result is still 2D each
     return np.vstack(all_inputs), np.vstack(all_preds), np.vstack(all_targets)     
 
-def test(model, test_loader):
+
+def test(model):
     """
     Test the model and compute metrics.
     
+    produce input , get diagnosis from quickxplain, process the output (store also the conflict)
+    produce input (unordered), get diagnosis and process the output
+    compare the performance of 2 results (runtime and cc)
+    evaluate how good the test_pred is (accuracy, precision, recall, f1 score, loss)
+    test overfitting/underfitting
+    build report (with suggestions for improvement)
+
     Args:
         test_loader (DataLoader): Test data loader
         PREDICTION_THRESHOLD (float): PREDICTION_THRESHOLD for binary classification
         
     Returns:
-        dict: Dictionary of performance metrics
+        dict: the test report
     """
     overall_start_time = time.time()
-    
     print("\nTesting model...")
-    test_input, test_pred, test_true = predictTestData(model, test_loader)
 
-    # generate input for QuickXplain, constraints are ordered based on probability highest to lowest
-    createSolverInput(test_input, test_pred, settings, model.constraint_name_list_)
+    test_input, test_pred, test_true = predictTestData(model)
+
+    # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
+    createSolverInput(test_input, test_pred, 
+                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
+                      constraint_name_list= model.constraint_name_list_)
     done_create_ordered = time.time()
 
     # Runs QuickXplain to analyze conflicts
-    getConflict(settings)
+    Solver.getConflict(model.settings_)
     done_get_ordered = time.time()
 
     # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.

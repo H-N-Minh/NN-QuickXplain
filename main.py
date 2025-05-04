@@ -1,7 +1,6 @@
 import DataHandling
-import os
+import Tester
 import time
-import yaml
 import Model
 
 DEFAULT_SETTINGS = {
@@ -21,27 +20,13 @@ DEFAULT_SETTINGS = {
     }
 }
 
-def importSettings():
-    """
-    Import settings from a YAML file or use default settings if the file does not exist.
-    """
-    # Load settings from a YAML file if it exists
-    if os.path.exists("settings.yaml"):
-        with open("settings.yaml", "r") as f:
-            settings = yaml.safe_load(f)
-    else:
-        print(f"\nWarning: setting file  not found at 'settings.yaml'. Using default settings.")
-        settings = DEFAULT_SETTINGS
-
-    return settings
-
 
 def main():
     # Start timing the entire function
     overall_start_time = time.time()
 
     # Import
-    settings = importSettings()
+    settings = DataHandling.importSettings(DEFAULT_SETTINGS)
     features_dataframe, labels_dataframe = DataHandling.importTrainingData(settings)
     import_end_time = time.time()
     
@@ -58,14 +43,14 @@ def main():
     NN_model.train()
     training_end_time = time.time()
 
-    # # Test model
-    # # todo: continue from here
-    # create_ordered_time, get_ordered_time = NN_model.test(test_loader, settings)
-    # testing_end_time = time.time()
-    # # Test the base model
-    # # metrics = base_model.test(test_loader)
+    # Test model
+    create_ordered_time, get_ordered_time = Tester.test(NN_model)
+    testing_end_time = time.time()
+    # Test the base model
+    # metrics = base_model.test(test_loader)
     
-    
+    # save model and build report
+
     # print("Validating neural network model...")
     # validation_start_time = time.time()
     # ConLearn.model_predict_conflict(id, features_dataframe, labels_dataframe)
