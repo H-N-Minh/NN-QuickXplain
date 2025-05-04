@@ -12,7 +12,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import HeNormal
 
-from Solver.solver_caller import get_linux_diagnosis
+from Solver.RunQuickXplain import getConflict
 from neuron_constraint_initializer import NeuronConstraintInitializer
 import os
 
@@ -151,47 +151,47 @@ class ConLearn:
 
     @staticmethod
     def get_NN_performance(features_dataframe, predictions):
-        # Build input_constraints_dict: list of dicts mapping feature names to values for each row
-        input_constraints_dict = []   # { name of constraint : value of constraint 1 or -1}. each dict is a config
-        feature_names = ARCARD_FEATURE_MODEL
-        for _, row in features_dataframe.iterrows():
-            row_dict = {feature_names[i]: row.iloc[i] for i in range(len(feature_names))}
-            input_constraints_dict.append(row_dict)
+        # # Build input_constraints_dict: list of dicts mapping feature names to values for each row
+        # input_constraints_dict = []   # { name of constraint : value of constraint 1 or -1}. each dict is a config
+        # feature_names = ARCARD_FEATURE_MODEL
+        # for _, row in features_dataframe.iterrows():
+        #     row_dict = {feature_names[i]: row.iloc[i] for i in range(len(feature_names))}
+        #     input_constraints_dict.append(row_dict)
 
-        # Create feature_order_dicts: list of dicts for each row in predictions
-        feature_order_dicts = []  # { probability : name of constraint}. each dict is a config
-        for row in predictions:
-            row_dict = {row[i]: ARCARD_FEATURE_MODEL[i] for i in range(len(ARCARD_FEATURE_MODEL))}
-            feature_order_dicts.append(row_dict)
+        # # Create feature_order_dicts: list of dicts for each row in predictions
+        # feature_order_dicts = []  # { probability : name of constraint}. each dict is a config
+        # for row in predictions:
+        #     row_dict = {row[i]: ARCARD_FEATURE_MODEL[i] for i in range(len(ARCARD_FEATURE_MODEL))}
+        #     feature_order_dicts.append(row_dict)
 
-        # print("First 3 rows of features_dataframe:")
-        # print(features_dataframe.head(3))
-        # print("First 3 dicts of input_constraints_dict:")
-        # print(input_constraints_dict[:3])
+        # # print("First 3 rows of features_dataframe:")
+        # # print(features_dataframe.head(3))
+        # # print("First 3 dicts of input_constraints_dict:")
+        # # print(input_constraints_dict[:3])
 
-        # Create ordered_features_list: each row is a list of values from the dict, sorted by key
-        ordered_features_list = []
-        for d in feature_order_dicts:
-            # Sort the dict by key (probability), get the values (feature names) in order
-            sorted_items = sorted(d.items(), key=lambda x: x[0], reverse=True)
-            ordered_features_list.append([v for k, v in sorted_items])
+        # # Create ordered_features_list: each row is a list of values from the dict, sorted by key
+        # ordered_features_list = []
+        # for d in feature_order_dicts:
+        #     # Sort the dict by key (probability), get the values (feature names) in order
+        #     sorted_items = sorted(d.items(), key=lambda x: x[0], reverse=True)
+        #     ordered_features_list.append([v for k, v in sorted_items])
         
-        before_config = time.time()
-        print("model_predict_conflict::creating configs")
-        os.makedirs('candidate', exist_ok=True)
-        for idx, config_row in enumerate(ordered_features_list):
-            file_path = os.path.join('candidate', f'conf{idx}.txt')
-            with open(file_path, 'w') as f:
-                for constraint_name in config_row:
-                    constraint_value = "true" if input_constraints_dict[idx][constraint_name] == 1 else "false"
-                    f.write(f"{constraint_name} {constraint_value}\n")
-        after_config = time.time()
-        config_time = after_config - before_config
-        print(f"===> Done!! creating config took {config_time:.2f} seconds")
+        # before_config = time.time()
+        # print("model_predict_conflict::creating configs")
+        # os.makedirs('candidate', exist_ok=True)
+        # for idx, config_row in enumerate(ordered_features_list):
+        #     file_path = os.path.join('candidate', f'conf{idx}.txt')
+        #     with open(file_path, 'w') as f:
+        #         for constraint_name in config_row:
+        #             constraint_value = "true" if input_constraints_dict[idx][constraint_name] == 1 else "false"
+        #             f.write(f"{constraint_name} {constraint_value}\n")
+        # after_config = time.time()
+        # config_time = after_config - before_config
+        # print(f"===> Done!! creating config took {config_time:.2f} seconds")
         
         before_diagnosis = time.time()
         print("model_predict_conflict::getting diagnosis...")
-        get_linux_diagnosis(os.path.join("candidate"))
+        getConflict(os.path.join("candidate"))
         after_diagnosis = time.time()
         diagnosis_time = after_diagnosis - before_diagnosis
         print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")
@@ -230,7 +230,7 @@ class ConLearn:
 
         print("model_predict_conflict::getting diagnosis...")
         before_diagnosis = time.time()
-        get_linux_diagnosis(os.path.join("candidate"))
+        getConflict(os.path.join("candidate"))
         after_diagnosis = time.time()
         diagnosis_time = after_diagnosis - before_diagnosis
         print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")

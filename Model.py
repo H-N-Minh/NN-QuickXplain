@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from datetime import datetime
 import json
-from DataHandling import createSolverInput
 from Solver.RunQuickXplain import getConflict
 
 import time
@@ -18,7 +17,7 @@ import time
 PREDICTION_THRESHOLD = 0.5  
 
 class ConflictNN:
-    def __init__(self, constraints_size, hidden_size=64, learning_rate=0.001,
+    def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.001,
                  batch_size=32, max_epochs=100, patience=10):
         """
         Initialize the ConflictNN model.
@@ -30,6 +29,8 @@ class ConflictNN:
             batch_size (int): Batch size for training
             max_epochs (int): Maximum number of epochs for training
             patience (int): Number of epochs with no improvement before early stopping
+            settings (dict): the imported settings from file settings.yalm
+            constraint_name_list (1d list): list of constraint names, used to create input for QuickXplain
         """
         # size of each layers
         self.input_size_ = constraints_size
@@ -45,6 +46,11 @@ class ConflictNN:
             'best_epoch': 0
         }
 
+        # Data (train, validation and test data) (type: DataLoader)
+        self.train_data_ = None
+        self.validation_data_ = None
+        self.test_data_ = None
+
         # Other settings
         self.learning_rate_ = learning_rate
         self.batch_size_ = batch_size
@@ -54,7 +60,8 @@ class ConflictNN:
         self.dropout_rate_ = 0.0
         self.use_batch_norm_ = False 
         self.weight_decay_ = 0.0
-        self.constraint_name_list_ = [] # list of constraint names, used to create input for QuickXplain
+        self.constraint_name_list_ = constraint_name_list
+        self.settings_ = settings
 
         # Create model
         self.model_ = self._buildModel()
@@ -118,13 +125,12 @@ class ConflictNN:
         )
         
         # Create DataLoader objects. No shuffle for validation and test data, to make it consistent report 
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=self.batch_size_)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size_)
-        
-        return train_loader, val_loader, test_loader
+        self.train_data_ = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)
+        self.validation_data_ = DataLoader(val_dataset, batch_size=self.batch_size_)
+        self.test_data_ = DataLoader(test_dataset, batch_size=self.batch_size_)
+
     
-    def train(self, train_loader, val_loader):
+    def train(self):
         """
         Train the model: 
         After each batch: calculate loss and update weights.
@@ -133,16 +139,19 @@ class ConflictNN:
         The best performance during the whole training will be restored 
         
         Args:
-            train_loader (DataLoader): Training data loader
-            val_loader (DataLoader): Validation data loader
+            self.train_data_ (DataLoader): Training data loader
+            self.validation_data_ (DataLoader): Validation data loader
             
         Returns:
             dict: Training history
         """
+        assert self.train_data_ is not None, "Error: train_data_ is None. Please call prepareData() first."
+        assert self.validation_data_ is not None, "Error: validation_data_ is None. Please call prepareData() first." 
+        
         print("\nTraining model...")
         
-        training_total_size = len(train_loader.dataset)
-        validation_total_size = len(val_loader.dataset)
+        training_total_size = len(self.train_data_.dataset)
+        validation_total_size = len(self.validation_data_.dataset)
         
         best_model_weights = None
         # stops at max_epochs_ if not stopped earlier
@@ -151,7 +160,7 @@ class ConflictNN:
             total_loss = 0.0       # total loss over all batches in 1 epoch
             
             # go through each batch of 1 epoch (inputs and targets has "batch"-size (32 samples))
-            for inputs, targets in train_loader:        
+            for inputs, targets in self.train_data_:        
                 inputs, targets = inputs.to(self.device_), targets.to(self.device_)     # make sure we train on CPU
                 
                 # Zero the parameter gradients
@@ -174,7 +183,7 @@ class ConflictNN:
             # Evaluate performance using validation data, store progress to .progress_history_ 
             epoch_train_loss = total_loss / training_total_size
             self.progress_history_['train_loss'].append(epoch_train_loss)
-            epoch_val_loss = self.evaluate(val_loader, validation_total_size)
+            epoch_val_loss = self.evaluate(self.validation_data_, validation_total_size)
             self.progress_history_['val_loss'].append(epoch_val_loss)
             
             # Print progress (every 5 epochs to prevent spamming)
@@ -200,16 +209,16 @@ class ConflictNN:
         if best_model_weights is not None:
             self.model_.load_state_dict(best_model_weights)
     
-    def evaluate(self, val_loader, validation_total_size):
+    def evaluate(self, data_loader, data_size):
         """
         Helper func for train()
-        Evaluate the model on the validation data: 
-        - compute the prediction using the validation input
-        - calculate the loss in comparision with true labels
+        Evaluate the model on the data_loader: 
+        - compute the prediction using the input
+        - calculate the loss by comparing with true labels
 
         Args:
-            val_loader (DataLoader): Validation data loader, has input and true labels
-            validation_total_size (int): size of validation data
+            data_loader (DataLoader): stores both input and true labels
+            data_size (int): size of data_loader dataset (its done like this to improve efficiency when evaluate() is called in a loop)
 
         Returns:
             float: Average loss on the dataset
@@ -219,7 +228,7 @@ class ConflictNN:
         
         total_loss = 0.0
         with torch.no_grad():   # make sure the model's params wont be modified 
-            for inputs, targets in val_loader:  # inputs and targets has "batch"-size (32 samples) 
+            for inputs, targets in data_loader:  # inputs and targets has "batch"-size (32 samples) 
                 inputs, targets = inputs.to(self.device_), targets.to(self.device_)
                 
                 outputs = self.model_(inputs)
@@ -227,14 +236,14 @@ class ConflictNN:
                 
                 total_loss += loss.item() * inputs.size(0)
         
-        return total_loss / validation_total_size
+        return total_loss / data_size
     
     def predict(self, inputs):
         """
         make predictions using the trained model
 
         Args:
-            inputs (2D PyTorch tensor): batch of input values representing invalid configs
+            inputs (2D PyTorch tensor): input values representing invalid configs
         
         Returns:
             predictions (2D PyTorch tensor): predictions, each value is a probability [0, 1]
@@ -246,85 +255,6 @@ class ConflictNN:
         with torch.no_grad():    
             inputs = inputs.to(self.device_)
             return self.model_(inputs)
-
-    def predictTestData(self, test_data_loader):
-        """
-        Helper func for test()
-        Make predictions on the test data
-        
-        Args:
-            test_data_loader (DataLoader): Data loader including both input values and true labels.
-            
-        Returns:
-            tuple: Predicted probabilities and true labels (each is 2d NumPy array)
-        """
-        # Set the model to evaluation mode
-        self.model_.eval()
-        
-        all_inputs = []
-        all_preds = []      # 2D, each row is 1 conflict set
-        all_targets = []    # 2D, each row is 1 conflict set
-        with torch.no_grad():   # make sure the model's params wont be modified
-            for inputs, targets in test_data_loader:     # loop through each batch
-                inputs = inputs.to(self.device_)
-
-                # make the prediction and add it to the list
-                outputs = self.model_(inputs)
-
-                all_inputs.append(inputs.numpy())
-                all_preds.append(outputs.cpu().numpy())
-                all_targets.append(targets.numpy())
-        
-        # each row represent 1 samples, we use vstack to concatenates all samples, so result is still 2D each
-        return np.vstack(all_inputs), np.vstack(all_preds), np.vstack(all_targets)     
-    
-    def test(self, test_loader, settings):
-        """
-        Test the model and compute metrics.
-        
-        Args:
-            test_loader (DataLoader): Test data loader
-            PREDICTION_THRESHOLD (float): PREDICTION_THRESHOLD for binary classification
-            
-        Returns:
-            dict: Dictionary of performance metrics
-        """
-        overall_start_time = time.time()
-        
-        print("\nTesting model...")
-        test_input, test_pred, test_true = self.predictTestData(test_loader)
-
-        # generate input for QuickXplain, constraints are ordered based on probability highest to lowest
-        createSolverInput(test_input, test_pred, settings, self.constraint_name_list_)
-        done_create_ordered = time.time()
-
-        # Runs QuickXplain to analyze conflicts
-        getConflict(settings)
-        done_get_ordered = time.time()
-
-        # todo next: efficient way to read the result of quickxplain, then do again everything but in normal order.
-
-        # y_pred = (y_pred_prob >= PREDICTION_THRESHOLD).astype(int)
-        
-        # # Calculate metrics
-        # test_result = {
-        #     'accuracy (% of predictions that are correct, higher is better)': accuracy_score(y_true.flatten(), y_pred.flatten()),
-        #     'precision (% of true positives, higher is better)': precision_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-        #     'recall': recall_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-        #     'f1': f1_score(y_true.flatten(), y_pred.flatten(), zero_division=0),
-        #     'loss': self.evaluate(test_loader)
-        # }
-        
-        # print("Test result:")
-        # for metric, value in test_result.items():
-        #     print(f"{metric}: {value:.4f}")
-        
-        # return test_result
-        create_ordered_time = done_create_ordered - overall_start_time
-        get_ordered_time = done_get_ordered - done_create_ordered
-        return create_ordered_time, get_ordered_time
-
-
 
     
     # def save_model(self, folder_path, run_id=None):
@@ -957,11 +887,11 @@ class ConflictNN:
 #     base_model = ConflictNN(input_size=input_size, output_size=output_size)
     
 #     # Prepare data
-#     train_loader, val_loader, test_loader = base_model.prepareData(X, y)
+#     self.train_data_, self.validation_data_, test_loader = base_model.prepareData(X, y)
     
 #     # Train the base model
 #     print("\nTraining base model...")
-#     base_model.train(train_loader, val_loader)
+#     base_model.train(self.train_data_, self.validation_data_)
     
 #     # Test the base model
 #     metrics = base_model.test(test_loader)
@@ -977,10 +907,10 @@ class ConflictNN:
 #         faster_model.increase_learning_rate(0.005)
         
 #         # Prepare data
-#         train_loader, val_loader, test_loader = faster_model.prepareData(X, y)
+#         self.train_data_, self.validation_data_, test_loader = faster_model.prepareData(X, y)
         
 #         # Train and test
-#         faster_model.train(train_loader, val_loader)
+#         faster_model.train(self.train_data_, self.validation_data_)
 #         metrics = faster_model.test(test_loader)
         
 #         # Record results
@@ -993,10 +923,10 @@ class ConflictNN:
 #         dropout_model.add_dropout(0.2)
         
 #         # Prepare data
-#         train_loader, val_loader, test_loader = dropout_model.prepareData(X, y)
+#         self.train_data_, self.validation_data_, test_loader = dropout_model.prepareData(X, y)
         
 #         # Train and test
-#         dropout_model.train(train_loader, val_loader)
+#         dropout_model.train(self.train_data_, self.validation_data_)
 #         metrics = dropout_model.test(test_loader)
         
 #         # Record results
