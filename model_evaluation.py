@@ -132,8 +132,8 @@ def extract_metrics_optimized(data_folder):
     avg_runtime = runtime_sum / valid_count if valid_count > 0 else 0
     avg_cc = cc_sum / valid_count if valid_count > 0 else 0
     
-    print(f"Average runtime: {avg_runtime:.6f} seconds")
-    print(f"Average CC: {avg_cc:.2f}")
+    # print(f"Average runtime: {avg_runtime:.6f} seconds")
+    # print(f"Average CC: {avg_cc:.2f}")
     
     return avg_runtime, avg_cc
 
@@ -351,8 +351,8 @@ class ConLearn:
         # Build input_constraints_dict: list of dicts mapping feature names to values for each row
         input_constraints_dict = []   # { name of constraint : value of constraint 1 or -1}. each dict is a config
         feature_names = ARCARD_FEATURE_MODEL
-        for _, row in features_dataframe.iterrows():
-            row_dict = {feature_names[i]: row.iloc[i] for i in range(len(feature_names))}
+        for row in features_dataframe:
+            row_dict = {feature_names[i]: row[i] for i in range(len(feature_names))}
             input_constraints_dict.append(row_dict)
 
         # Create feature_order_dicts: list of dicts for each row in predictions
@@ -421,11 +421,11 @@ class ConLearn:
         if os.path.exists(input_dir):
             shutil.rmtree(input_dir)
         os.makedirs(input_dir, exist_ok=True)
-        for idx, row in features_dataframe.iterrows():
+        for idx, row in enumerate(features_dataframe):
             file_path = os.path.join('Solver/Input', f'conf{idx}.txt')
             with open(file_path, 'w') as f:
                 for col_idx, feature_name in enumerate(ARCARD_FEATURE_MODEL):
-                    value = row.iloc[col_idx]
+                    value = row[col_idx]
                     constraint_value = "true" if value == 1 else "false"
                     f.write(f"{feature_name} {constraint_value}\n")
         after_config = time.time()
@@ -461,7 +461,7 @@ class ConLearn:
         if not os.path.exists("Data"):
             os.makedirs("Data")
         # Predict conflict sets
-        predictions = model.predict(features_dataframe.values)
+        predictions = model.predict(features_dataframe)
         # print("Predictions shape:", predictions.shape)
         # print("First 3 rows of predictions:\n", predictions[:3])
         # print("First row of features_dataframe:")
@@ -471,16 +471,20 @@ class ConLearn:
         normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
 
         runtime_improvement = normal_runtime -  nn_runtime # seconds
+        print(f"nn_runtime: {nn_runtime}")
+        print(f"normal_runtime: {normal_runtime}")
+        print(f"runtime_improvement: {runtime_improvement}")
         cc_improvement = normal_cc - nn_cc
 
 
         # Calculate percentage improvements
-        runtime_improvement_percentage = (runtime_improvement / normal_runtime) * 100
+        runtime_improvement_percentage = (runtime_improvement / nn_runtime) * 100
         cc_improvement_percentage = (cc_improvement / normal_cc) * 100
 
         # Print results
-        print(f"Runtime Improvement: {runtime_improvement_percentage:.2f}%")
-        print(f"CC Improvement: {cc_improvement_percentage:.2f}%")
+        print("FINAL RESULTS")
+        print(f"Faster %: {runtime_improvement_percentage:.2f}%")
+        print(f"CC less %: {cc_improvement_percentage:.2f}%")
 
         
         

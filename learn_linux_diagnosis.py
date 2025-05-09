@@ -27,19 +27,19 @@ def learn_diagnosis(settings):
     
     print("preparing data for learning...")
     preprocess_start_time = time.time()
-    train_x, test_x, train_labels, test_labels = data_preprocessing.data_preprocessing_learning(features_dataframe, labels_dataframe)
+    train_x, validate_x, train_labels, validate_labels, test_x, test_labels = data_preprocessing.data_preprocessing_learning(features_dataframe, labels_dataframe)
     preprocess_end_time = time.time()
     preprocess_time = preprocess_end_time - preprocess_start_time
 
     print("Start training...")
     training_start_time = time.time()
-    id, history = ConLearn.train_and_evaluate(train_x, test_x, train_labels, test_labels)
+    id, history = ConLearn.train_and_evaluate(train_x, validate_x, train_labels, validate_labels)
     training_end_time = time.time()
     training_time = training_end_time - training_start_time
     
     print("Validating neural network model...")
     validation_start_time = time.time()
-    ConLearn.model_predict_conflict(id, features_dataframe, labels_dataframe)
+    ConLearn.model_predict_conflict(id, test_x, test_labels)
     validation_end_time = time.time()
     validation_time = validation_end_time - validation_start_time
     
@@ -60,10 +60,10 @@ def learn_diagnosis(settings):
     return overall_time
 
 settings_dict = {
-    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
-    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade_conflicts_48752.csv"),
-    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_410.csv"),
-    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_410.csv"),
+    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_48752.csv"),
+    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_48752.csv"),
+    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_410.csv"),
+    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_410.csv"),
     "CONFIGURATION_FILE_PATH": os.path.join("candidate"),
     "DIAGNOSIS_FILE_PATH": os.path.join("data"),
     "MODEL_LIBRARY_FILE_PATH": os.path.join("Models", "DiagnosisModelLibrary.csv"),
