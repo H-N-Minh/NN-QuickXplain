@@ -1,13 +1,11 @@
-
-
-Models/
 venv/
 __pycache__/
 *.pyc
-LinuxConfiguration/fm_conflict.jar
-TEMPminh.py
-ConflictModelLibrary.csv
 
-Solver/
-Trashbin/
-privateTest/
+Solver/__pycache__/
+Solver/Input/
+Solver/Output/
+Solver/Logs/
+Solver/fm_conflict.jar
+
+Models/

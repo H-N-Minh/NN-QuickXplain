@@ -16,13 +16,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import HeNormal
-from sklearn.metrics import jaccard_score
-from keras.utils import plot_model
-
-from Choco.diagnosis_choco import get_linux_diagnosis
-from diagnosis_handling import diagnosis_handling_linux
-from metric_calculation import similarity_calculation
-from neuron_constraint_initializer import NeuronConstraintInitializer
+from Solver.diagnosis_choco import get_linux_diagnosis
 import os
 
 
@@ -139,10 +133,6 @@ def extract_metrics_optimized(data_folder):
 
 class ConLearn:
 
-    def initialize_weights(self, input_shape):
-
-        return
-
     @staticmethod
     def create_model(input_shape, output_shape):
         model = Sequential([
@@ -151,58 +141,6 @@ class ConLearn:
             Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
         ])
         return model
-
-    def build_branch(input_shape, output_shape, inputs, label_name, input_neuron_list, output_neuron_list,
-                     last_layer_activation, rules=None):
-        if output_shape < 3:
-            if rules:
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="output_layer"))(y)
-            else:
-                # He initializer is recommended for ReLu activation function layers
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-
-        else:
-            if rules:
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(inputs)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="input_layer"))(x)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name,
-                                          kernel_initializer=NeuronConstraintInitializer(label_name, input_neuron_list,
-                                                                                         output_neuron_list, rules,
-                                                                                         layer="output_layer"))(x)
-            else:
-                # He initializer is recommended for ReLu activation function layers
-                # w = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                # kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                x = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(inputs)
-                # y = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(x)
-                y = tf.keras.layers.Dense(input_shape, activation=tf.nn.relu,
-                                          kernel_initializer=tf.keras.initializers.HeNormal())(x)
-                # z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-                z = tf.keras.layers.Dense(output_shape, activation=last_layer_activation, name=label_name)(y)
-
-        return z
 
     def train_and_evaluate(train_x, test_x, train_labels, test_labels):
         input_shape = train_x.shape[1]
@@ -255,97 +193,9 @@ class ConLearn:
         plt.savefig(f'{model_dir}/accuracy.png')
         plt.close()
         
-        # Update model library
-        model_library = pd.DataFrame({
-            'ID': [model_id],
-            **{col: [0] for col in range(input_shape)},
-            'Conflict': [1]
-        })
-        model_library.to_csv('ConflictModelLibrary.csv', index=False)
-        
         return model_id, history.history
 
-    def save_model_csv(id, CONSTRAINTS_FILE_PATH, label_names, model_library_file_path, delimiter=None):
-        if not delimiter:
-            delimiter = ';'
-        pandas_data = pd.read_csv(CONSTRAINTS_FILE_PATH, delimiter=delimiter, dtype='string')
-        with open(model_library_file_path, "a+", newline='') as model_Library:
-            if os.stat(model_library_file_path).st_size == 0:
-                head_data = ['ID']
-                for column in pandas_data.columns:
-                    head_data.append(column)
-                library_entry = [id]
-                for column in pandas_data.columns:
-                    if column in label_names:
-                        library_entry.append(1)
-                    else:
-                        library_entry.append(0)
-                writer = csv.writer(model_Library, delimiter=';')
-                writer.writerow(head_data)
-                writer.writerow(library_entry)
-            else:
-                library_entry = [id]
-                for column in pandas_data.columns:
-                    if column in label_names:
-                        library_entry.append(1)
-                    else:
-                        library_entry.append(0)
-                writer = csv.writer(model_Library, delimiter=';')
-                writer.writerow(library_entry)
-        return
-
-    def model_exists(model_library_file_path, label_names):
-        id = str()
-        try:
-            Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
-            model_exists = 0
-            for i in range(Library_Data.shape[0]):
-                for element in Library_Data:
-                    if element in label_names:
-                        if Library_Data[element][i] == 1:
-                            model_exists = 1
-                            continue
-                        else:
-                            model_exists = 0
-                            break
-                    else:
-                        if Library_Data[element][i] == 1:
-                            model_exists = 0
-                            break
-                        else:
-                            continue
-                if model_exists:
-                    id = Library_Data['ID'][i]
-                    break
-            return id
-        except:
-            return id
-
-    def model_id_get(model_library_file_path, model_row):
-        try:
-            Library_Data = pd.read_csv(model_library_file_path, delimiter=';')
-            id = Library_Data.ID[model_row]
-            return id
-        except:
-            return id
         
-    def model_cleanup(model_performance):
-        # Select model with highest runtime improvement
-        best_model_id = max(model_performance, key=model_performance.get)
-        best_performance = model_performance[best_model_id]
-        
-        # Delete other models
-        for model_id in model_performance:
-            if model_id != best_model_id:
-                shutil.rmtree(f'Models/{model_id}')
-        
-        # Update model library
-        model_library = pd.read_csv('ConflictModelLibrary.csv')
-        model_library = model_library[model_library['ID'] == best_model_id]
-        model_library.to_csv('ConflictModelLibrary.csv', index=False)
-        
-        print(f'Selected model achieved a runtime improvement of {best_performance:.6f} s')
-
     @staticmethod
     def get_NN_performance(features_dataframe, predictions):
         # Build input_constraints_dict: list of dicts mapping feature names to values for each row
@@ -462,10 +312,6 @@ class ConLearn:
             os.makedirs("Data")
         # Predict conflict sets
         predictions = model.predict(features_dataframe)
-        # print("Predictions shape:", predictions.shape)
-        # print("First 3 rows of predictions:\n", predictions[:3])
-        # print("First row of features_dataframe:")
-        # print(features_dataframe.iloc[0])
         nn_runtime, nn_cc = ConLearn.get_NN_performance(features_dataframe, predictions)
 
         normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
@@ -506,47 +352,3 @@ class ConLearn:
         # return avg_runtime_improvement
     
     
-
-def conflictOutputToCSV(conflict_file_path, output_csv_path):
-
-    # convert output of conflict detection system to csv file
-
-    # Create temp1.csv from Data/conf*_output.txt files
-    data_folder = "Data"
-    num_files = 410  # conf0_output.txt to conf409_output.txt
-    num_features = len(ARCARD_FEATURE_MODEL)
-    output_rows = []
-    for i in range(num_files):
-        row = [0] * (num_features + 1)  # First column is counter, rest are features
-        row[0] = i
-        file_path = os.path.join(data_folder, f"conf{i}_output.txt")
-        try:
-            with open(file_path, "r") as f:
-                lines = f.readlines()
-                if len(lines) >= 3:
-                    cs_line = lines[2].strip()
-                    if cs_line.startswith("CS: [") and cs_line.endswith("]"):
-                        cs_content = cs_line[5:-1]  # Remove "CS: [" and "]"
-                        if cs_content:
-                            pairs = cs_content.split(", ")
-                            for pair in pairs:
-                                if "=" in pair:
-                                    key, value = pair.split("=")
-                                    value = value.lower()
-                                    key = key.strip()
-                                    if key in ARCARD_FEATURE_MODEL:
-                                        idx = ARCARD_FEATURE_MODEL.index(key)
-                                        row[idx + 1] = 1 if value == "true" else -1
-        except FileNotFoundError:
-            pass  # If file does not exist, leave row as zeros
-        output_rows.append(row)
-
-    # Write to temp1.csv
-    with open("temp1.csv", "w", newline="") as csvfile:
-        writer = csv.writer(csvfile)
-        # Write header
-        header = ["counter"] + ARCARD_FEATURE_MODEL
-        writer.writerow(header)
-        # Write data
-        writer.writerows(output_rows)
-

@@ -6,7 +6,7 @@ import pandas as pd
 import time
 
 
-from Choco.diagnosis_choco import get_linux_diagnosis
+from Solver.diagnosis_choco import get_linux_diagnosis
 from model_evaluation import ConLearn
 import csv
 
