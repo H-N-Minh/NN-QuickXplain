@@ -1,15 +1,8 @@
 import os
-import csv
 import uuid
-import heapq
-import operator
-import subprocess
-import timeit
-
 import time
 
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 import tensorflow as tf
@@ -17,7 +10,12 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import HeNormal
 from Solver.diagnosis_choco import get_linux_diagnosis
-import os
+
+
+from concurrent.futures import ProcessPoolExecutor
+import shutil
+from tensorflow.keras import Input
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
 ARCARD_FEATURE_MODEL = [
@@ -70,11 +68,6 @@ ARCARD_FEATURE_MODEL = [
     "Right brickles"
 ]
 
-
-from concurrent.futures import ProcessPoolExecutor
-import os
-import shutil
-from tensorflow.keras import Input
 
 def process_file(file_path):
     try:
@@ -314,8 +307,47 @@ class ConLearn:
             os.makedirs("Data")
         # Predict conflict sets
         predictions = model.predict(features_dataframe)
-        nn_runtime, nn_cc = ConLearn.get_NN_performance(features_dataframe, predictions)
 
+        print(f"features_dataframe shape: {features_dataframe.shape}")
+        print(f"labels_dataframe shape: {labels_dataframe.shape}")
+        print(f"predictions shape: {predictions.shape}")
+
+        pos_probs = predictions[labels_dataframe == 1]
+        neg_probs = predictions[labels_dataframe == 0]
+        print(f"Mean probability for true 1s: {np.mean(pos_probs):.4f}")
+        print(f"Mean probability for true 0s: {np.mean(neg_probs):.4f}")
+
+        from sklearn.metrics import precision_recall_curve
+        precisions, recalls, thresholds = precision_recall_curve(labels_dataframe.ravel(), predictions.ravel())
+        f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-10)
+        optimal_idx = np.argmax(f1_scores)
+        optimal_threshold = thresholds[optimal_idx]
+        print(f"Optimal threshold: {optimal_threshold:.4f}")
+
+        # Evaluate model performance
+        binary_predictions = (predictions > optimal_threshold).astype(int)
+        # accuracy = accuracy_score(labels_dataframe, binary_predictions)
+        hamming_score = np.mean(labels_dataframe == binary_predictions)
+        precision = precision_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
+        recall = recall_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
+        f1 = f1_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
+        bce_loss = tf.keras.losses.BinaryCrossentropy()
+        loss = bce_loss(labels_dataframe, predictions).numpy()
+
+        auc_scores = []
+        weights = []
+        for i in range(labels_dataframe.shape[1]):
+            y_true = labels_dataframe[:, i]
+            y_pred = predictions[:, i]
+            if len(np.unique(y_true)) > 1:  # Both classes present
+                auc = roc_auc_score(y_true, y_pred)
+                auc_scores.append(auc)
+                weights.append(np.sum(y_true != 0))  # Weight by number of non-zero labels
+        auc = np.average(auc_scores, weights=weights) if auc_scores else 0.0
+
+
+
+        nn_runtime, nn_cc = ConLearn.get_NN_performance(features_dataframe, predictions)
         normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
 
         runtime_improvement = normal_runtime -  nn_runtime # seconds
@@ -329,28 +361,24 @@ class ConLearn:
         runtime_improvement_percentage = (runtime_improvement / nn_runtime) * 100
         cc_improvement_percentage = (cc_improvement / normal_cc) * 100
 
+
+        print("Sample predictions vs labels (first 5 samples, first 5 constraints):")
+        for i in range(min(10, labels_dataframe.shape[0])):
+            print(f"Sample {i}:")
+            print(f"Predictions: {predictions[i, :10].round(4)}")
+            print(f"Labels: {labels_dataframe[i, :10]}")
+
         # Print results
         print("FINAL RESULTS")
+        # print(f"Accuracy: {accuracy:.4f}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall: {recall:.4f}")
+        print(f"F1 Score: {f1:.4f}")
+        print(f"Loss: {loss:.4f}")
+        print(f"ROC-AUC: {auc:.4f}")
+        print(f"Hamming Score: {hamming_score:.4f}")
         print(f"Faster %: {runtime_improvement_percentage:.2f}%")
         print(f"CC less %: {cc_improvement_percentage:.2f}%")
 
         
-        
-        # # Compute averages
-        # avg_similarity = np.mean([r['similarity'] for r in results])
-        # avg_similar = np.mean([r['similar'] for r in results])
-        # avg_runtime_improvement = np.mean([r['runtime_improvement'] for r in results])
-        # avg_cc_improvement = np.mean([r['cc_improvement'] for r in results])
-        
-        # # Save performance
-        # performance_file = f'Models/{model_id}/performance.txt'
-        # with open(performance_file, 'w') as f:
-        #     f.write(f'Results for model {model_id}:\n')
-        #     f.write(f'Average similarity of the original and new conflict = {avg_similarity:.3f}\n')
-        #     f.write(f'Average similar conflict as the original = {avg_similar:.3f}\n')
-        #     f.write(f'Average runtime improvement = {avg_runtime_improvement:.6f} s\n')
-        #     f.write(f'Average consistency check improvement = {avg_cc_improvement:.1f}\n')
-        
-        # return avg_runtime_improvement
-    
     
