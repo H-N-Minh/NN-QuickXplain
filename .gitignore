@@ -2,16 +2,12 @@ venv/
 __pycache__/
 *.pyc
 .vscode/
-
-Trashbin/
+java/
 
 Solver/fm_conflict.jar
 Solver/Input
 Solver/Output
 Solver/Logs/
-
-
-java/
 
 # specific files that only stored locally
 TempMinh.py
