@@ -24,13 +24,13 @@ def getConflict(settings):
 
         # running the .jar file to get the conflicts
         print("...Running QuickXplain...")
-        # result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # in case of portable java, which is download into Java folder, use this:
-        java_executable = os.path.join("java", "jdk-24.0.1", "bin", "java.exe")  # Adjust the path if needed
-        if not os.path.isfile(java_executable):
-            raise FileNotFoundError(f"Java executable not found: {java_executable}. Is Java Portable installed?")
-        result = subprocess.run([java_executable, f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # java_executable = os.path.join("java", "jdk-24.0.1", "bin", "java.exe")  # Adjust the path if needed
+        # if not os.path.isfile(java_executable):
+        #     raise FileNotFoundError(f"Java executable not found: {java_executable}. Is Java Portable installed?")
+        # result = subprocess.run([java_executable, f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Processing output of QuickXplain: move the logs to LOGS folder and output folder to Solver/output folder
         for log_file in glob.glob("*.log"):
