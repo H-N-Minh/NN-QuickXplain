@@ -19,3 +19,42 @@ build_model Algorithm is used to create the neural network used for machien lear
 model_evaluation Algorithm is utilized to learn the machine learning model based on the tensorflow model.fit() method.
 
 model_predict_linux_diagnosis After the training session of the machine learning model this method is called to determine the performance of the model by checking the runtime improvement and similarity of the diagnosis calculated by FastDiag based on the validation data. 
+
+
+
+
+Hamming Score: Measures the proportion of correctly predicted labels (0s and 1s) across all samples.
+
+    Good Value: >0.9, especially in imbalanced datasets where 0s are common.
+
+Precision: Measures the proportion of predicted positives (1s) that are actually correct.
+
+    Good Value: >0.7, though it depends on the context.
+
+Recall: Measures the proportion of actual positives (1s) correctly identified.
+
+    Good Value: >0.7, but often trades off with precision.
+
+F1 Score: Balances precision and recall (harmonic mean).
+
+    Good Value: >0.7 for a well-rounded model.
+
+MCC (Matthews Correlation Coefficient): Measures overall classification quality, considering all confusion matrix quadrants.
+
+    Good Value: >0.5 for a strong correlation between predictions and true labels.
+
+AUPRC (Area Under Precision-Recall Curve): Measures ranking quality for the positive class, robust to imbalance.
+
+    Good Value: >0.5, ideally near 1.
+
+Precision at K=5: Measures the proportion of true positives in the top-5 predicted items per sample.
+
+    Good Value: >0.5 (at least half should be correct).
+
+ROC-AUC: Measures the ability to rank positives higher than negatives.
+
+    Good Value: >0.8 for good ranking performance.
+
+Loss (Binary Cross-Entropy): Measures model fit and probability calibration.
+
+    Good Value: Lower is better; context-dependent, but <0.2 is often reasonable.

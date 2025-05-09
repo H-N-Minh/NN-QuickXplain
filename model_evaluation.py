@@ -15,7 +15,7 @@ from Solver.diagnosis_choco import get_linux_diagnosis
 from concurrent.futures import ProcessPoolExecutor
 import shutil
 from tensorflow.keras import Input
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, average_precision_score, matthews_corrcoef
 
 
 ARCARD_FEATURE_MODEL = [
@@ -298,87 +298,103 @@ class ConLearn:
 
 
 
+            
+        
     def model_predict_conflict(model_id, features_dataframe, labels_dataframe):
         # Load model
         model = tf.keras.models.load_model(f'Models/{model_id}/model.keras')
         
-        # Ensure the Data folder exists before running predictions and extracting metrics
+        # Ensure the Data folder exists
         if not os.path.exists("Data"):
             os.makedirs("Data")
+        
         # Predict conflict sets
         predictions = model.predict(features_dataframe)
 
-        print(f"features_dataframe shape: {features_dataframe.shape}")
-        print(f"labels_dataframe shape: {labels_dataframe.shape}")
-        print(f"predictions shape: {predictions.shape}")
+        # all constraints with 1 in labels get calculated the average in predicted probabilities
+        # pos_probs = predictions[labels_dataframe == 1]
+        # neg_probs = predictions[labels_dataframe == 0]
+        # print(f"Mean probability for true 1s: {np.mean(pos_probs):.4f}")
+        # print(f"Mean probability for true 0s: {np.mean(neg_probs):.4f}")
 
-        pos_probs = predictions[labels_dataframe == 1]
-        neg_probs = predictions[labels_dataframe == 0]
-        print(f"Mean probability for true 1s: {np.mean(pos_probs):.4f}")
-        print(f"Mean probability for true 0s: {np.mean(neg_probs):.4f}")
-
-        from sklearn.metrics import precision_recall_curve
+        # Optimal threshold via precision-recall curve
         precisions, recalls, thresholds = precision_recall_curve(labels_dataframe.ravel(), predictions.ravel())
         f1_scores = 2 * (precisions * recalls) / (precisions + recalls + 1e-10)
         optimal_idx = np.argmax(f1_scores)
         optimal_threshold = thresholds[optimal_idx]
         print(f"Optimal threshold: {optimal_threshold:.4f}")
 
-        # Evaluate model performance
+        # Binary predictions based on optimal threshold
         binary_predictions = (predictions > optimal_threshold).astype(int)
-        # accuracy = accuracy_score(labels_dataframe, binary_predictions)
+        
+        # Core metrics
         hamming_score = np.mean(labels_dataframe == binary_predictions)
         precision = precision_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
         recall = recall_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
         f1 = f1_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
-        bce_loss = tf.keras.losses.BinaryCrossentropy()
-        loss = bce_loss(labels_dataframe, predictions).numpy()
+        loss = tf.keras.losses.BinaryCrossentropy()(labels_dataframe, predictions).numpy()
 
+        # ROC-AUC (weighted by non-zero labels)
         auc_scores = []
         weights = []
         for i in range(labels_dataframe.shape[1]):
             y_true = labels_dataframe[:, i]
             y_pred = predictions[:, i]
-            if len(np.unique(y_true)) > 1:  # Both classes present
+            if len(np.unique(y_true)) > 1:
                 auc = roc_auc_score(y_true, y_pred)
                 auc_scores.append(auc)
-                weights.append(np.sum(y_true != 0))  # Weight by number of non-zero labels
+                weights.append(np.sum(y_true != 0))
         auc = np.average(auc_scores, weights=weights) if auc_scores else 0.0
 
+        # MCC (averaged across constraints)
+        mcc_scores = []
+        for i in range(labels_dataframe.shape[1]):
+            y_true = labels_dataframe[:, i]
+            y_pred = binary_predictions[:, i]
+            if len(np.unique(y_true)) > 1:
+                mcc = matthews_corrcoef(y_true, y_pred)
+                mcc_scores.append(mcc)
+        mcc = np.mean(mcc_scores) if mcc_scores else 0.0
 
+        # AUPRC (weighted average)
+        auprc = average_precision_score(labels_dataframe, predictions, average='weighted')
 
+        # Precision at K (K=5, assuming ~5 conflicts per sample)
+        K = 5
+        precision_at_k = []
+        for i in range(labels_dataframe.shape[0]):
+            top_k_indices = np.argsort(predictions[i])[::-1][:K]
+            true_positives = np.sum(labels_dataframe[i, top_k_indices])
+            precision_at_k.append(true_positives / K)
+        precision_at_k = np.mean(precision_at_k)
+
+        # Performance improvements
         nn_runtime, nn_cc = ConLearn.get_NN_performance(features_dataframe, predictions)
         normal_runtime, normal_cc = ConLearn.get_normal_performance(features_dataframe)
-
-        runtime_improvement = normal_runtime -  nn_runtime # seconds
-        print(f"nn_runtime: {nn_runtime}")
-        print(f"normal_runtime: {normal_runtime}")
-        print(f"runtime_improvement: {runtime_improvement}")
+        runtime_improvement = normal_runtime - nn_runtime
         cc_improvement = normal_cc - nn_cc
-
-
-        # Calculate percentage improvements
         runtime_improvement_percentage = (runtime_improvement / nn_runtime) * 100
         cc_improvement_percentage = (cc_improvement / normal_cc) * 100
 
+        # Print first 10 samples of predictions vs labels
+        # print("Sample predictions vs labels (first 10 samples, first 10 constraints):")
+        # for i in range(min(10, labels_dataframe.shape[0])):
+        #     print(f"Sample {i}:")
+        #     print(f"Predictions: {predictions[i, :10].round(4)}")
+        #     print(f"Labels: {labels_dataframe[i, :10]}")
 
-        print("Sample predictions vs labels (first 5 samples, first 5 constraints):")
-        for i in range(min(10, labels_dataframe.shape[0])):
-            print(f"Sample {i}:")
-            print(f"Predictions: {predictions[i, :10].round(4)}")
-            print(f"Labels: {labels_dataframe[i, :10]}")
-
-        # Print results
-        print("FINAL RESULTS")
-        # print(f"Accuracy: {accuracy:.4f}")
+        # Final results
+        print("\n-------FINAL RESULTS------")
+        print(f"Hamming Score: {hamming_score:.4f}")
         print(f"Precision: {precision:.4f}")
         print(f"Recall: {recall:.4f}")
         print(f"F1 Score: {f1:.4f}")
-        print(f"Loss: {loss:.4f}")
+        print(f"MCC: {mcc:.4f}")
+        print(f"AUPRC: {auprc:.4f}")
+        print(f"Precision at K={K}: {precision_at_k:.4f}")
         print(f"ROC-AUC: {auc:.4f}")
-        print(f"Hamming Score: {hamming_score:.4f}")
+        print(f"Loss: {loss:.4f}")
         print(f"Faster %: {runtime_improvement_percentage:.2f}%")
         print(f"CC less %: {cc_improvement_percentage:.2f}%")
 
-        
-    
+
