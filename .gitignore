@@ -2,7 +2,6 @@ venv/
 __pycache__/
 *.pyc
 
-TrainingData/
 Trashbin/
 Solver/fm_conflict.jar
 Solver/Input

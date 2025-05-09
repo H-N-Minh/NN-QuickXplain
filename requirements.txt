@@ -10,3 +10,4 @@ scikit-learn
 matplotlib
 natsort
 tqdm
+pyyaml

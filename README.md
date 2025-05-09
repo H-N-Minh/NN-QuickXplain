@@ -1,5 +1,7 @@
 
-Requirement: need arcade-game.splx and fm_conflict.jar
+Requirement: need fm_conflict.jar
+https://github.com/manleviet/MF4ChocoSolver/releases/tag/conflict-v1
+
 
 To modify or tweak anything, use the settings.yaml file
 

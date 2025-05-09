@@ -1,11 +1,11 @@
 PATHS:
-  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/arcade_small_invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/arcade_small_conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
   # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
   
   # bigger dataset (48752 invalid configurations)
-  TRAINDATA_INPUT_PATH: "TrainingData/arcade/arcade_invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
-  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/arcade_conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
   TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
 
   SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
