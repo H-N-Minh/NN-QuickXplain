@@ -50,9 +50,11 @@ class ConflictNN:
         }
 
         # Data (train, validation and test data) (type: DataLoader)
+        # these will be defined in self.prepareData()
         self.train_data_ = None
         self.validation_data_ = None
         self.test_data_ = None
+        self.pos_weight_ = None
 
         # Other settings
         self.learning_rate_ = learning_rate
@@ -70,6 +72,7 @@ class ConflictNN:
         self.model_ = self._buildModel()
         
         # Define loss function and optimizer
+        # NOTE: loss_func might be redefined in self.prepareData() if the dataset is unbalanced
         self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=learning_rate)    # Adam optimizer to optimize the loss func
 
@@ -126,6 +129,16 @@ class ConflictNN:
             dataset, [train_size, val_size, test_size],
             generator=torch.Generator().manual_seed(42)  # For reproducibility
         )
+
+        # Count the number of positive and negative values to ensure class balance
+        labels = y_tensor.flatten()
+        num_positives = (labels == 1).sum()
+        num_negatives = (labels == 0).sum()
+        if num_positives == 0 or num_negatives == 0:        # loss func use this ratio to calculate error, if either is 0 this calculation will be invalid
+            raise ValueError("The dataset contains no positive/negative samples, which will cause error in loss calculation.")
+
+        pos_weight = torch.tensor([num_negatives / num_positives], device=self.device_)
+        self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         
         # Create DataLoader objects. No shuffle for validation and test data, to make it consistent report 
         self.train_data_ = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)

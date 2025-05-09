@@ -131,7 +131,7 @@ def testModelRealImprovement(test_input, test_pred, model):
     # calculate the improvement in percentage
     runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100
     cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100
-    print(f"Runtime improvement: {runtime_improv:.2f}% (ordered: {avg_ordered_runtime:.2f}s, unordered: {avg_unordered_runtime:.2f}s)")
+    print(f"Runtime improvement: {runtime_improv:.2f}% (ordered: {avg_ordered_runtime:.5f}s, unordered: {avg_unordered_runtime:.5f}s)")
     print(f"CC improvement: {cc_improv:.2f}% (ordered: {avg_ordered_cc:.2f}, unordered: {avg_unordered_cc:.2f})")
     # return runtime_improv, cc_improv
     return 0, 0
