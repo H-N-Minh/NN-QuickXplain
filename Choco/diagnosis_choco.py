@@ -9,7 +9,7 @@ def get_linux_diagnosis(configuration_file_path):
         # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
         jar_path = os.path.join("Solver", "fm_conflict.jar")
         fm_path = os.path.join("LinuxConfiguration", "arcade-game.splx")
-        log_dir = os.path.join("LOGS")  # Change this to your desired log directory
+        log_dir = os.path.join("Solver", "Logs")  # Change this to your desired log directory
         os.makedirs(log_dir, exist_ok=True)
         result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, configuration_file_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
@@ -20,6 +20,13 @@ def get_linux_diagnosis(configuration_file_path):
             shutil.move(zip_file, os.path.join(log_dir, zip_file))
         for tmp_file in glob.glob("*.tmp"):
             shutil.move(tmp_file, os.path.join(log_dir, tmp_file))
+        
+        data_dir = "data"
+        output_dir = os.path.join("Solver", "Output")
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        if os.path.exists(data_dir):
+            shutil.move(data_dir, output_dir)
         # print(result.stdout)
         return result
     except:

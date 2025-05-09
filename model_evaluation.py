@@ -79,6 +79,7 @@ ARCARD_FEATURE_MODEL = [
 
 from concurrent.futures import ProcessPoolExecutor
 import os
+import shutil
 
 def process_file(file_path):
     try:
@@ -374,9 +375,13 @@ class ConLearn:
         
         before_config = time.time()
         print("model_predict_conflict::creating configs")
-        os.makedirs('candidate', exist_ok=True)
+        # Remove 'Solver/Input' if it exists, then create it again
+        input_dir = 'Solver/Input'
+        if os.path.exists(input_dir):
+            shutil.rmtree(input_dir)
+        os.makedirs(input_dir, exist_ok=True)
         for idx, config_row in enumerate(ordered_features_list):
-            file_path = os.path.join('candidate', f'conf{idx}.txt')
+            file_path = os.path.join('Solver/Input', f'conf{idx}.txt')
             with open(file_path, 'w') as f:
                 for constraint_name in config_row:
                     constraint_value = "true" if input_constraints_dict[idx][constraint_name] == 1 else "false"
@@ -387,13 +392,13 @@ class ConLearn:
         
         before_diagnosis = time.time()
         print("model_predict_conflict::getting diagnosis...")
-        get_linux_diagnosis(os.path.join("candidate"))
+        get_linux_diagnosis(os.path.join("Solver/Input"))
         after_diagnosis = time.time()
         diagnosis_time = after_diagnosis - before_diagnosis
         print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")
 
         # extract runtime and cc
-        data_folder = "Data"
+        data_folder = "Solver/Output"
         before_extract = time.time()
         print("model_predict_conflict::extracting metrics...")
         avg_runtime, avg_cc = extract_metrics_optimized(data_folder)
@@ -411,9 +416,13 @@ class ConLearn:
 
         print("model_predict_conflict::creating configs")
         before_config = time.time()
-        os.makedirs('candidate', exist_ok=True)
+        # Remove 'Solver/Input' if it exists, then create it again
+        input_dir = 'Solver/Input'
+        if os.path.exists(input_dir):
+            shutil.rmtree(input_dir)
+        os.makedirs(input_dir, exist_ok=True)
         for idx, row in features_dataframe.iterrows():
-            file_path = os.path.join('candidate', f'conf{idx}.txt')
+            file_path = os.path.join('Solver/Input', f'conf{idx}.txt')
             with open(file_path, 'w') as f:
                 for col_idx, feature_name in enumerate(ARCARD_FEATURE_MODEL):
                     value = row.iloc[col_idx]
@@ -426,13 +435,13 @@ class ConLearn:
 
         print("model_predict_conflict::getting diagnosis...")
         before_diagnosis = time.time()
-        get_linux_diagnosis(os.path.join("candidate"))
+        get_linux_diagnosis(os.path.join("Solver/Input"))
         after_diagnosis = time.time()
         diagnosis_time = after_diagnosis - before_diagnosis
         print(f"===> Done!! getting diagnosis took {diagnosis_time:.2f} seconds")
 
         # extract runtime and cc
-        data_folder = "Data"
+        data_folder = "Solver/Output"
         before_extract = time.time()
         avg_runtime, avg_cc = extract_metrics_optimized(data_folder)
         after_extract = time.time()
