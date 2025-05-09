@@ -24,7 +24,11 @@ def getConflict(settings):
 
         # running the .jar file to get the conflicts
         print("...Running QuickXplain...")
-        result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # result = subprocess.run(["java", f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # in case of portable java, use this:
+        java_executable = os.path.join("java", "jre-x64", "bin", "java.exe")  # Adjust the path if needed
+        result = subprocess.run([java_executable, f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         # Processing output of QuickXplain: move the logs to LOGS folder and output folder to Solver/output folder
         for log_file in glob.glob("*.log"):
