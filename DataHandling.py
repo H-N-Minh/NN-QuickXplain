@@ -66,7 +66,7 @@ def importTrainingData(settings):
     if not os.path.exists(conflict_file):
         raise FileNotFoundError(f"importTrainingData:: Conflict file not found: {conflict_file}")
     if not os.path.exists(name_file):
-        raise FileNotFoundError(f"importTrainingData:: Name file not found: {name_file}")
+        raise FileNotFoundError(f"importTrainingData:: Name file not found (file with names of all constraints): {name_file}")
 
     # Read configuration and conflict CSV files
     features_dataframe = pd.read_csv(constraints_file, header=None, delimiter=',')
@@ -248,6 +248,7 @@ def processOutputFile(directory_path):
     all_files = glob.glob(pattern)
     
     total_files = len(all_files)
+    assert total_files > 0, f"Error:processOutputFile:: No output files found in {directory_path}. Check if Solver ran successfully."
     print(f"...Reading {total_files} output files from QuickXplain...")
     
     # Use ProcessPoolExecutor for parallel processing

@@ -3,10 +3,12 @@ __pycache__/
 *.pyc
 
 Trashbin/
+
 Solver/fm_conflict.jar
 Solver/Input
 Solver/Output
 Solver/Logs/
+
 .vscode/
 TempMinh.py
 privateTest/

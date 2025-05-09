@@ -42,7 +42,6 @@ def getConflict(settings):
 
         return result
     except:
-        print('Subprocess did not answer! Continue with another try...')
-        return None
+        assert False, "Subprocess (QuickXplain) did not answer! Make sure Java is installed"
 
 
