@@ -10,6 +10,7 @@ from Solver.diagnosis_choco import get_linux_diagnosis
 from model_evaluation import ConLearn
 import csv
 
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 
 

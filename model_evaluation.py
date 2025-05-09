@@ -74,6 +74,7 @@ ARCARD_FEATURE_MODEL = [
 from concurrent.futures import ProcessPoolExecutor
 import os
 import shutil
+from tensorflow.keras import Input
 
 def process_file(file_path):
     try:
@@ -136,9 +137,10 @@ class ConLearn:
     @staticmethod
     def create_model(input_shape, output_shape):
         model = Sequential([
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal(), input_shape=(input_shape,)),
+            Input(shape=(input_shape,)),
             Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
-            Dense(output_shape, activation='sigmoid')  # Binary output for conflict set
+            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
+            Dense(output_shape, activation='sigmoid')
         ])
         return model
 
