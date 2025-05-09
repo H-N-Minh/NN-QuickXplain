@@ -7,7 +7,7 @@ def get_linux_diagnosis(configuration_file_path):
     try:
         # change feature model file according to the feature model to be diagnosed
         # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
-        jar_path = os.path.join("LinuxConfiguration", "fm_conflict.jar")
+        jar_path = os.path.join("Solver", "fm_conflict.jar")
         fm_path = os.path.join("LinuxConfiguration", "arcade-game.splx")
         log_dir = os.path.join("LOGS")  # Change this to your desired log directory
         os.makedirs(log_dir, exist_ok=True)
