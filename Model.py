@@ -1,24 +1,16 @@
-import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, TensorDataset, random_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from datetime import datetime
-import json
-from Solver.RunQuickXplain import getConflict
 
-import time
 
 # Threshold for binary classification, if probability is > than this threshold, it will be considered
 # to be part of the conflict set
 PREDICTION_THRESHOLD = 0.5  
 
 class ConflictNN:
-    def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.001,
-                 batch_size=32, max_epochs=100, patience=10):
+    def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.0005,
+                 batch_size=1024, max_epochs=100, patience=10):
         """
         Initialize the ConflictNN model.
         
@@ -37,7 +29,7 @@ class ConflictNN:
 
         # size of each layers
         self.input_size_ = constraints_size
-        self.hidden_size_ = hidden_size
+        self.hidden_size_ = constraints_size
         self.output_size_ = constraints_size
 
         # Keep track of progress during training (after each epoch)
