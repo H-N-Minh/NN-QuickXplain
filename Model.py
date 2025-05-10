@@ -73,8 +73,10 @@ class ConflictNN:
         model = nn.Sequential(
             nn.Linear(self.input_size_, self.hidden_size_),
             nn.ReLU(),
+            nn.Dropout(0.2),
             nn.Linear(self.hidden_size_, self.hidden_size_),
             nn.ReLU(),
+            nn.Dropout(0.2),
             nn.Linear(self.hidden_size_, self.output_size_),
             nn.Sigmoid()
         )
