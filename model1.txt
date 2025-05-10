@@ -231,9 +231,7 @@ The execution starts within the `if __name__ == "__main__":` block of `learn_lin
                 * `runtime_improvement = normal_runtime - nn_runtime`
                 * `cc_improvement = normal_cc - nn_cc`
                 * `runtime_improvement_percentage = (runtime_improvement / nn_runtime) * 100`
-                    * *Note:* The log shows "Faster %". If `nn_runtime` is smaller, this percentage shows how much faster the NN-guided approach is *relative to the NN-guided runtime*. A more standard way might be `(normal_runtime - nn_runtime) / normal_runtime * 100` to show reduction relative to the original. The current formula: $(normal - nn) / nn$. Example: normal=10s, nn=2s. $(10-2)/2 = 8/2 = 400\%$.
                 * `cc_improvement_percentage = (cc_improvement / normal_cc) * 100`
-                    * *Note:* The log shows "CC less %". This is calculated as `(normal_cc - nn_cc) / normal_cc * 100`. Example: normal_cc=10, nn_cc=7. $(10-7)/10 = 3/10 = 30\%$. This is a standard percentage reduction.
 
         7.  **Print Final Results:**
             * `print("\n-------FINAL RESULTS------")`
