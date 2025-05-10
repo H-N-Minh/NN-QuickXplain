@@ -10,7 +10,7 @@ PREDICTION_THRESHOLD = 0.5
 
 class ConflictNN:
     def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.0005,
-                 batch_size=1024, max_epochs=100, patience=10):
+                 batch_size=1024, max_epochs=12, patience=10):
         """
         Initialize the ConflictNN model.
         
