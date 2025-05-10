@@ -1,0 +1,290 @@
+## Codebase Analysis Report
+
+This report details the chronological operation of the provided Python codebase, which is designed to train a neural network to predict conflict sets in feature models and then uses these predictions to optimize the QuickXplain algorithm.
+
+### 1. Initialization and Settings Import (main.py, DataHandling.py)
+
+* The process begins in `main.py`. [cite: 1]
+* **Default Settings**: Default paths for training data, solver files, and output/log directories, as well as options for clearing previous logs and solver inputs/outputs, are defined in `DEFAULT_SETTINGS`. [cite: 1]
+* **Importing Settings**:
+    * The `DataHandling.importSettings` function is called. [cite: 1]
+    * It attempts to load settings from a `settings.yaml` file.
+    * If `settings.yaml` is not found, it reverts to the `DEFAULT_SETTINGS` defined in `main.py`. [cite: 1]
+    * The user-provided `settings.yaml` specifies paths for:
+        * Training data input (`invalid_confs_48752.csv`) and output (`conflicts_48752.csv`).
+        * Constraint names (`arcade_constraints_names.txt`).
+        * Solver input (`Solver/Input`), output (`Solver/Output`), JAR file (`Solver/fm_conflict.jar`), feature model (`Solver/arcade-game.splx`), and logs (`Solver/Logs`).
+        * It also specifies that logs and solver input/output folders should be cleared before running.
+* Overall timing for the entire execution starts. [cite: 1]
+
+### 2. Data Import and Extraction (main.py, DataHandling.py)
+
+* **Output Printed**:
+    ```
+    Importing training data...
+    ```
+* **Function Call**: `DataHandling.importTrainingData(settings)` is called from `main.py`. [cite: 1]
+* **Process**:
+    * This function reads three files specified in the settings:
+        * `TRAINDATA_INPUT_PATH`: A CSV file containing invalid configurations (features). The user indicates this is `TrainingData/arcade/invalid_confs_48752.csv`, with 48752 samples and 48 columns (1 index, 47 constraints). Values are 1 (true) or -1 (false).
+        * `TRAINDATA_OUTPUT_PATH`: A CSV file containing the corresponding conflict sets (labels) computed by QuickXplain. The user indicates this is `TrainingData/arcade/conflicts_48752.csv`, with 48752 samples and 48 columns (1 index, 47 constraints). Values are 1 (part of minimal conflict set) or 0 (not part).
+        * `TRAINDATA_CONSTRAINTS_NAME_PATH`: A text file listing the names of the constraints, used for column headers.
+    * It checks if these files exist and are not empty.
+    * The first column (index column) from both the features and labels CSV files is dropped.
+    * The columns are then named using the constraint names loaded from `TRAINDATA_CONSTRAINTS_NAME_PATH`.
+    * The function returns two pandas DataFrames: `features_dataframe` and `labels_dataframe`.
+* The time taken for data import is recorded. [cite: 1]
+
+### 3. Data Preprocessing (main.py, DataHandling.py)
+
+* **Output Printed**:
+    ```
+    Preprocessing data for learning...
+    ```
+* **Function Call**: `DataHandling.preprocessTrainingData(features_dataframe, labels_dataframe)` is called from `main.py`. [cite: 1]
+* **Process**:
+    * The function ensures the input DataFrames are not empty.
+    * **Value Conversion for Neural Network**:
+        * In `features_dataframe` (invalid configurations), values of -1 (false) are replaced with 0. Values of 1 (true) remain 1.
+        * In `labels_dataframe` (conflict sets), values of -1 are replaced with 1 (this seems unusual based on the user's description where labels are 0 or 1, but the code does this). The user described labels as 0 or 1, so this step might be intended to handle a different input format or is a legacy step. However, based on the typical use for binary classification (0 or 1), this would ensure all label data is 0 or 1.
+    * It verifies that both DataFrames now only contain values 0 or 1.
+    * The preprocessed DataFrames are returned.
+* The time taken for preprocessing is recorded. [cite: 1]
+
+### 4. Neural Network (NN) Model Preparation (main.py, Model.py)
+
+* **Constraint Size Determination**: The number of constraints (features/labels) is determined from the shape of the `features_dataframe`. [cite: 1]
+* **Model Initialization**:
+    * An instance of `Model.ConflictNN` is created. [cite: 1]
+    * **Constructor (`__init__` in `Model.py`)**[cite: 2]:
+        * `constraints_size`: Number of input and output neurons, corresponding to the number of constraints (47 based on user description).
+        * `settings`: The imported settings.
+        * `constraint_name_list`: A list of constraint names extracted from the `features_dataframe` columns.
+        * `hidden_size`: Defaulted to 64 neurons for hidden layers.
+        * `learning_rate`: Defaulted to 0.001.
+        * `batch_size`: Defaulted to 32.
+        * `max_epochs`: Defaulted to 100.
+        * `patience`: Defaulted to 10 (for early stopping).
+        * Initializes `progress_history_` to track training loss, validation loss, epochs without improvement, best validation loss, and best epoch.
+        * Sets the device to CPU (`torch.device('cpu')`).
+        * Calls `_buildModel()` to create the NN architecture.
+* **NN Architecture (`_buildModel` in `Model.py`)**[cite: 2]:
+    * A sequential model is defined with the following layers:
+        1.  Linear layer: `input_size` (47 neurons) to `hidden_size` (64 neurons).
+        2.  ReLU activation function.
+        3.  Linear layer: `hidden_size` (64 neurons) to `hidden_size` (64 neurons).
+        4.  ReLU activation function.
+        5.  Linear layer: `hidden_size` (64 neurons) to `output_size` (47 neurons).
+        6.  Sigmoid activation function (outputting probabilities between 0 and 1 for each constraint, indicating its likelihood of being in a conflict set).
+    * Weights are initialized using HeNormal (Kaiming normal) initialization for layers followed by ReLU, and biases are initialized to zeros.
+    * The model is moved to the specified device (CPU).
+* **Loss Function and Optimizer (Initial Definition in `__init__`)**[cite: 2]:
+    * Initially, `loss_func_` is set to `nn.BCELoss()` (Binary Cross-Entropy Loss), suitable for binary classification.
+    * `optimizer_` is set to `optim.Adam` with the specified learning rate, to optimize the model's parameters.
+* **Data Preparation for Training (`prepareData` in `Model.py`)**:
+    * This method is called on the `NN_model` instance from `main.py`. [cite: 1]
+    * **Process**:
+        * Converts the pandas DataFrames (`features_dataframe`, `labels_dataframe`) into PyTorch FloatTensors (`X_tensor`, `y_tensor`). [cite: 2]
+        * Creates a `TensorDataset` from these tensors.
+        * **Data Splitting**: The dataset is split into training, validation, and test sets. The default ratios are 70% training, 20% validation, and 10% testing. A fixed random seed (42) is used for reproducibility. [cite: 2]
+        * **Loss Function Adjustment (Handling Class Imbalance)**:
+            * It counts the number of positive (1) and negative (0) samples in the entire `y_tensor` (labels).
+            * If either count is zero, it raises an error.
+            * Calculates `pos_weight` as `num_negatives / num_positives`. This weight gives more importance to the positive class if it's underrepresented.
+            * The `loss_func_` is redefined to `nn.BCEWithLogitsLoss(pos_weight=pos_weight)`. `BCEWithLogitsLoss` is numerically more stable than using a Sigmoid layer followed by `BCELoss`.
+        * **DataLoader Creation**: `DataLoader` objects are created for the training, validation, and test sets.
+            * `train_data_`: `shuffle=True` to randomize data order in each epoch.
+            * `validation_data_` and `test_data_`: `shuffle=False` for consistent evaluation.
+            * The `batch_size` (default 32) is used. [cite: 2]
+* The time taken for data preparation for the model is recorded. [cite: 1]
+
+### 5. Neural Network Model Training (main.py, Model.py)
+
+* **Output Printed**:
+    ```
+    Training model...
+    ```
+* **Function Call**: `NN_model.train()` is called from `main.py`. [cite: 1]
+* **Process (`train` method in `Model.py`)**[cite: 2]:
+    * Asserts that training and validation data loaders are available.
+    * Iterates for a maximum of `max_epochs_` (default 100).
+    * **Per Epoch**:
+        * Sets the model to training mode (`self.model_.train()`).
+        * Initializes `total_loss` for the epoch.
+        * **Per Batch** (iterates through `self.train_data_`):
+            * Moves input batch and target batch to the device (CPU).
+            * Zeros the gradients in the optimizer (`self.optimizer_.zero_grad()`).
+            * **Forward Pass**: Passes the inputs through the model to get `outputs` (predictions).
+            * **Loss Calculation**: Computes the loss between `outputs` and `targets` using `self.loss_func_` (which is `BCEWithLogitsLoss` with `pos_weight`).
+            * **Backward Pass**: Computes gradients of the loss with respect to model parameters (`loss.backward()`).
+            * **Optimizer Step**: Updates model parameters using the computed gradients (`self.optimizer_.step()`).
+            * Accumulates the loss for the epoch.
+        * **Epoch Evaluation**:
+            * Calculates the average training loss for the epoch (`epoch_train_loss`).
+            * Calls `self.evaluate()` with `self.validation_data_` to get the validation loss (`epoch_val_loss`).
+                * **`evaluate` method**: Sets model to evaluation mode (`self.model_.eval()`), disables gradient calculations (`torch.no_grad()`), iterates through the provided data loader, computes predictions, calculates loss, and returns the average loss. [cite: 2]
+            * Stores `epoch_train_loss` and `epoch_val_loss` in `self.progress_history_`.
+        * **Progress Printing**: Every 5 epochs, it prints the current epoch number, training loss, and validation loss. This matches the user's output:
+            ```
+            ===> Epoch 5/100: Train Loss: 1.1457,  Val Loss: 1.1465
+            ===> Epoch 10/100: Train Loss: 1.1415,  Val Loss: 1.1444
+            ===> Epoch 15/100: Train Loss: 1.1399,  Val Loss: 1.1442
+            ===> Epoch 20/100: Train Loss: 1.1388,  Val Loss: 1.1455
+            ```
+        * **Early Stopping Logic**:
+            * If `epoch_val_loss` is less than the current `best_val_loss` in `progress_history_`:
+                * Updates `best_val_loss`, `best_epoch`, and resets `epochs_no_improve` to 0.
+                * Saves the current model's state (weights) as `best_model_weights`.
+            * Else (if validation loss did not improve):
+                * Increments `epochs_no_improve`.
+            * If `epochs_no_improve` reaches `self.patience_` (default 10):
+                * Prints an early stopping message. This matches the user's output:
+                    ```
+                    Early stopping triggered at epoch 21. (no improvement in last 10 epochs)
+                    ```
+                * Breaks the training loop.
+    * **Restore Best Model**: After the loop (either completed all epochs or stopped early), if `best_model_weights` were saved, it loads these weights back into the model (`self.model_.load_state_dict(best_model_weights)`). This ensures the model with the best validation performance is kept. [cite: 2]
+* The time taken for model training is recorded. [cite: 1]
+
+### 6. Model Testing (main.py, Tester.py)
+
+* **Output Printed**:
+    ```
+    Testing model...
+    ```
+* **Function Call**: `Tester.test(NN_model)` is called from `main.py`. [cite: 1]
+* **Process (`test` method in `Tester.py`)**:
+    * **Get Predictions on Test Data**: Calls `Tester.predictTestData(model)`.
+        * **`predictTestData` method**:
+            * Retrieves the `test_data_` loader from the model.
+            * Iterates through each batch in the test data loader.
+            * For each batch of inputs, it calls `model.predict(inputs)`.
+                * **`predict` method (in `Model.py`)**: Sets model to evaluation mode, disables gradient calculations, moves inputs to the device, and returns the model's output (predictions/probabilities). [cite: 2]
+            * Collects all inputs, predictions (probabilities), and true targets from the test set.
+            * Converts these lists of batches into single NumPy arrays (`test_input`, `test_pred`, `test_true`).
+    * **Main Benchmark - QuickXplain Runtime Improvement**: Calls `Tester.testModelRealImprovement(test_input, test_pred, model)`.
+        * **`testModelRealImprovement` method**:
+            1.  **Ordered Constraints Run**:
+                * **Output Printed**:
+                    ```
+                    ...Creating 4876 text files as input for QuickXplain (constraints sorted by predicted probabilities)...
+                    ```
+                * Calls `DataHandling.createSolverInput` to generate input files for QuickXplain.
+                    * `test_input`: The feature values from the test set (0 or 1).
+                    * `test_pred`: The predicted probabilities from the NN model for the test set.
+                    * `output_dir`: Path from settings (`Solver/Input`).
+                    * `constraint_name_list`: From the model.
+                    * **`createSolverInput` (in `DataHandling.py`)**:
+                        * Clears and creates the `output_dir`.
+                        * Determines the number of samples (e.g., 4876 from user output, which is 10% of ~48752).
+                        * Uses `ProcessPoolExecutor` for multiprocessing to create text files. The number of workers is based on CPU count.
+                        * **`processChunk` (helper for `createSolverInput`)**: For each sample (invalid configuration):
+                            * Creates a list of tuples: `(constraint_name, boolean_string, probability)`. `boolean_string` is "true" if input feature is 1, "false" if 0.
+                            * **Sorts** this list of constraints in descending order based on their predicted `probability` from `test_pred`.
+                            * Writes the sorted `constraint_name boolean_string` pairs to a text file (e.g., `conf0.txt`, `conf1.txt`, etc.) in the `output_dir`. An example is `conf0.txt`.
+                        * Prints a progress bar for file creation:
+                            ```
+                            >> Multiprocessing with 3 workers: 100%|████████████████████████████████████████████████████████████████████████████████| 5/5 [00:24<00:00,  4.94s/it]
+                            ```
+                * **Output Printed**:
+                    ```
+                    ...Running QuickXplain...
+                    ```
+                * Calls `Solver.getConflict(model.settings_)` to run QuickXplain.
+                    * **`getConflict` (in `RunQuickXplain.py`)**:
+                        * Constructs the command to run `fm_conflict.jar` using `java`.
+                        * The command includes paths to the JAR, the feature model (`.splx` file), and the directory of input text files (`Solver/Input`).
+                        * Executes QuickXplain as a subprocess. Standard output and error are suppressed from the console.
+                        * Moves log files (`.log`, `.zip`, `.tmp`) to the `SOLVER_LOGS_PATH`.
+                        * Moves the QuickXplain output data (typically in a folder named "data") to `SOLVER_OUTPUT_PATH` (`Solver/Output`). The user provided an example output file `conf0_output.txt`.
+                * **Output Printed**:
+                    ```
+                    ...Reading 4876 output files from QuickXplain...
+                    ```
+                * Calls `DataHandling.processOutputFile` to process the QuickXplain results from the "ordered" run.
+                    * **`processOutputFile` (in `DataHandling.py`)**:
+                        * Finds all `conf*_output.txt` files in the specified directory (`Solver/Output`).
+                        * Uses `ProcessPoolExecutor` for multiprocessing.
+                        * **`extractDataFromFile` (helper for `processOutputFile`)**: For each output file:
+                            * Skips the first 3 lines.
+                            * Reads the 4th line to extract "Runtime" (e.g., "Runtime: 0.104465 seconds").
+                            * Reads the 5th line to extract "CC" (constraint count in conflict or a similar metric) (e.g., "CC: 15").
+                            * Returns the extracted runtime and CC.
+                        * Calculates the sum of runtimes and CCs.
+                        * Returns the average runtime (`avg_ordered_runtime`) and average CC (`avg_ordered_cc`).
+                        * Prints a progress bar:
+                            ```
+                            >> Multiprocessing with 4 workers: 100%|█████████████████████████████████████████████████████████████████████████| 4876/4876 [00:39<00:00, 123.71it/s]
+                            ```
+            2.  **Unordered (Default) Constraints Run**:
+                * **Output Printed**:
+                    ```
+                    ...Creating 4876 text files as input for QuickXplain (default constraints ordering)...
+                    ```
+                * Calls `DataHandling.createSolverInput` again, but this time `test_pred` is `None`. This means the constraints in the input text files will *not* be sorted by the NN's predicted probabilities but will use their default order from `constraint_name_list`.
+                * Prints a progress bar:
+                    ```
+                    >> Multiprocessing with 3 workers: 100%|████████████████████████████████████████████████████████████████████████████████| 5/5 [00:23<00:00,  4.62s/it]
+                    ```
+                * **Output Printed**:
+                    ```
+                    ...Running QuickXplain...
+                    ```
+                * Calls `Solver.getConflict(model.settings_)` again.
+                * **Output Printed**:
+                    ```
+                    ...Reading 4876 output files from QuickXplain...
+                    ```
+                * Calls `DataHandling.processOutputFile` to get `avg_unordered_runtime` and `avg_unordered_cc`.
+                * Prints a progress bar:
+                    ```
+                    >> Multiprocessing with 4 workers: 100%|█████████████████████████████████████████████████████████████████████████| 4876/4876 [00:39<00:00, 124.74it/s]
+                    ```
+            3.  **Calculate and Print Improvements**:
+                * `runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100`
+                * `cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100`
+                * Prints these improvements, which matches the user's output:
+                    ```
+                    Runtime improvement: -78.20% (ordered: 1.00873s, unordered: 0.21986s)
+                    CC improvement: 20.58% (ordered: 10.42, unordered: 13.11)
+                    ```
+                    *(Note: The negative runtime improvement suggests the ordered run was significantly slower than the unordered one in this specific case, which is counter-intuitive to the goal. The positive CC improvement suggests the QuickXplain used less consistency checks, which is better)*
+
+    * **Calculate Standard Classification Metrics**:
+        * Converts `test_pred` (probabilities) to binary predictions `y_pred` using a threshold of 0.5 (from `PREDICTION_THRESHOLD` in `Model.py`). [cite: 2]
+        * Calculates:
+            * Accuracy
+            * Precision (with `zero_division=0`)
+            * Recall (with `zero_division=0`)
+            * F1-score (with `zero_division=0`)
+            * Loss (by calling `model.evaluate` on the test data again).
+        * Prints these metrics, matching the user's output:
+            ```
+            accuracy (% of predictions that are correct, higher is better): 0.7726
+            precision (% of true positives, higher is better): 0.1164
+            recall: 0.8606
+            f1: 0.2051
+            loss: 1.1460
+            ```
+    * The `test` function in `Tester.py` is written to return `0,0` as placeholders, but the calculations for runtime and CC improvements are performed and printed.
+* The time taken for model testing is recorded. [cite: 1]
+
+### 7. Execution Time Summary (main.py)
+
+* **Output Printed**:
+    ```
+
+    ===== EXECUTION TIME SUMMARY =====
+    Data Extraction:     0.63 seconds (0.2%)
+    Data Preprocessing: 0.25 seconds (0.1%)
+    Data Preparation:   14.81 seconds (4.5%)
+    Model Training:     82.09 seconds (24.7%)
+    Model Testing:      234.47 seconds (70.6%)
+    =================================
+    ```
+* **Process**:
+    * Calculates the duration of each major step (Data Extraction, Data Preprocessing, Data Preparation for NN, Model Training, Model Testing) by taking differences between recorded timestamps. [cite: 1]
+    * Calculates the total execution time.
+    * Prints the time taken for each step and its percentage of the total execution time. [cite: 1]
+
+The program then finishes.
