@@ -9,3 +9,5 @@ Solver/Logs/
 Solver/fm_conflict.jar
 
 Models/
+TrainingData/busybox/invalid_confs_126725.csv
+TrainingData/busybox/conflicts_126725.csv

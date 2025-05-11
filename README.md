@@ -58,3 +58,28 @@ ROC-AUC: Measures the ability to rank positives higher than negatives.
 Loss (Binary Cross-Entropy): Measures model fit and probability calibration.
 
     Good Value: Lower is better; context-dependent, but <0.2 is often reasonable.
+
+
+
+    result for a really long run of busy box
+    -------FINAL RESULTS------
+Hamming Score: 0.9920
+Precision: 0.9972
+Recall: 0.9920
+F1 Score: 0.9944
+MCC: 0.1261
+AUPRC: 0.0651
+Precision at K=5: 0.0489
+ROC-AUC: 0.6774
+Loss: 0.0075
+Faster %: 26.46%
+CC less %: 27.17%
+c:\Users\Brocoli\Desktop\DiagLearn\DiagLearn\model_evaluation.py:833: UserWarning: No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+  plt.legend()
+
+===== EXECUTION TIME SUMMARY =====
+Data Extraction:    18.53 seconds (0.4%)
+Data Preprocessing: 6.08 seconds (0.1%)
+Model Training:     4307.93 seconds (86.3%)
+Model Validation:   657.87 seconds (13.2%)
+Total Execution:    4990.43 seconds (100%)
