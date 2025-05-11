@@ -15,3 +15,6 @@ privateTest/
 model1.py
 model2.py
 Models/
+TrainingData/busybox/conflicts_126725.csv
+.gitignore
+TrainingData/busybox/invalid_confs_126725.csv
