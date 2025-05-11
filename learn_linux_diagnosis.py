@@ -57,10 +57,10 @@ def learn_diagnosis(settings):
     return overall_time
 
 settings_dict = {
-    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_48752.csv"),
-    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_48752.csv"),
-    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_410.csv"),
-    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_410.csv"),
+    "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_48752.csv"),
+    "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_48752.csv"),
+    # "CONSTRAINTS_FILE_PATH": os.path.join("TrainingData", "arcade", "invalid_confs_410.csv"),
+    # "CONFLICT_FILE_PATH": os.path.join("TrainingData", "arcade", "conflicts_410.csv"),
     "CONFIGURATION_FILE_PATH": os.path.join("candidate"),
     "DIAGNOSIS_FILE_PATH": os.path.join("data"),
     "MODEL_LIBRARY_FILE_PATH": os.path.join("Models", "DiagnosisModelLibrary.csv"),

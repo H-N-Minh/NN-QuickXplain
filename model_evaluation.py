@@ -1,21 +1,21 @@
 import os
 import uuid
 import time
-
-import numpy as np
-import matplotlib.pyplot as plt
-
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.initializers import HeNormal
-from Solver.diagnosis_choco import get_linux_diagnosis
-
-
-from concurrent.futures import ProcessPoolExecutor
 import shutil
-from tensorflow.keras import Input
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, precision_recall_curve, average_precision_score, matthews_corrcoef
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from concurrent.futures import ProcessPoolExecutor
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import precision_recall_curve, average_precision_score, matthews_corrcoef
+
+from Solver.diagnosis_choco import get_linux_diagnosis
 
 
 ARCARD_FEATURE_MODEL = [
@@ -97,6 +97,7 @@ def process_file(file_path):
     except:
         return None, None
 
+
 def extract_metrics_optimized(data_folder):
     # Only include _output.txt files
     file_paths = [os.path.join(data_folder, f) for f in os.listdir(data_folder) 
@@ -120,57 +121,143 @@ def extract_metrics_optimized(data_folder):
     avg_runtime = runtime_sum / valid_count if valid_count > 0 else 0
     avg_cc = cc_sum / valid_count if valid_count > 0 else 0
     
-    # print(f"Average runtime: {avg_runtime:.6f} seconds")
-    # print(f"Average CC: {avg_cc:.2f}")
-    
     return avg_runtime, avg_cc
 
+
+class ConflictModel(nn.Module):
+    def __init__(self, input_size):
+        super(ConflictModel, self).__init__()
+        self.layer1 = nn.Linear(input_size, input_size)
+        self.layer2 = nn.Linear(input_size, input_size)
+        self.output = nn.Linear(input_size, input_size)
+        
+        # Initialize weights with He initialization
+        nn.init.kaiming_normal_(self.layer1.weight, nonlinearity='relu')
+        nn.init.kaiming_normal_(self.layer2.weight, nonlinearity='relu')
+        nn.init.xavier_normal_(self.output.weight)  # Xavier/Glorot for sigmoid
+        
+    def forward(self, x):
+        x = torch.relu(self.layer1(x))
+        x = torch.relu(self.layer2(x))
+        x = torch.sigmoid(self.output(x))
+        return x
+
+
 class ConLearn:
-
     @staticmethod
-    def create_model(input_shape, output_shape):
-        model = Sequential([
-            Input(shape=(input_shape,)),
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
-            Dense(input_shape, activation='relu', kernel_initializer=HeNormal()),
-            Dense(output_shape, activation='sigmoid')
-        ])
+    def create_model(input_shape):
+        # Create PyTorch model
+        model = ConflictModel(input_shape)
         return model
-
+    
+    @staticmethod
     def train_and_evaluate(train_x, test_x, train_labels, test_labels):
+        # Convert numpy arrays to PyTorch tensors
+        train_x_tensor = torch.tensor(train_x, dtype=torch.float32)
+        train_labels_tensor = torch.tensor(train_labels, dtype=torch.float32)
+        test_x_tensor = torch.tensor(test_x, dtype=torch.float32)
+        test_labels_tensor = torch.tensor(test_labels, dtype=torch.float32)
+        
+        # Create data loaders
+        train_dataset = TensorDataset(train_x_tensor, train_labels_tensor)
+        test_dataset = TensorDataset(test_x_tensor, test_labels_tensor)
+        
+        # Use a larger batch size to roughly match TensorFlow's performance
+        train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
+        test_loader = DataLoader(test_dataset, batch_size=1024)
+        
         input_shape = train_x.shape[1]
-        output_shape = train_labels.shape[1]  # Number of conflict columns
         
         print("train_and_evaluate::creating model...")
-        model = ConLearn.create_model(input_shape, output_shape)
+        model = ConLearn.create_model(input_shape)
         print("train_and_evaluate:: Done creating model")
-
-        print("train_and_evaluate::compiling model and train it...")
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
-            loss="binary_crossentropy",
-            metrics=['accuracy']
-        )
         
-        history = model.fit(
-            train_x, train_labels,
-            epochs=12,
-            batch_size=1024,
-            validation_data=(test_x, test_labels),
-            verbose=1
-        )
+        # Define loss and optimizer
+        print("train_and_evaluate::compiling model and train it...")
+        criterion = nn.BCELoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.0005)
+        
+        # Training history for plots
+        history = {
+            'loss': [],
+            'val_loss': [],
+            'accuracy': [],
+            'val_accuracy': []
+        }
+        
+        # Training loop
+        num_epochs = 12
+        for epoch in range(num_epochs):
+            # Training phase
+            model.train()
+            running_loss = 0.0
+            correct_preds = 0
+            total_preds = 0
+            
+            for inputs, labels in train_loader:
+                # Zero the parameter gradients
+                optimizer.zero_grad()
+                
+                # Forward pass
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                
+                # Backward pass and optimize
+                loss.backward()
+                optimizer.step()
+                
+                # Statistics
+                running_loss += loss.item() * inputs.size(0)
+                predicted = (outputs > 0.5).float()
+                correct_preds += (predicted == labels).sum().item()
+                total_preds += labels.numel()
+            
+            epoch_loss = running_loss / len(train_dataset)
+            epoch_acc = correct_preds / total_preds
+            history['loss'].append(epoch_loss)
+            history['accuracy'].append(epoch_acc)
+            
+            # Validation phase
+            model.eval()
+            running_val_loss = 0.0
+            val_correct_preds = 0
+            val_total_preds = 0
+            
+            with torch.no_grad():
+                for inputs, labels in test_loader:
+                    outputs = model(inputs)
+                    val_loss = criterion(outputs, labels)
+                    
+                    running_val_loss += val_loss.item() * inputs.size(0)
+                    predicted = (outputs > 0.5).float()
+                    val_correct_preds += (predicted == labels).sum().item()
+                    val_total_preds += labels.numel()
+            
+            val_epoch_loss = running_val_loss / len(test_dataset)
+            val_epoch_acc = val_correct_preds / val_total_preds
+            history['val_loss'].append(val_epoch_loss)
+            history['val_accuracy'].append(val_epoch_acc)
+            
+            print(f"Epoch {epoch+1}/{num_epochs}, "
+                  f"Loss: {epoch_loss:.4f}, "
+                  f"Accuracy: {epoch_acc:.4f}, "
+                  f"Val Loss: {val_epoch_loss:.4f}, "
+                  f"Val Accuracy: {val_epoch_acc:.4f}")
+        
         print("train_and_evaluate:: Done training model")
         
         # Save model
         model_id = str(uuid.uuid4())
         model_dir = f'Models/{model_id}'
         os.makedirs(model_dir, exist_ok=True)
-        model.save(f'{model_dir}/model.keras')
+        
+        # Save PyTorch model
+        torch.save(model.state_dict(), f'{model_dir}/model.pt')
         
         # Save training history plots
         plt.figure()
-        plt.plot(history.history['loss'], label='Training Loss')
-        plt.plot(history.history['val_loss'], label='Validation Loss')
+        plt.plot(history['loss'], label='Training Loss')
+        plt.plot(history['val_loss'], label='Validation Loss')
         plt.title('Model Loss')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
@@ -179,8 +266,8 @@ class ConLearn:
         plt.close()
         
         plt.figure()
-        plt.plot(history.history['accuracy'], label='Training Accuracy')
-        plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+        plt.plot(history['accuracy'], label='Training Accuracy')
+        plt.plot(history['val_accuracy'], label='Validation Accuracy')
         plt.title('Model Accuracy')
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
@@ -188,9 +275,8 @@ class ConLearn:
         plt.savefig(f'{model_dir}/accuracy.png')
         plt.close()
         
-        return model_id, history.history
-
-        
+        return model_id, history
+    
     @staticmethod
     def get_NN_performance(features_dataframe, predictions):
         # Build input_constraints_dict: list of dicts mapping feature names to values for each row
@@ -205,11 +291,6 @@ class ConLearn:
         for row in predictions:
             row_dict = {row[i]: ARCARD_FEATURE_MODEL[i] for i in range(len(ARCARD_FEATURE_MODEL))}
             feature_order_dicts.append(row_dict)
-
-        # print("First 3 rows of features_dataframe:")
-        # print(features_dataframe.head(3))
-        # print("First 3 dicts of input_constraints_dict:")
-        # print(input_constraints_dict[:3])
 
         # Create ordered_features_list: each row is a list of values from the dict, sorted by key
         ordered_features_list = []
@@ -256,9 +337,6 @@ class ConLearn:
 
     @staticmethod
     def get_normal_performance(features_dataframe):
-        # print("==========First 2 rows of features_dataframe:")
-        # print(features_dataframe.head(2))
-
         print("model_predict_conflict::creating configs")
         before_config = time.time()
         # Remove 'Solver/Input' if it exists, then create it again
@@ -277,7 +355,6 @@ class ConLearn:
         config_time = after_config - before_config
         print(f"===> Done!! creating config took {config_time:.2f} seconds")
         
-
         print("model_predict_conflict::getting diagnosis...")
         before_diagnosis = time.time()
         get_linux_diagnosis(os.path.join("Solver/Input"))
@@ -295,27 +372,25 @@ class ConLearn:
         print(f"Average CC for normal: {avg_cc:.2f}")
         print(f"===> Done!! extracting metrics took {extract_time:.2f} seconds")
         return avg_runtime, avg_cc
-
-
-
-            
-        
+    
+    @staticmethod
     def model_predict_conflict(model_id, features_dataframe, labels_dataframe):
         # Load model
-        model = tf.keras.models.load_model(f'Models/{model_id}/model.keras')
+        input_shape = features_dataframe.shape[1]
+        model = ConLearn.create_model(input_shape)
+        model.load_state_dict(torch.load(f'Models/{model_id}/model.pt'))
+        model.eval()  # Set model to evaluation mode
         
         # Ensure the Data folder exists
         if not os.path.exists("Data"):
             os.makedirs("Data")
         
+        # Convert numpy array to PyTorch tensor for prediction
+        features_tensor = torch.tensor(features_dataframe, dtype=torch.float32)
+        
         # Predict conflict sets
-        predictions = model.predict(features_dataframe)
-
-        # all constraints with 1 in labels get calculated the average in predicted probabilities
-        # pos_probs = predictions[labels_dataframe == 1]
-        # neg_probs = predictions[labels_dataframe == 0]
-        # print(f"Mean probability for true 1s: {np.mean(pos_probs):.4f}")
-        # print(f"Mean probability for true 0s: {np.mean(neg_probs):.4f}")
+        with torch.no_grad():
+            predictions = model(features_tensor).numpy()
 
         # Optimal threshold via precision-recall curve
         precisions, recalls, thresholds = precision_recall_curve(labels_dataframe.ravel(), predictions.ravel())
@@ -332,7 +407,12 @@ class ConLearn:
         precision = precision_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
         recall = recall_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
         f1 = f1_score(labels_dataframe, binary_predictions, average='weighted', zero_division=0)
-        loss = tf.keras.losses.BinaryCrossentropy()(labels_dataframe, predictions).numpy()
+        
+        # Calculate loss (BCE)
+        criterion = nn.BCELoss()
+        loss_tensor = criterion(torch.tensor(predictions, dtype=torch.float32), 
+                               torch.tensor(labels_dataframe, dtype=torch.float32))
+        loss = loss_tensor.item()
 
         # ROC-AUC (weighted by non-zero labels)
         auc_scores = []
@@ -376,13 +456,6 @@ class ConLearn:
         runtime_improvement_percentage = (runtime_improvement / nn_runtime) * 100
         cc_improvement_percentage = (cc_improvement / normal_cc) * 100
 
-        # Print first 10 samples of predictions vs labels
-        # print("Sample predictions vs labels (first 10 samples, first 10 constraints):")
-        # for i in range(min(10, labels_dataframe.shape[0])):
-        #     print(f"Sample {i}:")
-        #     print(f"Predictions: {predictions[i, :10].round(4)}")
-        #     print(f"Labels: {labels_dataframe[i, :10]}")
-
         # Final results
         print("\n-------FINAL RESULTS------")
         print(f"Hamming Score: {hamming_score:.4f}")
@@ -396,5 +469,3 @@ class ConLearn:
         print(f"Loss: {loss:.4f}")
         print(f"Faster %: {runtime_improvement_percentage:.2f}%")
         print(f"CC less %: {cc_improvement_percentage:.2f}%")
-
-
