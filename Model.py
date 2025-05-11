@@ -131,8 +131,8 @@ class ConflictNN:
         if num_positives == 0 or num_negatives == 0:        # loss func use this ratio to calculate error, if either is 0 this calculation will be invalid
             raise ValueError("The dataset contains no positive/negative samples, which will cause error in loss calculation.")
 
-        # pos_weight = torch.tensor([num_negatives / num_positives], device=self.device_)
-        # self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        pos_weight = torch.tensor([num_negatives / num_positives], device=self.device_)
+        self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         
         # Create DataLoader objects. No shuffle for validation and test data, to make it consistent report 
         self.train_data_ = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)
