@@ -8,6 +8,37 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 # to be part of the conflict set
 PREDICTION_THRESHOLD = 0.5  
 
+# Improved Focal Loss with dynamic alpha
+class ImprovedFocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super(ImprovedFocalLoss, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        
+    def forward(self, inputs, targets):
+        # Binary cross entropy
+        bce_loss = - (targets * torch.log(inputs + 1e-7) + 
+                       (1 - targets) * torch.log(1 - inputs + 1e-7))
+        
+        # Apply focal loss modulation
+        pt = torch.exp(-bce_loss)
+        
+        # Dynamically adjust alpha based on class imbalance per batch
+        batch_positives = targets.sum(dim=0, keepdim=True)
+        batch_size = targets.size(0)
+        pos_weights = torch.where(batch_positives > 0, 
+                                 batch_size / (2 * batch_positives), 
+                                 torch.tensor(self.alpha, device=targets.device))
+        
+        # Apply weights
+        alpha_t = torch.where(targets == 1, pos_weights, torch.tensor(1-self.alpha, device=targets.device))
+        
+        # Final focal loss
+        focal_loss = alpha_t * (1 - pt) ** self.gamma * bce_loss
+        
+        return focal_loss.mean()
+
+
 class ConflictNN:
     def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.0005,
                  batch_size=1024, max_epochs=12, patience=10):
@@ -65,7 +96,8 @@ class ConflictNN:
         
         # Define loss function and optimizer
         # NOTE: loss_func might be redefined in self.prepareData() if the dataset is unbalanced
-        self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
+        # self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
+        self.loss_func_ = ImprovedFocalLoss(alpha=0.25, gamma=2.0)
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=learning_rate)    # Adam optimizer to optimize the loss func
 
     def _buildModel(self):
@@ -124,15 +156,15 @@ class ConflictNN:
             generator=torch.Generator().manual_seed(42)  # For reproducibility
         )
 
-        # Count the number of positive and negative values to ensure class balance
-        labels = y_tensor.flatten()
-        num_positives = (labels == 1).sum()
-        num_negatives = (labels == 0).sum()
-        if num_positives == 0 or num_negatives == 0:        # loss func use this ratio to calculate error, if either is 0 this calculation will be invalid
-            raise ValueError("The dataset contains no positive/negative samples, which will cause error in loss calculation.")
+        # # Count the number of positive and negative values to ensure class balance
+        # labels = y_tensor.flatten()
+        # num_positives = (labels == 1).sum()
+        # num_negatives = (labels == 0).sum()
+        # if num_positives == 0 or num_negatives == 0:        # loss func use this ratio to calculate error, if either is 0 this calculation will be invalid
+        #     raise ValueError("The dataset contains no positive/negative samples, which will cause error in loss calculation.")
 
-        pos_weight = torch.tensor([num_negatives / num_positives], device=self.device_)
-        self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        # pos_weight = torch.tensor([num_negatives / num_positives], device=self.device_)
+        # self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         
         # Create DataLoader objects. No shuffle for validation and test data, to make it consistent report 
         self.train_data_ = DataLoader(train_dataset, batch_size=self.batch_size_, shuffle=True)
