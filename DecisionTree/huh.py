@@ -65,8 +65,30 @@ if __name__ == "__main__":
     model.fit(X_train, y_train)
 
     # Evaluate the model
+    # Evaluate the model
     y_pred = model.predict(X_test)
-    y_prob = np.array([estimator.predict_proba(X_test) for estimator in model.estimators_])
+
+    # Initialize y_prob to store probabilities for all classes {1, -1, 0} for each output
+    n_samples = X_test.shape[0]
+    n_outputs = y_test.shape[1]
+    all_classes = np.array([1, -1, 0])  # Define the possible classes
+    y_prob = np.zeros((n_outputs, n_samples, len(all_classes)))  # Shape: (47, 9751, 3)
+
+    # Fill y_prob with probabilities, handling varying classes
+    for i, estimator in enumerate(model.estimators_):
+        # Get probabilities for X_test
+        prob = estimator.predict_proba(X_test)  # Shape: (n_samples, n_classes_i)
+        classes = estimator.classes_  # Classes for this estimator (e.g., [0, 1], [0, -1], etc.)
+        
+        # Map probabilities to the full class set {1, -1, 0}
+        for j, cls in enumerate(all_classes):
+            if cls in classes:
+                # Copy probability for the class if it exists
+                cls_idx = np.where(classes == cls)[0][0]
+                y_prob[i, :, j] = prob[:, cls_idx]
+            else:
+                # Assign zero probability if the class is missing
+                y_prob[i, :, j] = 0.0
 
     # Print rows 20 to 30 of y_pred and y_prob
     print("Rows 20 to 30 of y_pred:")
@@ -83,34 +105,22 @@ if __name__ == "__main__":
                 for i in range(y_test.shape[1])]
     print(f"Average F1 score: {np.mean(f1_scores):.4f}")
 
-    
-    # Calculate AUC for evaluating probability predictions
-    # Reshape y_test to match classes in the model
+    # Calculate AUC for each output, handling multi-class cases
     auc_scores = []
     for i in range(y_test.shape[1]):
         try:
-            # Get unique classes for this output
-            classes = model.estimators_[i].classes_
-            
-            # For binary classification
-            if len(classes) == 2:
-                # Get probability of the positive class
-                y_prob_i = y_prob[i][:, 1] if y_prob[i].shape[1] > 1 else y_prob[i][:, 0]
-                auc = roc_auc_score(y_test[:, i], y_prob_i)
-                auc_scores.append(auc)
-            # For multi-class or when AUC calculation fails, skip
-        except (ValueError, IndexError):
+            # Use one-vs-rest AUC for multi-class
+            auc = roc_auc_score(y_test[:, i], y_prob[i], multi_class='ovr')
+            auc_scores.append(auc)
+        except ValueError:
             continue
 
     if auc_scores:
         print(f"Average AUC score: {np.mean(auc_scores):.4f}")
 
-
     # Save the model
     joblib.dump(model, 'constraint_mcs_model.pkl')
-
     print("Model saved as 'constraint_mcs_model.pkl'")
-
 
 
     # # Visualization of the decision trees (optional)
