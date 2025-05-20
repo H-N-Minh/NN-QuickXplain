@@ -10,6 +10,8 @@ NN/Solver/Logs/
 
 NN/TrainingData/busybox/conflicts_126725.csv
 NN/TrainingData/busybox/invalid_confs_126725.csv
+DecisionTree/TrainingData/busybox/conflicts_126725.csv
+DecisionTree/TrainingData/busybox/invalid_confs_126725.csv
 
 # specific files that only stored locally
 TempMinh.py
