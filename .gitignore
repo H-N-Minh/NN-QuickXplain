@@ -1,7 +1,6 @@
 venv/
 __pycache__/
 *.pyc
-.vscode/
 java/
 
 NN/Solver/fm_conflict.jar
@@ -18,7 +17,7 @@ privateTest/
 model1.py
 model2.py
 Models/
-.gitignore
 
 # others
 jdk-24_windows-x64_bin/
+
