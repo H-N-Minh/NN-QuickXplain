@@ -6,11 +6,11 @@ import shutil
 def getConflict(settings):
     try:
         # change feature model file according to the feature model to be diagnosed
-        # (e.g., linux-2.6.33.3.xml, busybox-1.18.0.xml, ea2468.xml, REAL-FM-4.sxfm)
+        # (e.g., arcade-game.splx, busybox-1.18.0.xml, REAL-FM-4.sxfm)
 
         # import all the paths from the settings.yaml
         jar_path = settings["PATHS"]["SOLVER_PATH"]
-        fm_path = settings["PATHS"]["SOLVER_FM_PATH"]
+        fm_path = settings["PATHS"]["TRAINDATA_FM_PATH"]
         log_dir = settings["PATHS"]["SOLVER_LOGS_PATH"]
         solver_input_path = settings["PATHS"]["SOLVER_INPUT_PATH"]
         java_exc_path = settings["PATHS"]["JAVA_PATH"]

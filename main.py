@@ -12,7 +12,7 @@ DEFAULT_SETTINGS = {
         'SOLVER_INPUT_PATH': 'Solver/Input',
         'SOLVER_OUTPUT_PATH': 'Solver/Output',
         'SOLVER_PATH': 'Solver/fm_conflict.jar',
-        'SOLVER_FM_PATH': 'Solver/arcade-game.splx'
+        'TRAINDATA_FM_PATH': 'Solver/arcade-game.splx'
     },
     'Clear': {
         'Logs': True, 
