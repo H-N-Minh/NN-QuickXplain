@@ -21,17 +21,16 @@ import re
 
 
 
-def importSettings(DEFAULT_SETTINGS):
+def importSettings():
     """
     Import settings from a YAML file or use default settings if the file does not exist.
     """
     # Load settings from a YAML file if it exists
-    if os.path.exists("settings.yaml"):
-        with open("settings.yaml", "r") as f:
+    if os.path.exists("NN\settings.yaml"):
+        with open("NN\settings.yaml", "r") as f:
             settings = yaml.safe_load(f)
     else:
-        print(f"\nWarning: setting file  not found at 'settings.yaml'. Using default settings.")
-        settings = DEFAULT_SETTINGS
+        assert False , "Error: 'settings.yaml' not found"
 
     return settings
 

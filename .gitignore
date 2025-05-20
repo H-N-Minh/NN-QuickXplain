@@ -4,13 +4,13 @@ __pycache__/
 .vscode/
 java/
 
-Solver/fm_conflict.jar
-Solver/Input
-Solver/Output
-Solver/Logs/
+NN/Solver/fm_conflict.jar
+NN/Solver/Input
+NN/Solver/Output
+NN/Solver/Logs/
 
-TrainingData/busybox/conflicts_126725.csv
-TrainingData/busybox/invalid_confs_126725.csv
+NN/TrainingData/busybox/conflicts_126725.csv
+NN/TrainingData/busybox/invalid_confs_126725.csv
 
 # specific files that only stored locally
 TempMinh.py

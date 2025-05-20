@@ -3,30 +3,13 @@ import Tester
 import time
 import Model
 
-DEFAULT_SETTINGS = {
-    # "TRAINDATA_INPUT_PATH": os.path.join("TrainingData", "arcade_invalid_confs_48752.csv"),
-    # "TRAINDATA_OUTPUT_PATH": os.path.join("TrainingData", "arcade_conflicts_48752.csv"),
-    'Path': {
-        'TRAINDATA_INPUT_PATH': 'TrainingData/arcade_small_invalid_confs_410.csv',
-        'TRAINDATA_OUTPUT_PATH': 'TrainingData/arcade_small_conflicts_410.csv',
-        'SOLVER_INPUT_PATH': 'Solver/Input',
-        'SOLVER_OUTPUT_PATH': 'Solver/Output',
-        'SOLVER_PATH': 'Solver/fm_conflict.jar',
-        'TRAINDATA_FM_PATH': 'Solver/arcade-game.splx'
-    },
-    'Clear': {
-        'Logs': True, 
-        "Solver's input/output": True
-    }
-}
-
 
 def main():
     # Start timing the entire function
     overall_start_time = time.time()
 
     # Import
-    settings = DataHandling.importSettings(DEFAULT_SETTINGS)
+    settings = DataHandling.importSettings()
     features_dataframe, labels_dataframe = DataHandling.importTrainingData(settings)
     import_end_time = time.time()
     
