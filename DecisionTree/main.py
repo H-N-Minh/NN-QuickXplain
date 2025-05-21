@@ -10,9 +10,9 @@ import os
 # Load the data
 # input_file = 'invalid_confs_410.csv'
 # output_file = 'conflicts_410.csv'
-
 input_file = 'DecisionTree/TrainingData/arcade/invalid_confs_48752.csv'
 output_file = 'DecisionTree/TrainingData/arcade/conflicts_48752.csv'
+
 
 
 def importTrainingData():
@@ -45,10 +45,17 @@ def importTrainingData():
 
     return input_data, output_data
 
-
-if __name__ == "__main__":
-    input_data, output_data = importTrainingData()
-
+def createAndTrainModel(input_data, output_data):
+    """
+    Create and train a multi-output decision tree classifier.
+    
+    Parameters:
+    input_data (pd.DataFrame): Input data for training
+    output_data (pd.DataFrame): Output data for training
+    
+    Returns:
+    model: Trained multi-output classifier
+    """
     # Convert to numpy arrays for processing
     X = input_data.values
     y = output_data.values
@@ -57,22 +64,28 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Create a multi-output decision tree classifier
-    # Using a base estimator with max_depth to prevent overfitting
-    base_estimator = DecisionTreeClassifier(max_depth=10, random_state=42)
+    base_estimator = DecisionTreeClassifier(max_depth=10, random_state=42)  # Using a base estimator with max_depth to prevent overfitting
     model = MultiOutputClassifier(base_estimator)
-
+    
     # Train the model
     model.fit(X_train, y_train)
 
-    # Evaluate the model
-    y_pred = model.predict(X_test)
-    y_prob = np.array([estimator.predict_proba(X_test) for estimator in model.estimators_])
+    return model, X_test, y_test
 
-    # Print rows 20 to 30 of y_pred and y_prob
-    print("Rows 20 to 30 of y_pred:")
-    print(y_pred[20:31])
-    print("\nRows 20 to 30 of y_prob:")
-    print(y_prob[:, 20:31])
+def evaluateModel(model, X_test, y_test):
+    """
+    Evaluate the trained model on the test data.
+    
+    Parameters:
+    model: Trained multi-output classifier
+    X_test (np.ndarray): Test input data
+    y_test (np.ndarray): Test output data
+    
+    Returns:
+    None
+    """
+    # Make predictions
+    y_pred = model.predict(X_test)
 
     # Calculate overall accuracy
     accuracy = np.mean([accuracy_score(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])])
@@ -83,75 +96,47 @@ if __name__ == "__main__":
                 for i in range(y_test.shape[1])]
     print(f"Average F1 score: {np.mean(f1_scores):.4f}")
 
-    
-    # Calculate AUC for evaluating probability predictions
-    # Reshape y_test to match classes in the model
-    auc_scores = []
-    for i in range(y_test.shape[1]):
-        try:
-            # Get unique classes for this output
-            classes = model.estimators_[i].classes_
-            
-            # For binary classification
-            if len(classes) == 2:
-                # Get probability of the positive class
-                y_prob_i = y_prob[i][:, 1] if y_prob[i].shape[1] > 1 else y_prob[i][:, 0]
-                auc = roc_auc_score(y_test[:, i], y_prob_i)
-                auc_scores.append(auc)
-            # For multi-class or when AUC calculation fails, skip
-        except (ValueError, IndexError):
-            continue
+    # Calculate and output probabilities for each output constraint
+    print("\nProbabilities for each output constraint:")
+    # for i in range(y_test.shape[1]):        # Iterate over each output constraint
+    for i in range(10):
+        print(f"\n-------Output constraint {i+1}:")
+        # Get probabilities for the i-th output constraint
+        probas = model.estimators_[i].predict_proba(X_test)     # Shape: (n_samples, n_classes_i)
+        # Note here that shape of probas depends on the training data:
+        #       - If in the training data, a constraint has 3 possible values, probas will have shape (n_samples, 3)
+        #       - If in the training data, a constraint has only 2 possible values, probas will have shape (n_samples, 2)
+        # for each row of probas, the probabilities added up to 1.0
 
-    if auc_scores:
-        print(f"Average AUC score: {np.mean(auc_scores):.4f}")
+        # How many classes are there for this output constraint? There are 3 possible classes: {1, -1, 0}, but some constraints
+        # may only have 2 or 1 different classes in the training data
+        class_labels = model.estimators_[i].classes_
 
+        # for sample_idx in range(probas.shape[0]):
+        # Identify indices for classes 1 and -1, if they exist
+        prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+        
+        for sample_idx in range(min(10, probas.shape[0])):  # Limit to 10 samples or fewer
+            # Sum probabilities for classes 1 and -1 (if they exist)
+            prob_sum = sum(probas[sample_idx, j] for j in prob_indices) if prob_indices else 0.0
+            print(f"  Sample {sample_idx + 1}:")
+            print(f"    Probability for labels 1 or -1: {prob_sum:.4f}")
+
+
+if __name__ == "__main__":
+    input_data, output_data = importTrainingData()
+
+    # Create and train the model
+    model, X_test, y_test = createAndTrainModel(input_data, output_data)
+
+    # Evaluate the model
+    evaluateModel(model, X_test, y_test)
 
     # Save the model
-    joblib.dump(model, 'constraint_mcs_model.pkl')
-
-    print("Model saved as 'constraint_mcs_model.pkl'")
-
-
-
-    # # Visualization of the decision trees (optional)
-    # # To visualize the trees, uncomment and install graphviz if needed
-    # # """
-    # # Visualize the first decision tree in the multi-output model
-    # estimator = model.estimators_[0]
-    # dot_data = tree.export_graphviz(estimator, 
-    #                                 out_file=None,
-    #                                 feature_names=[f"Constraint_{i}" for i in range(input_data.shape[1])],
-    #                                 filled=True)
-    # graph = graphviz.Source(dot_data)
-    # graph.render("decision_tree_0")
-    # # """
+    # joblib.dump(model, 'constraint_mcs_model.pkl')
+    # print("Model saved as 'constraint_mcs_model.pkl'")
 
 
 
 
-# # Function to predict MCS for a new set of constraints
-# def predict_mcs(constraints):
-#     """
-#     Predict the minimal conflict set for a new set of constraints.
-    
-#     Parameters:
-#     constraints (list or numpy.ndarray): Input constraints with values 1 (True) or -1 (False)
-    
-#     Returns:
-#     numpy.ndarray: Predicted minimal conflict set with values 1, -1, or 0
-#     """
-#     # Ensure constraints is a 2D array
-#     if isinstance(constraints, list):
-#         constraints = np.array(constraints)
-#     if constraints.ndim == 1:
-#         constraints = constraints.reshape(1, -1)
-    
-#     # Load model if not already available
-#     try:
-#         loaded_model = model
-#     except NameError:
-#         loaded_model = joblib.load('constraint_mcs_model.pkl')
-    
-#     # Make prediction
-#     prediction = loaded_model.predict(constraints)
-#     return prediction[0]  # Return first (and only) prediction
+
