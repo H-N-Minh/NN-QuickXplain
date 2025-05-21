@@ -85,7 +85,7 @@ def evaluateModel(model, X_test, y_test):
     None
     """
     # Make predictions
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_test)  # shape: (n_samples, n_constraints)
 
     # Calculate overall accuracy
     accuracy = np.mean([accuracy_score(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])])
@@ -96,31 +96,26 @@ def evaluateModel(model, X_test, y_test):
                 for i in range(y_test.shape[1])]
     print(f"Average F1 score: {np.mean(f1_scores):.4f}")
 
-    # Calculate and output probabilities for each output constraint
-    print("\nProbabilities for each output constraint:")
-    # for i in range(y_test.shape[1]):        # Iterate over each output constraint
-    for i in range(10):
-        print(f"\n-------Output constraint {i+1}:")
-        # Get probabilities for the i-th output constraint
-        probas = model.estimators_[i].predict_proba(X_test)     # Shape: (n_samples, n_classes_i)
-        # Note here that shape of probas depends on the training data:
-        #       - If in the training data, a constraint has 3 possible values, probas will have shape (n_samples, 3)
-        #       - If in the training data, a constraint has only 2 possible values, probas will have shape (n_samples, 2)
-        # for each row of probas, the probabilities added up to 1.0
-
-        # How many classes are there for this output constraint? There are 3 possible classes: {1, -1, 0}, but some constraints
-        # may only have 2 or 1 different classes in the training data
+    # Calculate probabilities for each output constraint (P(1) + P(-1))
+    y_pred_prob = np.zeros_like(y_pred, dtype=float)  # Initialize with same shape as y_pred
+    for i in range(y_test.shape[1]):  # Iterate over all output constraints
+        probas = model.estimators_[i].predict_proba(X_test)  # Shape: (n_samples, n_classes_i)
         class_labels = model.estimators_[i].classes_
-
-        # for sample_idx in range(probas.shape[0]):
         # Identify indices for classes 1 and -1, if they exist
         prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
-        
-        for sample_idx in range(min(10, probas.shape[0])):  # Limit to 10 samples or fewer
-            # Sum probabilities for classes 1 and -1 (if they exist)
-            prob_sum = sum(probas[sample_idx, j] for j in prob_indices) if prob_indices else 0.0
-            print(f"  Sample {sample_idx + 1}:")
-            print(f"    Probability for labels 1 or -1: {prob_sum:.4f}")
+        # Sum probabilities for classes 1 and -1 (if they exist)
+        y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
+
+    # Print first 10 rows of y_pred_prob, only columns with prob > 0
+    print("\nFirst 10 rows of y_pred_prob (columns with prob > 0):")
+    for row_idx in range(min(10, y_pred_prob.shape[0])):  # Limit to 10 rows
+        print(f"Row {row_idx + 1}:")
+        non_zero_cols = [(col_idx, prob) for col_idx, prob in enumerate(y_pred_prob[row_idx]) if prob > 0]
+        if non_zero_cols:
+            for col_idx, prob in non_zero_cols:
+                print(f"  Column {col_idx + 1}: {prob:.4f}")
+        else:
+            print("  No columns with probability > 0")
 
 
 if __name__ == "__main__":
