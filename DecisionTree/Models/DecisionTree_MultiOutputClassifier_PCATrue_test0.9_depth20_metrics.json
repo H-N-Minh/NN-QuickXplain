@@ -1,0 +1,32 @@
+{
+  "model_name": "DecisionTree_MultiOutputClassifier_PCATrue_test0.9_depth20",
+  "config": {
+    "test_size": 0.9,
+    "max_depth": 20,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "MultiOutputClassifier",
+    "use_pca": true,
+    "pca_components": 0.95,
+    "class_weight": "balanced",
+    "n_estimators": null
+  },
+  "exact_match_count": 364,
+  "total_samples": 43876,
+  "exact_match_percentage": 0.8296107211231653,
+  "avg_accuracy": 0.8820626989407286,
+  "avg_precision": 0.4951203824809992,
+  "avg_recall": 0.5259289129307455,
+  "avg_f1": 0.4907413268923342,
+  "accuracy_std": 0.12387956184857137,
+  "precision_std": 0.1496246936409755,
+  "recall_std": 0.14717760787105003,
+  "f1_std": 0.15168515953795508,
+  "accuracy_min": 0.5981402133284711,
+  "accuracy_max": 1.0,
+  "precision_min": 0.34579932598925334,
+  "precision_max": 1.0,
+  "recall_min": 0.35269226069310605,
+  "recall_max": 1.0,
+  "f1_min": 0.33437296857446025,
+  "f1_max": 1.0
+}

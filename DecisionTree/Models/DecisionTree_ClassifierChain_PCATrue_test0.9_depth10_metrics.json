@@ -1,0 +1,32 @@
+{
+  "model_name": "DecisionTree_ClassifierChain_PCATrue_test0.9_depth10",
+  "config": {
+    "test_size": 0.9,
+    "max_depth": 10,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "ClassifierChain",
+    "use_pca": true,
+    "pca_components": 0.95,
+    "class_weight": "balanced",
+    "n_estimators": null
+  },
+  "exact_match_count": 2832,
+  "total_samples": 43876,
+  "exact_match_percentage": 6.454553742364847,
+  "avg_accuracy": 0.9324784741524956,
+  "avg_precision": 0.5142037747765213,
+  "avg_recall": 0.521096710937497,
+  "avg_f1": 0.49679971672548334,
+  "accuracy_std": 0.08258122125841573,
+  "precision_std": 0.14446072592681572,
+  "recall_std": 0.14820359681344403,
+  "f1_std": 0.14846714571443606,
+  "accuracy_min": 0.6629820402953779,
+  "accuracy_max": 1.0,
+  "precision_min": 0.3489319258797306,
+  "precision_max": 1.0,
+  "recall_min": 0.35356643252376224,
+  "recall_max": 1.0,
+  "f1_min": 0.35228949911876745,
+  "f1_max": 1.0
+}
