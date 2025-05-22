@@ -1,0 +1,20 @@
+{
+  "model_name": "DecisionTree_ClassifierChain_PCAFalse_test0.2_depthNone",
+  "config": {
+    "test_size": 0.2,
+    "max_depth": null,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "ClassifierChain",
+    "use_pca": false,
+    "pca_components": null,
+    "class_weight": "balanced",
+    "n_estimators": null
+  },
+  "exact_match_count": 295,
+  "total_samples": 9751,
+  "exact_match_percentage": 3.025330735309199,
+  "avg_accuracy": 0.9453760334455602,
+  "avg_precision": 0.7229578975589138,
+  "avg_recall": 0.7000949486211169,
+  "avg_f1": 0.6973818782029334
+}

@@ -168,10 +168,10 @@ def main():
     max_depths = [None, 10, 20]
     # estimator_types = ['DecisionTree', 'RandomForest']
     estimator_types = ['DecisionTree']
-    # multi_output_types = ['MultiOutputClassifier', 'ClassifierChain']
-    multi_output_types = ['ClassifierChain']
-    # use_pca_options = [False, True]
-    use_pca_options = [True]
+    multi_output_types = ['MultiOutputClassifier', 'ClassifierChain']
+    # multi_output_types = ['ClassifierChain']
+    use_pca_options = [False, True]
+    # use_pca_options = [True]
     class_weight_options = ['balanced']
     # class_weight_options = [None, 'balanced']
     
@@ -228,7 +228,7 @@ def main():
             continue
     
     # Find best model based on exact match percentage
-    best_model_idx = np.argmax([m['exact_match_percentage'] for m in all_metrics])
+    best_model_idx = np.argmax([m['avg_f1'] for m in all_metrics])
     best_metrics = all_metrics[best_model_idx]
     best_model_file = all_model_files[best_model_idx]
     

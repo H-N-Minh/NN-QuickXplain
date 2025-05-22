@@ -1,0 +1,20 @@
+{
+  "model_name": "DecisionTree_MultiOutputClassifier_PCAFalse_test0.6_depth20",
+  "config": {
+    "test_size": 0.6,
+    "max_depth": 20,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "MultiOutputClassifier",
+    "use_pca": false,
+    "pca_components": null,
+    "class_weight": "balanced",
+    "n_estimators": null
+  },
+  "exact_match_count": 474,
+  "total_samples": 29251,
+  "exact_match_percentage": 1.6204574202591364,
+  "avg_accuracy": 0.8437369298885583,
+  "avg_precision": 0.6804818513986547,
+  "avg_recall": 0.7019435277628249,
+  "avg_f1": 0.6681629172483982
+}
