@@ -22,6 +22,26 @@ def create_model_directory():
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
+def save_best_model(model, pca, config, metrics, model_type):
+    """Save model with appropriate naming convention."""
+    base_name = f"{config['estimator_type']}_{config['multi_output_type']}_PCA{config['use_pca']}_test{config['test_size']}_depth{config.get('max_depth', 'None')}"
+    
+    if model_type == 'exact':
+        model_name = f"exact_{base_name}"
+    else:  # f1
+        model_name = f"f1_{base_name}"
+    
+    # Save model and PCA
+    model_filename = f"{model_dir}/{model_name}.pkl"
+    joblib.dump({'model': model, 'pca': pca, 'config': config}, model_filename)
+    
+    # Save metrics
+    metrics_filename = f"{model_dir}/{model_name}_metrics.json"
+    with open(metrics_filename, 'w') as f:
+        json.dump(metrics, f, indent=2)
+    
+    return model_filename
+
 def importTrainingData():
     """Import training data from CSV files."""
     if not os.path.exists(input_file) or not os.path.exists(output_file):
@@ -138,18 +158,9 @@ def train_and_evaluate_model(X, y, config):
     model_name = f"{config['estimator_type']}_{config['multi_output_type']}_PCA{config['use_pca']}_test{config['test_size']}_depth{config.get('max_depth', 'None')}"
     metrics = evaluate_model(model, X_test, y_test, model_name, config)
     
-    # Save model and PCA
-    model_filename = f"{model_dir}/{model_name}.pkl"
-    joblib.dump({'model': model, 'pca': pca, 'config': config}, model_filename)
+    print(f"{model_name}: Exact Match = {metrics['exact_match_percentage']:.2f}%, F1 = {metrics['avg_f1']:.4f}")
     
-    # Save metrics
-    metrics_filename = f"{model_dir}/{model_name}_metrics.json"
-    with open(metrics_filename, 'w') as f:
-        json.dump(convert_numpy_types(metrics), f, indent=2)
-    
-    print(f"{model_name}: Exact Match = {metrics['exact_match_percentage']:.2f}%")
-    
-    return metrics, model_filename
+    return metrics, model, pca
 
 def main():
     """Main training and evaluation pipeline."""
@@ -215,51 +226,84 @@ def main():
     
     # Train and evaluate all models
     all_metrics = []
-    all_model_files = []
+    best_exact_match = {'score': -1, 'model': None, 'pca': None, 'metrics': None}
+    best_f1 = {'score': -1, 'model': None, 'pca': None, 'metrics': None}
     
     for i, config in enumerate(configs):
         try:
             print(f"\nConfiguration {i+1}/{len(configs)}")
-            metrics, model_file = train_and_evaluate_model(X, y, config)
+            metrics, model, pca = train_and_evaluate_model(X, y, config)
             all_metrics.append(metrics)
-            all_model_files.append(model_file)
+            
+            # Check if this is the best exact match model
+            if metrics['exact_match_percentage'] > best_exact_match['score']:
+                best_exact_match = {
+                    'score': metrics['exact_match_percentage'],
+                    'model': model,
+                    'pca': pca,
+                    'metrics': metrics
+                }
+            
+            # Check if this is the best F1 model
+            if metrics['avg_f1'] > best_f1['score']:
+                best_f1 = {
+                    'score': metrics['avg_f1'],
+                    'model': model,
+                    'pca': pca,
+                    'metrics': metrics
+                }
+                
         except Exception as e:
             print(f"Error with configuration {i+1}: {e}")
             continue
     
-    # Find best model based on exact match percentage
-    best_model_idx = np.argmax([m['avg_f1'] for m in all_metrics])
-    best_metrics = all_metrics[best_model_idx]
-    best_model_file = all_model_files[best_model_idx]
+    # Save only the two best models
+    best_exact_file = save_best_model(
+        best_exact_match['model'], 
+        best_exact_match['pca'], 
+        best_exact_match['metrics']['config'],
+        best_exact_match['metrics'],
+        'exact'
+    )
+    
+    best_f1_file = save_best_model(
+        best_f1['model'],
+        best_f1['pca'],
+        best_f1['metrics']['config'],
+        best_f1['metrics'],
+        'f1'
+    )
     
     # Save summary results
     summary = {
         'timestamp': datetime.now().isoformat(),
         'total_configs_tested': len(all_metrics),
-        'best_model': {
-            'file': best_model_file,
-            'metrics': best_metrics
+        'best_exact_match_model': {
+            'file': best_exact_file,
+            'metrics': best_exact_match['metrics']
         },
-        'all_results': all_metrics
+        'best_f1_model': {
+            'file': best_f1_file,
+            'metrics': best_f1['metrics']
+        }
     }
     
     with open(f"{model_dir}/training_summary.json", 'w') as f:
-        json.dump(convert_numpy_types(summary), f, indent=2)
+        json.dump(summary, f, indent=2)
     
     # Print results
     print(f"\n{'='*60}")
     print("TRAINING COMPLETE")
     print(f"{'='*60}")
-    print(f"Best Model: {best_metrics['model_name']}")
-    print(f"Exact Match: {best_metrics['exact_match_percentage']:.2f}%")
-    print(f"Average F1: {best_metrics['avg_f1']:.4f}")
-    print(f"Average Precision: {best_metrics['avg_precision']:.4f}")
-    print(f"Average Recall: {best_metrics['avg_recall']:.4f}")
-    print(f"Average Accuracy: {best_metrics['avg_accuracy']:.4f}")
-    print(f"Model saved at: {best_model_file}")
-    print(f"\nConfiguration:")
-    for key, value in best_metrics['config'].items():
-        print(f"  {key}: {value}")
+    print(f"\nBest Exact Match Model:")
+    print(f"  File: {best_exact_file}")
+    print(f"  Exact Match: {best_exact_match['metrics']['exact_match_percentage']:.2f}%")
+    print(f"  F1: {best_exact_match['metrics']['avg_f1']:.4f}")
+    
+    print(f"\nBest F1 Model:")
+    print(f"  File: {best_f1_file}")
+    print(f"  F1: {best_f1['metrics']['avg_f1']:.4f}")
+    print(f"  Exact Match: {best_f1['metrics']['exact_match_percentage']:.2f}%")
 
 def convert_numpy_types(obj):
     """Recursively convert numpy types in dicts/lists to native Python types."""
