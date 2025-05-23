@@ -1,20 +1,24 @@
 venv/
 __pycache__/
 *.pyc
-.vscode/
 java/
 
-Solver/fm_conflict.jar
-Solver/Input
-Solver/Output
-Solver/Logs/
+NN/Solver/fm_conflict.jar
+NN/Solver/Input
+NN/Solver/Output
+NN/Solver/Logs/
+DecisionTree/Solver/fm_conflict.jar
+DecisionTree/Solver/Input
+DecisionTree/Solver/Output
+DecisionTree/Solver/Logs/
+
+NN/TrainingData/busybox/conflicts_126725.csv
+NN/TrainingData/busybox/invalid_confs_126725.csv
+DecisionTree/TrainingData/busybox/conflicts_126725.csv
+DecisionTree/TrainingData/busybox/invalid_confs_126725.csv
 
 # specific files that only stored locally
-TempMinh.py
-privateTest/
-model1.py
-model2.py
-Models/
-TrainingData/busybox/conflicts_126725.csv
-.gitignore
-TrainingData/busybox/invalid_confs_126725.csv
+
+# others
+jdk-24_windows-x64_bin/
+
