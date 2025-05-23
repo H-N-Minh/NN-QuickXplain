@@ -7,6 +7,10 @@ NN/Solver/fm_conflict.jar
 NN/Solver/Input
 NN/Solver/Output
 NN/Solver/Logs/
+DecisionTree/Solver/fm_conflict.jar
+DecisionTree/Solver/Input
+DecisionTree/Solver/Output
+DecisionTree/Solver/Logs/
 
 NN/TrainingData/busybox/conflicts_126725.csv
 NN/TrainingData/busybox/invalid_confs_126725.csv

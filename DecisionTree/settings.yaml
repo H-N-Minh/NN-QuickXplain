@@ -1,0 +1,54 @@
+PATHS:
+  # ARCADE small dataset
+  # TRAINDATA_INPUT_PATH: "DecisionTree/TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "DecisionTree/TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "DecisionTree/TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "DecisionTree/TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  
+  # ARCADE bigger dataset (48752 invalid configurations)
+  TRAINDATA_INPUT_PATH: "DecisionTree/TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "DecisionTree/TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "DecisionTree/TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  TRAINDATA_FM_PATH: "DecisionTree/TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+
+  #BUSYBOX small dataset
+  # TRAINDATA_INPUT_PATH: "DecisionTree/TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "DecisionTree/TrainingData/busybox/busybox_conflicts_655.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "DecisionTree/TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "DecisionTree/TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+
+  #BUSYBOX HUGE dataset
+  # TRAINDATA_INPUT_PATH: "DecisionTree/TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "DecisionTree/TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "DecisionTree/TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "DecisionTree/TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+
+
+  SOLVER_INPUT_PATH: "DecisionTree/Solver/Input"     # invalid configurations (each config is a text file)
+  SOLVER_OUTPUT_PATH: "DecisionTree/Solver/Output"   # conflicts computed by the solver (each conflict is a text file)
+  SOLVER_PATH: "DecisionTree/Solver/fm_conflict.jar"     # the solver's code (JAR file)
+  SOLVER_LOGS_PATH: "DecisionTree/Solver/Logs"     # store the logs of the solver (if any)
+
+  # JAVA_PATH: "java"     # default java path (if java is installed in the system)
+  JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
+
+CLEAR:  # this is currently not set up yet
+  LOGS: true            # clear the logs folder (if any) before ruDecisionTreeing the script
+  Solver's input/output: true       # clear the solver's input/output folders (if any) before ruDecisionTreeing the script
+  MODELS: false           # clear all trained models from the past
+
+WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
+  TRAIN:
+    SKIP: false # skip training if the model already exists and stored in the model folder
+    configurations:   # different configs for different models to find best model
+      # NOTE: the more configurations, the more time it takes to train the model
+      test_sizes: [0.2, 0.6, 0.9]   # test size for train/test split
+      max_depths: [null, 10, 20]    # max training depth
+      estimator_types: ['DecisionTree', 'RandomForest']
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']
+      use_pca_options: [false, true]    # PCA reduces the dimensionality of the data, help training faster, but also might lose some information
+      class_weight_options: [null, 'balanced']    # for imbalanced data, use 'balanced' to give more weight to the minority class
+      random_forest:
+        n_estimators: 100
+        multi_output_type: 'Direct'
+        use_pca: [false, true]

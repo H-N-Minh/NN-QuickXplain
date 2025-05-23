@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
@@ -11,6 +12,8 @@ import joblib
 import os
 import json
 from datetime import datetime
+import yaml
+
 
 # Configuration
 input_file = 'DecisionTree/TrainingData/arcade/invalid_confs_48752.csv'
@@ -165,7 +168,15 @@ def train_and_evaluate_model(X, y, config):
 def main():
     """Main training and evaluation pipeline."""
     create_model_directory()
-    
+
+    # Load configurations from settings.yaml
+    try:
+        with open('DecisionTree/settings.yaml', 'r') as file:
+            settings = yaml.safe_load(file)
+    except FileNotFoundError:
+        print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
+        sys.exit(1)
+
     # Import data
     input_data, output_data = importTrainingData()
     X = input_data.values
@@ -173,26 +184,15 @@ def main():
     
     # Define configurations to test
     configs = []
-    
-    # Test sizes based on your observations
-    test_sizes = [0.2, 0.6, 0.9]
-    max_depths = [None, 10, 20]
-    # estimator_types = ['DecisionTree', 'RandomForest']
-    estimator_types = ['DecisionTree']
-    multi_output_types = ['MultiOutputClassifier', 'ClassifierChain']
-    # multi_output_types = ['ClassifierChain']
-    use_pca_options = [False, True]
-    # use_pca_options = [True]
-    class_weight_options = ['balanced']
-    # class_weight_options = [None, 'balanced']
-    
-    # Generate all combinations (subset for practical reasons)
-    for test_size in test_sizes:
-        for max_depth in max_depths:
-            for estimator_type in estimator_types:
-                for multi_output_type in multi_output_types:
-                    for use_pca in use_pca_options:
-                        for class_weight in class_weight_options:
+
+    # Generate all combinations from YAML settings
+    config_settings = settings['WORKFLOW']['TRAIN']['configurations']
+    for test_size in config_settings['test_sizes']:
+        for max_depth in config_settings['max_depths']:
+            for estimator_type in config_settings['estimator_types']:
+                for multi_output_type in config_settings['multi_output_types']:
+                    for use_pca in config_settings['use_pca_options']:
+                        for class_weight in config_settings['class_weight_options']:
                             config = {
                                 'test_size': test_size,
                                 'max_depth': max_depth,
@@ -204,21 +204,21 @@ def main():
                                 'n_estimators': 100 if estimator_type == 'RandomForest' else None
                             }
                             configs.append(config)
-    
-    # # Also test direct RandomForest
-    # for test_size in test_sizes:
-    #     for max_depth in max_depths:
-    #         for use_pca in use_pca_options:
-    #             for class_weight in class_weight_options:
+
+    # # Add direct multi-output RandomForest configurations
+    # for test_size in config_settings['test_sizes']:
+    #     for max_depth in config_settings['max_depths']:
+    #         for use_pca in config_settings['random_forest']['use_pca']:
+    #             for class_weight in config_settings['class_weight_options']:
     #                 config = {
     #                     'test_size': test_size,
     #                     'max_depth': max_depth,
     #                     'estimator_type': 'RandomForest',
-    #                     'multi_output_type': 'Direct',
+    #                     'multi_output_type': config_settings['random_forest']['multi_output_type'],
     #                     'use_pca': use_pca,
     #                     'pca_components': 0.95 if use_pca else None,
     #                     'class_weight': class_weight,
-    #                     'n_estimators': 100
+    #                     'n_estimators': config_settings['random_forest']['n_estimators']
     #                 }
     #                 configs.append(config)
     
