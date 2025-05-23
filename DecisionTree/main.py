@@ -206,7 +206,7 @@ def createBaseEstimator(estimator_type, config):
             n_jobs=-1
         )
 
-def evaluate_model(model, X_test, y_test, model_name, config):
+def evaluateModel(model, X_test, y_test, config):
     """Evaluate model and return metrics."""
     y_pred = model.predict(X_test)
     
@@ -222,9 +222,7 @@ def evaluate_model(model, X_test, y_test, model_name, config):
     f1_scores = [f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
     
     metrics = {
-        'model_name': model_name,
         'config': config,
-        'exact_match_count': exact_matches,
         'total_samples': total_rows,
         'exact_match_percentage': exact_match_pct,
         'avg_accuracy': np.mean(accuracies),
@@ -274,10 +272,11 @@ def trainOneModel(input_data, output_data, config):
     model.fit(X_train, y_train)
     
     # Evaluate
-    model_name = f"{config['estimator_type']}_{config['multi_output_type']}_PCA{config['use_pca']}_test{config['test_size']}_depth{config.get('max_depth', 'None')}"
-    metrics = evaluate_model(model, X_test, y_test, model_name, config)
+    metrics = evaluateModel(model, X_test, y_test, config)
     
-    print(f"{model_name}: Exact Match = {metrics['exact_match_percentage']:.2f}%, F1 = {metrics['avg_f1']:.4f}")
+    # print results
+    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
+    print(f"Exact Match = {metrics['exact_match_percentage']:.2f}%, F1 = {metrics['avg_f1']:.4f}")
     
     return metrics, model, pca
 
@@ -299,54 +298,79 @@ def splitData(input_data, output_data):
     input_data = np.delete(input_data, slice(start_index, end_index), axis=0)
     output_data = np.delete(output_data, slice(start_index, end_index), axis=0)
 
-    return input_data, output_data, start_index, end_index
+    return input_data, output_data, (start_index, end_index)
 
+def updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both):
+    """
+    Update the best model if the current model is better than the previous best.
+    """
+    # Check if the model is the best so far
+    current_exact_match = metrics['exact_match_percentage']
+    current_f1 = metrics['avg_f1']
+    current_both = current_exact_match + current_f1 * 100
+
+    # Check if this is the best exact match model
+    if current_exact_match > best_exact_match['exact_match_percentage']:
+        best_exact_match = {
+            'exact_match_percentage': current_exact_match,
+            'model': model,
+            'pca': pca,
+            'metrics': metrics
+        }
+
+    # Check if this is the best F1 model
+    if current_f1 > best_f1['avg_f1']:
+        best_f1 = {
+            'avg_f1': current_f1,
+            'model': model,
+            'pca': pca,
+            'metrics': metrics
+        }
+
+    # Check if this is the best model of both metrics above
+    if current_both > best_both['f1_and_exact_match']:
+        best_both = {
+            'f1_and_exact_match': current_both,
+            'model': model,
+            'pca': pca,
+            'metrics': metrics
+        }
+
+    return best_exact_match, best_f1, best_both
 
 def trainAllModels(input_data, output_data , configs):
     """Train all models with different configurations."""
 
     # split a section of the data out for validation after the training
-    input_data, output_data, validation_start, validation_end = splitData(input_data, output_data)
+    input_data, output_data, validation_indexes = splitData(input_data, output_data)
 
-    # Train and evaluate all models
+    # Train all models and save the best ones
     configs_count = len(configs)
     print(f"Training {configs_count} configurations...")
     
     all_metrics = []
-    best_exact_match = {'exact_match_percentage': -1, 'model': None, 'pca': None, 'metrics': None}
-    best_f1 = {'exact_match_percentage': -1, 'model': None, 'pca': None, 'metrics': None}
-    best_both = {'exact_match_percentage': -1, 'model': None, 'pca': None, 'metrics': None}
+    best_exact_match = {'exact_match_percentage': -1}       # these metrics will be used to save the best models
+    best_f1 = {'avg_f1': -1}
+    best_both = {'f1_and_exact_match': -1}
     
+    error_count = 0
     for i, config in enumerate(configs):
         try:
             print(f"\nConfiguration {i+1}/{configs_count}")
 
             metrics, model, pca = trainOneModel(input_data, output_data, config)
+            metrics['validation_indexes'] = validation_indexes
             all_metrics.append(metrics)
-            
-            # Check if this is the best exact match model
-            if metrics['exact_match_percentage'] > best_exact_match['exact_match_percentage']:
-                best_exact_match = {
-                    'exact_match_percentage': metrics['exact_match_percentage'],
-                    'model': model,
-                    'pca': pca,
-                    'metrics': metrics
-                }
-            
-            # Check if this is the best F1 model
-            if metrics['avg_f1'] > best_f1['exact_match_percentage']:
-                best_f1 = {
-                    'exact_match_percentage': metrics['avg_f1'],
-                    'model': model,
-                    'pca': pca,
-                    'metrics': metrics
-                }
+
+            # If the model is the best so far, save it
+            best_exact_match, best_f1, best_both = updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both)
                 
         except Exception as e:
             print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
+            error_count += 1
             continue
     
-    # Save only the two best models
+    # Save only the best models
     best_exact_file = save_best_model(
         best_exact_match['model'], 
         best_exact_match['pca'], 
@@ -379,6 +403,8 @@ def trainAllModels(input_data, output_data , configs):
     
     with open(f"{model_dir}/training_summary.json", 'w') as f:
         json.dump(summary, f, indent=2)
+    
+    print(f"\n\n...Training completed with {error_count} error(s).")
 
 
 def startTraining(settings):
