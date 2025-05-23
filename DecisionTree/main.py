@@ -25,23 +25,30 @@ def create_model_directory():
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
-def save_best_model(model, pca, config, metrics, model_type):
-    """Save model with appropriate naming convention."""
-    base_name = f"{config['estimator_type']}_{config['multi_output_type']}_PCA{config['use_pca']}_test{config['test_size']}_depth{config.get('max_depth', 'None')}"
-    
-    if model_type == 'exact':
-        model_name = f"exact_{base_name}"
-    else:  # f1
-        model_name = f"f1_{base_name}"
+def save_best_model(model, pca, config, metrics, model_dir, base_name):
+    model_name = f"f1_{base_name}"
     
     # Save model and PCA
     model_filename = f"{model_dir}/{model_name}.pkl"
     joblib.dump({'model': model, 'pca': pca, 'config': config}, model_filename)
     
+    # Convert metrics to JSON-serializable types
+    def convert_to_serializable(obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return obj
+
+    metrics_serializable = {k: convert_to_serializable(v) for k, v in metrics.items()}
+    
     # Save metrics
     metrics_filename = f"{model_dir}/{model_name}_metrics.json"
     with open(metrics_filename, 'w') as f:
-        json.dump(metrics, f, indent=2)
+        json.dump(metrics_serializable, f, indent=2)
     
     return model_filename
 
