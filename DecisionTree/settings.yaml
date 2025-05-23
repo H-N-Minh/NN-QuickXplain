@@ -43,12 +43,15 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
       test_sizes: [0.2, 0.6, 0.9]   # test size for train/test split
-      max_depths: [null, 10, 20]    # max training depth
+      # max_depths: [null, 10, 20]    # max training depth
+      max_depths: [5, 10]
       estimator_types: ['DecisionTree', 'RandomForest']
       multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']
-      use_pca_options: [false, true]    # PCA reduces the dimensionality of the data, help training faster, but also might lose some information
+      # use_pca_options: [false, true]    # PCA reduces the dimensionality of the data, help training faster, but also might lose some information
+      use_pca_options: [false]
       class_weight_options: [null, 'balanced']    # for imbalanced data, use 'balanced' to give more weight to the minority class
       random_forest:
         n_estimators: 100
         multi_output_type: 'Direct'
         use_pca: [false, true]
+        # use_pca: [false]
