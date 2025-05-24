@@ -61,7 +61,7 @@ def main():
     # print(f"--> create ordered input: {create_ordered_time:.2f} seconds ({(create_ordered_time/testing_time)*100:.1f}%)")
     # print(f"--> get ordered output: {get_ordered_time:.2f} seconds ({(get_ordered_time/testing_time)*100:.1f}%)")
     # print(f"Model Validation:   {validation_time:.2f} seconds ({(validation_time/overall_time)*100:.1f}%)")
-    # print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
+    print(f"Total Execution:    {overall_time:.2f} seconds (100%)")
     print("=================================")
 
 
