@@ -1,5 +1,7 @@
 
 Requirement: 
+all the libs can be installed using:
+    pip install -r requirements.txt
 need fm_conflict.jar
 https://github.com/manleviet/MF4ChocoSolver/releases/tag/conflict-v1
 Also JAVA and python needs to be installed

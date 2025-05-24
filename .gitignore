@@ -17,6 +17,8 @@ NN/TrainingData/busybox/invalid_confs_126725.csv
 DecisionTree/TrainingData/busybox/conflicts_126725.csv
 DecisionTree/TrainingData/busybox/invalid_confs_126725.csv
 
+DecisionTree/Models/**/*.pkl
+
 # specific files that only stored locally
 
 # others

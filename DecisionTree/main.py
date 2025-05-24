@@ -20,33 +20,6 @@ def create_model_directory():
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
 
-def save_best_model(model, pca, config, metrics, model_dir, base_name):
-    model_name = f"f1_{base_name}"
-    
-    # Save model and PCA
-    model_filename = f"{model_dir}/{model_name}.pkl"
-    joblib.dump({'model': model, 'pca': pca, 'config': config}, model_filename)
-    
-    # Convert metrics to JSON-serializable types
-    def convert_to_serializable(obj):
-        if isinstance(obj, np.integer):
-            return int(obj)
-        elif isinstance(obj, np.floating):
-            return float(obj)
-        elif isinstance(obj, np.ndarray):
-            return obj.tolist()
-        else:
-            return obj
-
-    metrics_serializable = {k: convert_to_serializable(v) for k, v in metrics.items()}
-    
-    # Save metrics
-    metrics_filename = f"{model_dir}/{model_name}_metrics.json"
-    with open(metrics_filename, 'w') as f:
-        json.dump(metrics_serializable, f, indent=2)
-    
-    return model_filename
-
 def calculate_class_weights(y):
     """Calculate class weights for imbalanced data."""
     class_weights = []
@@ -113,9 +86,10 @@ def load_and_predict(model_path, input_data):
 
 def importTrainingData(settings):
     """Import training data from CSV files."""
-    input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
-    output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
+    input_file = os.path.abspath(settings['PATHS']['TRAINDATA_INPUT_PATH'])
+    output_file = os.path.abspath(settings['PATHS']['TRAINDATA_OUTPUT_PATH'])
     if not os.path.exists(input_file) or not os.path.exists(output_file):
+        print(f"Cant find file at {input_file} or {output_file}.")
         raise FileNotFoundError("Training file not found. Please check the file paths in settings.yaml .")
 
     print("Importing data...")
@@ -162,28 +136,28 @@ def getModelConfigs(settings):
                                 'estimator_type': estimator_type,
                                 'multi_output_type': multi_output_type,
                                 'use_pca': use_pca,
-                                'pca_components': 0.95 if use_pca else None,
+                                'pca_components': 0.95,
                                 'class_weight': class_weight,
                                 'n_estimators': 100 if estimator_type == 'RandomForest' else None
                             }
                             configs.append(config)
 
-    # # Add direct multi-output RandomForest configurations
-    # for test_size in config_settings['test_sizes']:
-    #     for max_depth in config_settings['max_depths']:
-    #         for use_pca in config_settings['random_forest']['use_pca']:
-    #             for class_weight in config_settings['class_weight_options']:
-    #                 config = {
-    #                     'test_size': test_size,
-    #                     'max_depth': max_depth,
-    #                     'estimator_type': 'RandomForest',
-    #                     'multi_output_type': config_settings['random_forest']['multi_output_type'],
-    #                     'use_pca': use_pca,
-    #                     'pca_components': 0.95 if use_pca else None,
-    #                     'class_weight': class_weight,
-    #                     'n_estimators': config_settings['random_forest']['n_estimators']
-    #                 }
-    #                 configs.append(config)
+    # Add direct multi-output RandomForest configurations
+    for test_size in config_settings['test_sizes']:
+        for max_depth in config_settings['max_depths']:
+            for use_pca in config_settings['use_pca_options']:
+                for class_weight in config_settings['class_weight_options']:
+                    config = {
+                        'test_size': test_size,
+                        'max_depth': max_depth,
+                        'estimator_type': 'RandomForest',
+                        'multi_output_type': 'Direct',
+                        'use_pca': use_pca,
+                        'pca_components': 0.95,
+                        'class_weight': class_weight,
+                        'n_estimators': 100
+                    }
+                    configs.append(config)
 
     assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
     return configs
@@ -206,7 +180,7 @@ def createBaseEstimator(estimator_type, config):
             n_jobs=-1
         )
 
-def evaluateModel(model, X_test, y_test, config):
+def evaluateModel(model, X_test, y_test):
     """Evaluate model and return metrics."""
     y_pred = model.predict(X_test)
     
@@ -222,7 +196,6 @@ def evaluateModel(model, X_test, y_test, config):
     f1_scores = [f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
     
     metrics = {
-        'config': config,
         'total_samples': total_rows,
         'exact_match_percentage': exact_match_pct,
         'avg_accuracy': np.mean(accuracies),
@@ -233,7 +206,57 @@ def evaluateModel(model, X_test, y_test, config):
     
     return metrics
 
+def saveModel(best_model, model_name, settings):
+    """Save the model object, pca object and the metrices of the best models."""
 
+    # get an appropriate name for the folder to save these models
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    model_folder_name = os.path.basename(os.path.dirname(settings['PATHS']['TRAINDATA_INPUT_PATH']))
+    model_folder_path = os.path.join(current_folder, "Models", model_folder_name)
+    if not os.path.exists(model_folder_path):
+        os.makedirs(model_folder_path)
+    metrics_filename = os.path.join(model_folder_path, f"{model_name}_metrics.json")
+
+    # Dont save this model if it is not better than the one already stored in this folder (if any exists)
+    if os.path.exists(metrics_filename):
+        with open(metrics_filename, 'r') as f:
+            old_model = json.load(f)
+            old_exact_match = old_model['exact_match_percentage']
+            new_exact_match = best_model['metrics']['exact_match_percentage']
+            old_f1 = old_model['avg_f1']
+            new_f1 = best_model['metrics']['avg_f1']
+            old_both = old_exact_match + old_f1 * 100
+            new_both = new_exact_match + new_f1 * 100
+
+            # Check if the new model is better than the old one
+            if (model_name == "BestExactMatch" and old_exact_match >= new_exact_match) or \
+               (model_name == "BestF1" and old_f1 >= new_f1) or \
+               (model_name == "BestBoth" and old_both >= new_both):
+                print(f"Skipping saving '{model_name}' model as it is not better than the existing one.")
+                return model_folder_path
+
+    # If code reaches here, it means we need to save the new model
+    # Save model and PCA
+    model_filename = os.path.join(model_folder_path, f"{model_name}.pkl")
+    joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
+    
+    # Convert metrics to JSON-serializable types
+    def convert_to_serializable(obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return obj
+
+    # Save metrics
+    metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['metrics'].items()}
+    with open(metrics_filename, 'w') as f:
+        json.dump(metrics_serializable, f, indent=2)
+    
+    return model_folder_path
 
 
 def trainOneModel(input_data, output_data, config):
@@ -272,10 +295,11 @@ def trainOneModel(input_data, output_data, config):
     model.fit(X_train, y_train)
     
     # Evaluate
-    metrics = evaluateModel(model, X_test, y_test, config)
+    metrics = evaluateModel(model, X_test, y_test)
     
     # print results
-    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
+    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
+          f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
     print(f"Exact Match = {metrics['exact_match_percentage']:.2f}%, F1 = {metrics['avg_f1']:.4f}")
     
     return metrics, model, pca
@@ -338,7 +362,40 @@ def updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both):
 
     return best_exact_match, best_f1, best_both
 
-def trainAllModels(input_data, output_data , configs):
+
+def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir):
+    """Print a summary of the training results."""
+    exact_match_config = best_exact_match['metrics']['config']
+    f1_config = best_f1['metrics']['config']   
+    both_config = best_both['metrics']['config']
+
+    print(f"\n\n{'='*60}")
+    print("TRAINING SUMMARY")
+    print(f"{'='*60}")
+    print(f"\nBest Exact Match Model:")
+    print(f"  Estimator: {exact_match_config['estimator_type']}, MultiOutput: {exact_match_config['multi_output_type']}, "
+          f"PCA: {exact_match_config['use_pca']}, Class Weight: {exact_match_config['class_weight']}, "
+          f"Test Size: {exact_match_config['test_size']}, Max Depth: {exact_match_config.get('max_depth', 'None')}")
+    print(f"  Exact Match: {best_exact_match['metrics']['exact_match_percentage']:.2f}%")
+    print(f"  F1: {best_exact_match['metrics']['avg_f1']:.4f}")
+
+    print(f"\nBest F1 Model:")
+    print(f"  Estimator: {f1_config['estimator_type']}, MultiOutput: {f1_config['multi_output_type']}, "
+          f"PCA: {f1_config['use_pca']}, Class Weight: {f1_config['class_weight']}, "
+          f"Test Size: {f1_config['test_size']}, Max Depth: {f1_config.get('max_depth', 'None')}")
+    print(f"  Exact Match: {best_f1['metrics']['exact_match_percentage']:.2f}%")
+    print(f"  F1: {best_f1['metrics']['avg_f1']:.4f}")
+
+    print(f"\nBest Both Model:")
+    print(f"  Estimator: {both_config['estimator_type']}, MultiOutput: {both_config['multi_output_type']}, "
+          f"PCA: {both_config['use_pca']}, Class Weight: {both_config['class_weight']}, "
+          f"Test Size: {both_config['test_size']}, Max Depth: {both_config.get('max_depth', 'None')}")
+    print(f"  Exact Match: {best_both['metrics']['exact_match_percentage']:.2f}%")
+    print(f"  F1: {best_both['metrics']['avg_f1']:.4f}")
+
+    print(f"\n (These models are stored in folder {saved_models_dir}.)")
+
+def trainAllModels(input_data, output_data , configs, settings):
     """Train all models with different configurations."""
 
     # split a section of the data out for validation after the training
@@ -348,10 +405,10 @@ def trainAllModels(input_data, output_data , configs):
     configs_count = len(configs)
     print(f"Training {configs_count} configurations...")
     
-    all_metrics = []
-    best_exact_match = {'exact_match_percentage': -1}       # these metrics will be used to save the best models
-    best_f1 = {'avg_f1': -1}
-    best_both = {'f1_and_exact_match': -1}
+    # these metrics will be used to track the best models
+    best_exact_match = {'exact_match_percentage': -1, 'metrics': None, 'model': None, 'pca': None}       
+    best_f1 = {'avg_f1': -1, 'metrics': None, 'model': None, 'pca': None}
+    best_both = {'f1_and_exact_match': -1, 'metrics': None, 'model': None, 'pca': None}
     
     error_count = 0
     for i, config in enumerate(configs):
@@ -360,7 +417,7 @@ def trainAllModels(input_data, output_data , configs):
 
             metrics, model, pca = trainOneModel(input_data, output_data, config)
             metrics['validation_indexes'] = validation_indexes
-            all_metrics.append(metrics)
+            metrics['config'] = config
 
             # If the model is the best so far, save it
             best_exact_match, best_f1, best_both = updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both)
@@ -370,44 +427,20 @@ def trainAllModels(input_data, output_data , configs):
             error_count += 1
             continue
     
-    # Save only the best models
-    best_exact_file = save_best_model(
-        best_exact_match['model'], 
-        best_exact_match['pca'], 
-        best_exact_match['metrics']['config'],
-        best_exact_match['metrics'],
-        'exact'
-    )
-    
-    best_f1_file = save_best_model(
-        best_f1['model'],
-        best_f1['pca'],
-        best_f1['metrics']['config'],
-        best_f1['metrics'],
-        'f1'
-    )
-    
-    # Save summary results
-    summary = {
-        'timestamp': datetime.now().isoformat(),
-        'total_configs_tested': len(all_metrics),
-        'best_exact_match_model': {
-            'file': best_exact_file,
-            'metrics': best_exact_match['metrics']
-        },
-        'best_f1_model': {
-            'file': best_f1_file,
-            'metrics': best_f1['metrics']
-        }
-    }
-    
-    with open(f"{model_dir}/training_summary.json", 'w') as f:
-        json.dump(summary, f, indent=2)
-    
     print(f"\n\n...Training completed with {error_count} error(s).")
+
+    # Save only the best models
+    saved_models_dir = saveModel(best_exact_match, "BestExactMatch", settings)
+    saveModel(best_f1, "BestF1", settings)
+    saveModel(best_both, "BestBoth", settings)
+
+    # Training summary
+    printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
+    
 
 
 def startTraining(settings):
+    """Main training and evaluation pipeline."""
     print("\n\n################## TRAINING PHASE ##########################")
 
     # Import data
@@ -416,11 +449,9 @@ def startTraining(settings):
     # Import configurations
     configs = getModelConfigs(settings)
 
-    # Train all models with different configurations
-    trainAllModels(input_data, output_data, configs)
+    # Train all models with different configurations. The best ones will be saved.
+    trainAllModels(input_data, output_data, configs, settings)
 
-
-    # get all different configurations from settings.yaml
 
 def main():
     settings = loadSettings()
@@ -431,28 +462,8 @@ def main():
         print("Skipping training phase as per settings.yaml file.")
 
 
-   
-    
-    """Main training and evaluation pipeline."""
-    # create_model_directory()
-    # Define configurations to test
-    
     
 
-    
-    # # Print results
-    # print(f"\n{'='*60}")
-    # print("TRAINING COMPLETE")
-    # print(f"{'='*60}")
-    # print(f"\nBest Exact Match Model:")
-    # print(f"  File: {best_exact_file}")
-    # print(f"  Exact Match: {best_exact_match['metrics']['exact_match_percentage']:.2f}%")
-    # print(f"  F1: {best_exact_match['metrics']['avg_f1']:.4f}")
-    
-    # print(f"\nBest F1 Model:")
-    # print(f"  File: {best_f1_file}")
-    # print(f"  F1: {best_f1['metrics']['avg_f1']:.4f}")
-    # print(f"  Exact Match: {best_f1['metrics']['exact_match_percentage']:.2f}%")
 
 
 if __name__ == "__main__":
