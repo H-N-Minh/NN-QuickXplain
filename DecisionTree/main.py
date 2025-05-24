@@ -1,4 +1,8 @@
 import sys
+import os
+import json
+import yaml
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
@@ -7,47 +11,7 @@ from sklearn.multioutput import MultiOutputClassifier, ClassifierChain
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.decomposition import PCA
-from sklearn.utils.class_weight import compute_class_weight
-import joblib
-import os
-import json
-from datetime import datetime
-import yaml
 
-
-def create_model_directory():
-    """Create Models directory if it doesn't exist."""
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-
-def calculate_class_weights(y):
-    """Calculate class weights for imbalanced data."""
-    class_weights = []
-    for i in range(y.shape[1]):
-        unique_classes = np.unique(y[:, i])
-        if len(unique_classes) > 1:
-            weights = compute_class_weight('balanced', classes=unique_classes, y=y[:, i])
-            weight_dict = dict(zip(unique_classes, weights))
-        else:
-            weight_dict = {unique_classes[0]: 1.0}
-        class_weights.append(weight_dict)
-    return class_weights
-
-
-def convert_numpy_types(obj):
-    """Recursively convert numpy types in dicts/lists to native Python types."""
-    if isinstance(obj, dict):
-        return {k: convert_numpy_types(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_numpy_types(v) for v in obj]
-    elif isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    else:
-        return obj
 
 def load_and_predict(model_path, input_data):
     """
@@ -64,7 +28,6 @@ def load_and_predict(model_path, input_data):
     model_data = joblib.load(model_path)
     model = model_data['model']
     pca = model_data['pca']
-    config = model_data['config']
     
     # Convert to numpy if needed
     if isinstance(input_data, pd.DataFrame):
