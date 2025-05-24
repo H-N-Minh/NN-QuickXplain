@@ -1,13 +1,13 @@
 {
+  "EXACT_MATCH": 1.2078395624430265,
+  "AVG_F1": 0.7137411953604534,
   "total_samples": 8776,
-  "exact_match_percentage": 1.1736554238833181,
-  "avg_accuracy": 0.9653455264842219,
-  "avg_precision": 0.7681686068019816,
-  "avg_recall": 0.7064961972611327,
-  "avg_f1": 0.711095339210888,
+  "avg_accuracy": 0.9653431020772316,
+  "avg_precision": 0.772430443412359,
+  "avg_recall": 0.7082406514568814,
   "validation_indexes": [
-    37843,
-    42718
+    24054,
+    28929
   ],
   "config": {
     "test_size": 0.2,
@@ -15,7 +15,7 @@
     "estimator_type": "DecisionTree",
     "multi_output_type": "MultiOutputClassifier",
     "use_pca": false,
-    "pca_components": null,
+    "pca_components": 0.95,
     "class_weight": null,
     "n_estimators": null
   }
