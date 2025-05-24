@@ -29,6 +29,7 @@ def getConflict(settings):
             if not os.path.isfile(java_exc_path):
                 raise FileNotFoundError(f"Java executable not found: {java_exc_path}. Is Java installed and path is correct?")
 
+
         # running the .jar file to get the conflicts
         print("...Running QuickXplain...")
         result = subprocess.run([java_exc_path, f"-Dlog.dir={log_dir}", "-jar",jar_path, fm_path, solver_input_path], 

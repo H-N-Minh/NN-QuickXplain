@@ -212,7 +212,7 @@ def trainOneModel(input_data, output_data, config):
     
     # Train model
     model.fit(X_train, y_train)
-    
+
     # Evaluate
     metrics = evaluateModel(model, X_test, y_test)
     

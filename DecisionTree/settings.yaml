@@ -29,8 +29,8 @@ PATHS:
   SOLVER_PATH: "Solver/fm_conflict.jar"     # the solver's code (JAR file)
   SOLVER_LOGS_PATH: "Solver/Logs"     # store the logs of the solver (if any)
 
-  # JAVA_PATH: "java"     # default java path (if java is installed in the system)
-  JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
+  JAVA_PATH: "java"     # default java path (if java is installed in the system)
+  # JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
 
   VALIDATE_MODEL_PATH: "Models/arcade"  # path to the folder of trained models
 CLEAR:  # this is currently not set up yet
@@ -44,7 +44,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.2, 0.8]   # test size for train/test split
+      test_sizes: [0.2]   # test size for train/test split
       max_depths: [10]        # max training depth, null for unlimited depth
       estimator_types: ['RandomForest']   # ['DecisionTree', 'RandomForest']
       multi_output_types: ['ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']

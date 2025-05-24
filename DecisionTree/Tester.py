@@ -1,29 +1,22 @@
 # this file responsible for testing the model on unseen data and combined with QuickXplain.
 # Model is tested on: F1, accuracy, Exact Match, and performance on ordered vs unordered data using QuickXplain.
 
+import multiprocessing
+import shutil
 import sys
 import os
+import concurrent
+import time
+import traceback
+import numpy as np
+from tqdm import tqdm
 import yaml
 import joblib
 import pandas as pd
 import json
 
+import Solver.RunQuickXplain as Solver
 from Trainer import evaluateModel
-
-
-
-    # # Calculate probabilities for each output constraint (P(1) + P(-1))
-    # y_pred_prob = np.zeros_like(y_pred, dtype=float)  # Initialize with same shape as y_pred
-    # for i in range(y_test.shape[1]):  # Iterate over all output constraints
-    #     probas = model.estimators_[i].predict_proba(X_test)  # Shape: (n_samples, n_classes_i)
-    #     class_labels = model.estimators_[i].classes_
-    #     # Identify indices for classes 1 and -1, if they exist
-    #     prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
-    #     # Sum probabilities for classes 1 and -1 (if they exist)
-    #     y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
-
-
-##################################################################################################
 
 
 def importModel(settings, model_name):
@@ -46,7 +39,7 @@ def importModel(settings, model_name):
     model_metrics_file_name = os.path.join(settings['PATHS']['VALIDATE_MODEL_PATH'], f"Best{model_name}_metrics.json")
     assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist, i.e no model can be imported. Check path"
 
-    print(f"\nImporting model {model_name}...")
+    print(f"...Importing model {model_name}...")
 
     # import the model and pca
     model_data = joblib.load(model_file_name)
@@ -73,6 +66,7 @@ def importValidationData(settings, model_metadata, pca):
     Returns:
     X_validate: Validation features (numpy)
     y_validate: Validation labels (numpy)
+    input_data: Original input data without PCA transformation, needed for later with QuickXplain test.
     """
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
@@ -96,9 +90,11 @@ def importValidationData(settings, model_metadata, pca):
     # Apply PCA if it was used during training
     if pca is not None:
         assert model_metadata['config']['use_pca'] == True, "PCA was not used during training, but PCA object is provided."
-        input_data = pca.transform(input_data)
+        input_data_transformed = pca.transform(input_data)
+    else:
+        input_data_transformed = input_data.copy()  # No transformation, just convert to numpy array
 
-    return input_data.values , output_data.values
+    return input_data_transformed.values , output_data.values, input_data.values
 
 
 def saveTestResults(settings, model_name, metrics):
@@ -149,7 +145,7 @@ def printTrainingSummary(settings):
         validation_result = model_metrics['validation_result']
 
         # print result out
-        print(f"\nModel {model_name}:")
+        print(f"\nModel '{model_name}':")
 
         print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
             f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
@@ -159,29 +155,248 @@ def printTrainingSummary(settings):
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
 
+def getPredictedProbabilities(model, X_validate):
+    """
+    Get the predicted probabilities for each output constraint using the model.
+    Probability is calculated as follow:
+    - for each constraint, the model predicts the probability of each class (1, -1, 0).
+    - Since we only want 1 probability per constraint, we sum the probabilities of classes 1 and -1 and assign
+        that as the predicted probability for that constraint.
+    This means it is the probability that the constraint will be parted of the conflict set or not. 
+    
+    Parameters:
+    model: The trained model to use for predictions
+    X_validate (numpy.ndarray): Input data for validation
+    
+    Returns:
+    numpy.ndarray: Predicted probabilities for each output constraint
+    """
+    y_pred_prob = np.zeros(X_validate.shape, dtype=float)
+    
+    # Check if model is ClassifierChain, which requires a different way to get probabilities than other models
+    is_classifier_chain = hasattr(model, 'order_') and model.order_ is not None
+    
+    if is_classifier_chain:
+        # ClassifierChain - handle each estimator individually due to sklearn issues
+        for i, estimator in enumerate(model.estimators_):
+            try:
+                probas = estimator.predict_proba(X_validate)
+                class_labels = estimator.classes_
+                # Create boolean mask for classes 1 and -1
+                mask = np.isin(class_labels, [1, -1])
+                if np.any(mask):
+                    y_pred_prob[:, i] = probas[:, mask].sum(axis=1)
+            except ValueError:
+                # Handle case where estimator only has one class
+                class_labels = estimator.classes_
+                if len(class_labels) == 1 and class_labels[0] in [1, -1]:
+                    # If the single class is 1 or -1, set probability to 1.0
+                    y_pred_prob[:, i] = 1.0
+                # If the single class is 0, probability remains 0.0 (default)
+    else:
+        # For MultiOutputClassifier or similar models
+        for i, estimator in enumerate(model.estimators_):
+            try:
+                probas = estimator.predict_proba(X_validate)
+                class_labels = estimator.classes_
+                # Create boolean mask for classes 1 and -1
+                mask = np.isin(class_labels, [1, -1])
+                if np.any(mask):
+                    y_pred_prob[:, i] = probas[:, mask].sum(axis=1)
+            except ValueError:
+                # Handle case where estimator only has one class
+                class_labels = estimator.classes_
+                if len(class_labels) == 1 and class_labels[0] in [1, -1]:
+                    # If the single class is 1 or -1, set probability to 1.0
+                    y_pred_prob[:, i] = 1.0
+                # If the single class is 0, probability remains 0.0 (default)
+    
+    return y_pred_prob
+
+
+def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
+    """
+    Generate text files that will be used as input for QuickXplain.
+    If test_pred is given, the constraints will be sorted by their predicted probabilities (highest first), else default ordering
+    Text files are generated using multiprocessing for faster processing.
+    
+    Args:
+        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
+        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints. "None" for no sorting.
+        output_dir (string): directory for the text files that will be generated.
+        constraint_name_list (list): List of constraint names
+    """
+    # Error handling
+    assert test_input is not None and isinstance(test_input, np.ndarray) and test_input.ndim == 2 and test_input.size > 0, \
+        "Error:createSolverInput:: test_input must be a non-empty 2D numpy array."
+    assert constraint_name_list is not None and isinstance(constraint_name_list, list) and len(constraint_name_list) > 0, \
+        "Error:createSolverInput:: constraint_name_list must be a non-empty list."
+    if test_pred is not None:
+        assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
+            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
+    assert len(constraint_name_list) == test_input.shape[1], \
+        "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
+
+    # Ensure output directory exists and is empty
+    if os.path.exists(output_dir) and os.listdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Get the number of samples aka number of text files to be generated
+    num_samples = test_input.shape[0]
+
+    # Some settings for multiprocessing
+    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
+    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
+    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
+             for i in range(0, num_samples, chunk_size)]
+    
+    print(f"...Creating {num_samples} text files as input for QuickXplain", end=' ')
+    print("(constraints sorted by predicted probabilities)..." if test_pred is not None else "(default constraints ordering)...")
+
+    # Use ProcessPoolExecutor for true parallelism
+    total_processed = 0
+    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            # Submit tasks to the executor for each chunk
+            for chunk_data in chunks:
+                future = executor.submit(
+                    processChunk,
+                    chunk_data=chunk_data,
+                    features_array=test_input,
+                    test_pred=test_pred,
+                    constraint_name_list=constraint_name_list,
+                    output_dir=output_dir
+                )
+                futures.append(future)
+
+            # save status of each chunk as it is completed
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    total_processed += future.result()
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"...Error processing chunk: {e}")
+                    print(traceback.format_exc())
+    
+    # Verify all samples were processed
+    assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
+    
+
+# Func for parallel processing in createSolverInput()
+def processChunk(chunk_data, features_array, test_pred, constraint_name_list, output_dir):
+    """Process a chunk of samples concurrently"""
+    try:
+        start_idx, end_idx = chunk_data
+        processed_count = 0
+        
+        # process only the specified chunk of samples
+        for idx in range(start_idx, end_idx):
+            # Get data for this sample
+            feature_values = features_array[idx]
+            probabilities = test_pred[idx] if test_pred is not None else None
+            
+            # Create list for sorting (tuple of (name, boolean_str, probability))
+            constraints_data = []
+            for i in range(len(constraint_name_list)):
+                name = constraint_name_list[i]
+                boolean_str = "true" if feature_values[i] == 1 else "false"
+                prob = probabilities[i] if probabilities is not None else 0.0
+                constraints_data.append((name, boolean_str, prob))
+            
+            # Sort by probability (descending) (only if test_pred is not None)
+            if test_pred is not None:
+                constraints_data.sort(key=lambda x: x[2], reverse=True)
+            
+            # Write name and boolean string to text file
+            output_file = os.path.join(output_dir, f"conf{idx}.txt")
+            with open(output_file, 'w') as f:
+                for name, boolean_str, _ in constraints_data:
+                    f.write(f"{name} {boolean_str}\n")
+            
+            processed_count += 1
+
+        return processed_count
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return 0
+
+
+def getConstraintNameList(settings):
+    """
+    Get the list of constraint names (list of strings)
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    
+    Returns:
+    list: List of constraint names
+    """
+    name_file = settings['PATHS']['TRAINDATA_CONSTRAINTS_NAME_PATH']
+    if not os.path.exists(name_file):
+        raise FileNotFoundError(f"importTrainingData:: Name file not found (file with names of all constraints): {name_file}")
+
+    column_names_list = []
+    with open(name_file, 'r') as f:
+        for line in f:
+            name = line.strip()
+            if name:
+                column_names_list.append(name)
+    return column_names_list
+
+def testWithQuickXplain(settings, model, X_validate, input_data):
+    """
+    Test the model with QuickXplain to evaluate its performance on constraint ordering.
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    model: The trained model to test
+    X_validate (numpy.ndarray): input data but was transformed with PCA (if PCA was used during training)
+    input_data (numpy.ndarray): Original input data without PCA transformation
+    """
+    # get predicted probabilities from model
+    y_pred_prob = getPredictedProbabilities(model, X_validate)
+
+    # Get the list of constraint names
+    constraint_name_list = getConstraintNameList(settings)
+
+    # Generate input for QuickXplain using the predicted probabilities
+    createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+
+    # Run QuickXplain to analyze conflicts
+    ordered_run_start_time = time.time()
+    Solver.getConflict(settings)
+    ordered_run_end_time = time.time()
+
+
 
 def startTesting(settings):
     print("\n\n##################### VALIDATION PHASE ########################")
 
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
         # Import the model and the validation data
+        print(f"\nTesting model '{model_name}'...")
         model, pca, model_metadata = importModel(settings, model_name)
-        X_validate, y_validate = importValidationData(settings, model_metadata, pca)
+        X_validate, y_validate, input_data = importValidationData(settings, model_metadata, pca)
         
         # Skip if model is already validated
         if 'validation_result' in model_metadata:
-            print(f"...Model {model_name} has already been validated. Skipped!")
+            print(f"...Model '{model_name}' has already been validated. Skipped!")
             continue
 
         # Test model on validation data.
-        print(f"...Testing model {model_name} on validation data...")
+        print(f"...Testing model '{model_name}' on validation data...")
         metrics = evaluateModel(model, X_validate, y_validate)
 
         # Test the model on QX
+        print(f"...Testing model '{model_name}' with QuickXplain...")
+        testWithQuickXplain(settings, model, X_validate, input_data)
 
         # store the result in json file
         saveTestResults(settings, model_name, metrics)
-        print(f"Done validating {model_name}!")
+        print(f"Done validating '{model_name}'!")
 
     # Print validation summary
     printTrainingSummary(settings)

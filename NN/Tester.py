@@ -32,6 +32,7 @@ def predictTestData(model):
     assert test_data_loader is not None, "Error: predictTestData:: test_data_loader is None."
     assert len(test_data_loader) > 0, "Error: predictTestData:: test_data_loader is empty."
 
+    # TODO: WAIT WHY IS THIS IN BATCHES?
     for inputs, targets in test_data_loader:     # loop through each batch
         # make the prediction
         prediction = model.predict(inputs)

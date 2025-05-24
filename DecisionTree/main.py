@@ -19,7 +19,11 @@ def loadSettings():
         print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
         sys.exit(1)
     
+    # Ensure all paths in settings are absolute
     for key in settings['PATHS']:
+        # Except for Java path, which is handled separately
+        if key == 'JAVA_PATH':
+            continue
         settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
     return settings
 
