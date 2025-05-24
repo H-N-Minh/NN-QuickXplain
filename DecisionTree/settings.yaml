@@ -32,6 +32,7 @@ PATHS:
   # JAVA_PATH: "java"     # default java path (if java is installed in the system)
   JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
 
+  VALIDATE_MODEL_PATH: "Models/arcade"  # path to the folder of trained models
 CLEAR:  # this is currently not set up yet
   LOGS: true            # clear the logs folder (if any) before ruDecisionTreeing the script
   Solver's input/output: true       # clear the solver's input/output folders (if any) before ruDecisionTreeing the script
@@ -43,12 +44,19 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.2]   # test size for train/test split
+      test_sizes: [0.2, 0.8]   # test size for train/test split
       max_depths: [10]        # max training depth, null for unlimited depth
-      estimator_types: ['DecisionTree']   # ['DecisionTree', 'RandomForest']
-      multi_output_types: ['MultiOutputClassifier']         # ['MultiOutputClassifier', 'ClassifierChain']
+      estimator_types: ['RandomForest']   # ['DecisionTree', 'RandomForest']
+      multi_output_types: ['ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']
       use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
       class_weight_options: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
       
       random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
         skip: true     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
+
+  VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
+    SKIP: false # skip validation part completely if set to true
+    # Note: set the path to the folder of the models we want to validate (set the VALIDATE_MODEL_PATH in the PATHS section above)
+    models_to_test: ["F1", "ExactMatch", "Both"]  # specify which models to be tested.
+
+

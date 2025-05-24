@@ -1,13 +1,13 @@
 {
-  "EXACT_MATCH": 1.2078395624430265,
-  "AVG_F1": 0.7137411953604534,
+  "EXACT_MATCH": 1.0711030082041932,
+  "AVG_F1": 0.7126901123042511,
   "total_samples": 8776,
-  "avg_accuracy": 0.9653431020772316,
-  "avg_precision": 0.772430443412359,
-  "avg_recall": 0.7082406514568814,
+  "avg_accuracy": 0.9654085610659632,
+  "avg_precision": 0.7736316406721758,
+  "avg_recall": 0.7061344658191916,
   "validation_indexes": [
-    24054,
-    28929
+    13705,
+    18580
   ],
   "config": {
     "test_size": 0.2,
