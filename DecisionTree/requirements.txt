@@ -2,6 +2,4 @@ numpy
 pandas
 scikit-learn
 joblib
-graphviz
-
 pyyaml

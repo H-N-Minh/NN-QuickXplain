@@ -69,3 +69,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+    # # Calculate probabilities for each output constraint (P(1) + P(-1))
+    # y_pred_prob = np.zeros_like(y_pred, dtype=float)  # Initialize with same shape as y_pred
+    # for i in range(y_test.shape[1]):  # Iterate over all output constraints
+    #     probas = model.estimators_[i].predict_proba(X_test)  # Shape: (n_samples, n_classes_i)
+    #     class_labels = model.estimators_[i].classes_
+    #     # Identify indices for classes 1 and -1, if they exist
+    #     prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+    #     # Sum probabilities for classes 1 and -1 (if they exist)
+    #     y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
