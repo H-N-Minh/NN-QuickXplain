@@ -40,7 +40,7 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: false # skip training if the model already exists and stored in the model folder
+    SKIP: true # skip training if the model already exists and stored in the model folder
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
@@ -57,6 +57,6 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: false # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the VALIDATE_MODEL_PATH in the PATHS section above)
-    models_to_test: ["F1", "ExactMatch", "Both"]  # specify which models to be tested.
+    models_to_test: ["F1", "ExactMatch", "Both"]  # ["F1", "ExactMatch", "Both"] specify which models to be tested.
 
 

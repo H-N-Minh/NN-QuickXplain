@@ -100,7 +100,7 @@ def createBaseEstimator(estimator_type, config):
         )
 
 def evaluateModel(model, X_test, y_test):
-    """Evaluate model and return metrics."""
+    """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
     y_pred = model.predict(X_test)
     
     # Exact matches
