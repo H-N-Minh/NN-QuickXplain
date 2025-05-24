@@ -45,9 +45,9 @@ def load_and_predict(model_path, input_data):
 
 def loadSettings():
     """Load settings from YAML file."""
+    root_dir = os.path.dirname(os.path.abspath(__file__))
     try:
         # Construct the absolute path to the settings.yaml file
-        root_dir = os.path.dirname(os.path.abspath(__file__))
         settings_path = os.path.join(root_dir, 'settings.yaml')
 
         with open(settings_path, 'r') as file:
@@ -55,7 +55,11 @@ def loadSettings():
     except FileNotFoundError:
         print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
         sys.exit(1)
+    
+    for key in settings['PATHS']:
+        settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
     return settings
+
 
 
 def main():

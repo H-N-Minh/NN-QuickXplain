@@ -43,12 +43,12 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.2, 0.8]   # test size for train/test split
-      max_depths: [10, null]        # max training depth, null for unlimited depth
-      estimator_types: ['DecisionTree', 'RandomForest']   # ['DecisionTree', 'RandomForest']
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']
-      use_pca_options: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      class_weight_options: [null, 'balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+      test_sizes: [0.2]   # test size for train/test split
+      max_depths: [10]        # max training depth, null for unlimited depth
+      estimator_types: ['DecisionTree']   # ['DecisionTree', 'RandomForest']
+      multi_output_types: ['MultiOutputClassifier']         # ['MultiOutputClassifier', 'ClassifierChain']
+      use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
+      class_weight_options: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
       
       random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
-        skip: false     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
+        skip: true     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time

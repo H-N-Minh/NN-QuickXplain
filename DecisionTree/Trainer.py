@@ -18,9 +18,8 @@ from sklearn.decomposition import PCA
 
 def importTrainingData(settings):
     """Import training data from CSV files."""
-    current_folder = os.path.dirname(os.path.abspath(__file__))
-    input_file = os.path.join(current_folder, settings['PATHS']['TRAINDATA_INPUT_PATH'])
-    output_file = os.path.join(current_folder, settings['PATHS']['TRAINDATA_OUTPUT_PATH'])
+    input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
+    output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
         print(f"Cant find file at {input_file} or {output_file}.")
         raise FileNotFoundError("Training file not found. Please check the file paths in settings.yaml .")
@@ -62,21 +61,22 @@ def getModelConfigs(settings):
                             configs.append(config)
 
     # Add direct multi-output RandomForest configurations
-    for test_size in config_settings['test_sizes']:
-        for max_depth in config_settings['max_depths']:
-            for use_pca in config_settings['use_pca_options']:
-                for class_weight in config_settings['class_weight_options']:
-                    config = {
-                        'test_size': test_size,
-                        'max_depth': max_depth,
-                        'estimator_type': 'RandomForest',
-                        'multi_output_type': 'Direct',
-                        'use_pca': use_pca,
-                        'pca_components': 0.95,
-                        'class_weight': class_weight,
-                        'n_estimators': 100
-                    }
-                    configs.append(config)
+    if not config_settings['random_forest_direct']['skip']:
+        for test_size in config_settings['test_sizes']:
+            for max_depth in config_settings['max_depths']:
+                for use_pca in config_settings['use_pca_options']:
+                    for class_weight in config_settings['class_weight_options']:
+                        config = {
+                            'test_size': test_size,
+                            'max_depth': max_depth,
+                            'estimator_type': 'RandomForest',
+                            'multi_output_type': 'Direct',
+                            'use_pca': use_pca,
+                            'pca_components': 0.95,
+                            'class_weight': class_weight,
+                            'n_estimators': 100
+                        }
+                        configs.append(config)
 
     assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
     return configs

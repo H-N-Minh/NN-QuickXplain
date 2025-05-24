@@ -1,35 +1,35 @@
 PATHS:
   # ARCADE small dataset
-  TRAINDATA_INPUT_PATH: "NN/TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
-  TRAINDATA_OUTPUT_PATH: "NN/TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
-  TRAINDATA_CONSTRAINTS_NAME_PATH: "NN/TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  TRAINDATA_FM_PATH: "NN/TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
   
   # ARCADE bigger dataset (48752 invalid configurations)
-  # TRAINDATA_INPUT_PATH: "NN/TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "NN/TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
-  # TRAINDATA_CONSTRAINTS_NAME_PATH: "NN/TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  # TRAINDATA_FM_PATH: "NN/TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
 
   #BUSYBOX small dataset
-  # TRAINDATA_INPUT_PATH: "NN/TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "NN/TrainingData/busybox/busybox_conflicts_655.csv"    # conflicts computed by the solver (also stored in .csv format)
-  # TRAINDATA_CONSTRAINTS_NAME_PATH: "NN/TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  # TRAINDATA_FM_PATH: "NN/TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+  # TRAINDATA_INPUT_PATH: "TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/busybox_conflicts_655.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
   #BUSYBOX HUGE dataset
-  # TRAINDATA_INPUT_PATH: "NN/TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "NN/TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
-  # TRAINDATA_CONSTRAINTS_NAME_PATH: "NN/TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  # TRAINDATA_FM_PATH: "NN/TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+  # TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
 
-  SOLVER_INPUT_PATH: "NN/Solver/Input"     # invalid configurations (each config is a text file)
-  SOLVER_OUTPUT_PATH: "NN/Solver/Output"   # conflicts computed by the solver (each conflict is a text file)
+  SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
+  SOLVER_OUTPUT_PATH: "Solver/Output"   # conflicts computed by the solver (each conflict is a text file)
 
-  SOLVER_PATH: "NN/Solver/fm_conflict.jar"     # the solver's code (JAR file)
+  SOLVER_PATH: "Solver/fm_conflict.jar"     # the solver's code (JAR file)
 
-  SOLVER_LOGS_PATH: "NN/Solver/Logs"     # store the logs of the solver (if any)
+  SOLVER_LOGS_PATH: "Solver/Logs"     # store the logs of the solver (if any)
 
   # JAVA_PATH: "java"     # default java path (if java is installed in the system)
   JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)

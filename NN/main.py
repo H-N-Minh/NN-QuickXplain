@@ -27,7 +27,7 @@ def main():
     training_end_time = time.time()
 
     # Test model
-    create_ordered_time, get_ordered_time = Tester.test(NN_model)
+    # create_ordered_time, get_ordered_time = Tester.test(NN_model)
     testing_end_time = time.time()
 
     # todo: get detailed runtime for test

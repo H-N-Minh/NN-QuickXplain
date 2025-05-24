@@ -13,6 +13,7 @@ import yaml
 import glob
 from concurrent.futures import ProcessPoolExecutor
 import re
+import sys
 
 # Task of this file: 
 # - import and preprocess training data for the neural network.
@@ -25,16 +26,22 @@ def importSettings():
     """
     Import settings from a YAML file or use default settings if the file does not exist.
     """
-    # Load settings from a YAML file if it exists
-    if os.path.exists("NN\settings.yaml"):
-        with open("NN\settings.yaml", "r") as f:
-            settings = yaml.safe_load(f)
-    else:
-        assert False , "Error: 'settings.yaml' not found"
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        # Construct the absolute path to the settings.yaml file
+        settings_path = os.path.join(root_dir, 'settings.yaml')
 
+        with open(settings_path, 'r') as file:
+            settings = yaml.safe_load(file)
+    except FileNotFoundError:
+        print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
+        sys.exit(1)
+    
+    for key in settings['PATHS']:
+        settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
     return settings
 
-
+    
 def importTrainingData(settings):
     """
     Requires 3 files: TRAINDATA_INPUT_PATH, TRAINDATA_OUTPUT_PATH and TRAINDATA_CONSTRAINTS_NAME_PATH.
