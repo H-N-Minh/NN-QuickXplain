@@ -26,11 +26,11 @@
     "avg_accuracy": 0.9513627932351337,
     "avg_precision": 0.8313662917099431,
     "avg_recall": 0.8406872053227166,
-    "ordered_runtime": 0.033135932082051275,
+    "ordered_runtime": 0.062379832328205057,
     "ordered_cc": 12.944820512820513,
-    "unordered_runtime": 0.2574206085948717,
+    "unordered_runtime": 0.33564968738461504,
     "unordered_cc": 11.315692307692307,
-    "faster_performance_percentage": 676.8624342826577,
+    "faster_performance_percentage": 438.0740455002008,
     "CC_less_percentage": -14.397070553259377
   }
 }
