@@ -117,7 +117,6 @@ def saveTestResults(settings, model_name, metrics, result):
         data = json.load(f)
     
     # make sure the key 'validation_result' does not already exist
-    assert "validation_result" not in data, ("Key 'validation_result' already exists in the file.")
     assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
     assert len(result) == 3, "Result list must contain exactly 3 elements: [faster_performance, ordered_runtime, unordered_runtime]."
 
@@ -408,11 +407,6 @@ def startTesting(settings):
         model, pca, model_metadata = importModel(settings, model_name)
         X_validate, y_validate, input_data = importValidationData(settings, model_metadata, pca)
         
-        # Skip if model is already validated
-        if 'validation_result' in model_metadata:
-            print(f"...Model '{model_name}' has already been validated. Skipped!")
-            continue
-
         # Test model on validation data.
         print(f"...Testing model '{model_name}' on validation data...")
         metrics = evaluateModel(model, X_validate, y_validate)

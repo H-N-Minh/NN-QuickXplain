@@ -26,8 +26,8 @@
     "avg_accuracy": 0.9513627932351337,
     "avg_precision": 0.8313662917099431,
     "avg_recall": 0.8406872053227166,
-    "unordered_runtime": 48.63755989074707,
-    "ordered_runtime": 47.28056025505066,
-    "faster_performance_percentage": 2.8701005833606894
+    "unordered_runtime": 49.10725378990173,
+    "ordered_runtime": 50.16269874572754,
+    "faster_performance_percentage": -2.1040434071855034
   }
 }
