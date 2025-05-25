@@ -97,7 +97,7 @@ def importValidationData(settings, model_metadata, pca):
     return input_data_transformed.values , output_data.values, input_data.values
 
 
-def saveTestResults(settings, model_name, metrics):
+def saveTestResults(settings, model_name, metrics, result):
     """
     Add the test results to the JSON file of the model.
     
@@ -105,6 +105,7 @@ def saveTestResults(settings, model_name, metrics):
     settings (dict): Settings dictionary containing paths and configurations
     model_name (str): Name of the model
     metrics (dict): Metrics to save, e.g., F1, Exact Match, accuracy, etc.
+    result (list): Result of the QuickXplain test, containing [faster_performance, ordered_runtime, unordered_runtime]
     """
     print(f"...Saving validation results for model {model_name}...")
 
@@ -117,9 +118,14 @@ def saveTestResults(settings, model_name, metrics):
     
     # make sure the key 'validation_result' does not already exist
     assert "validation_result" not in data, ("Key 'validation_result' already exists in the file.")
+    assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
+    assert len(result) == 3, "Result list must contain exactly 3 elements: [faster_performance, ordered_runtime, unordered_runtime]."
 
     # Add the new key with the metrics dictionary
     data["validation_result"] = metrics
+    data["validation_result"]['unordered_runtime'] = result[2]  # runtime of QuickXplain with default ordering
+    data["validation_result"]['ordered_runtime'] = result[1]  # runtime of QuickXplain with predicted probabilities
+    data["validation_result"]['faster_performance_percentage'] = result[0]
     
     # Write the updated data back to file
     with open(output_file, 'w') as f:
@@ -152,6 +158,8 @@ def printTrainingSummary(settings):
             f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
         print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
         print(f"  F1: {validation_result['AVG_F1']:.4f}")
+        print(f"  Runtime improvement: {validation_result['faster_performance_percentage']:.4f} % "
+              f"(ordered: {validation_result['ordered_runtime']:.5f}s, unordered: {validation_result['unordered_runtime']:.5f}s)")
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
 
@@ -355,6 +363,12 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
     model: The trained model to test
     X_validate (numpy.ndarray): input data but was transformed with PCA (if PCA was used during training)
     input_data (numpy.ndarray): Original input data without PCA transformation
+
+    Returns:
+    list: [faster_performance, ordered_runtime, unordered_runtime]
+        - faster_performance: Percentage improvement in runtime with predicted probabilities vs default ordering
+        - ordered_runtime: Runtime of QuickXplain with predicted probabilities
+        - unordered_runtime: Runtime of QuickXplain with default ordering
     """
     # get predicted probabilities from model
     y_pred_prob = getPredictedProbabilities(model, X_validate)
@@ -370,7 +384,20 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
     Solver.getConflict(settings)
     ordered_run_end_time = time.time()
 
+    # Same thing again but with default ordering (no predicted probabilities)
+    createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
+    # Run QuickXplain with default ordering
+    unordered_run_start_time = time.time()
+    Solver.getConflict(settings)
+    unordered_run_end_time = time.time()
+
+    # calculate the runtime improvement
+    ordered_runtime = ordered_run_end_time - ordered_run_start_time
+    unordered_runtime = unordered_run_end_time - unordered_run_start_time
+    faster_performance = (unordered_runtime - ordered_runtime) / ordered_runtime * 100  # in percent
+
+    return [faster_performance, ordered_runtime, unordered_runtime]
 
 def startTesting(settings):
     print("\n\n##################### VALIDATION PHASE ########################")
@@ -392,11 +419,11 @@ def startTesting(settings):
 
         # Test the model on QX
         print(f"...Testing model '{model_name}' with QuickXplain...")
-        testWithQuickXplain(settings, model, X_validate, input_data)
+        result = testWithQuickXplain(settings, model, X_validate, input_data)
 
         # store the result in json file
-        saveTestResults(settings, model_name, metrics)
-        print(f"Done validating '{model_name}'!")
+        saveTestResults(settings, model_name, metrics, result)
+        print(f"Done testing '{model_name}'!")
 
     # Print validation summary
     printTrainingSummary(settings)
