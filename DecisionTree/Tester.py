@@ -9,6 +9,7 @@ import concurrent
 import time
 import traceback
 import numpy as np
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier
 from tqdm import tqdm
 import yaml
 import joblib
@@ -178,45 +179,36 @@ def getPredictedProbabilities(model, X_validate):
     Returns:
     numpy.ndarray: Predicted probabilities for each output constraint
     """
-    y_pred_prob = np.zeros(X_validate.shape, dtype=float)
+    # Initialize output array: (n_samples, n_constraints)
+    n_constraints = len(model.estimators_)
+    y_pred_prob = np.zeros((X_validate.shape[0], n_constraints), dtype=float)
     
-    # Check if model is ClassifierChain, which requires a different way to get probabilities than other models
-    is_classifier_chain = hasattr(model, 'order_') and model.order_ is not None
-    
-    if is_classifier_chain:
-        # ClassifierChain - handle each estimator individually due to sklearn issues
+    if isinstance(model, MultiOutputClassifier):
+        # For MultiOutputClassifier: each estimator is independent
         for i, estimator in enumerate(model.estimators_):
-            try:
-                probas = estimator.predict_proba(X_validate)
-                class_labels = estimator.classes_
-                # Create boolean mask for classes 1 and -1
-                mask = np.isin(class_labels, [1, -1])
-                if np.any(mask):
-                    y_pred_prob[:, i] = probas[:, mask].sum(axis=1)
-            except ValueError:
-                # Handle case where estimator only has one class
-                class_labels = estimator.classes_
-                if len(class_labels) == 1 and class_labels[0] in [1, -1]:
-                    # If the single class is 1 or -1, set probability to 1.0
-                    y_pred_prob[:, i] = 1.0
-                # If the single class is 0, probability remains 0.0 (default)
+            probas = estimator.predict_proba(X_validate)  # Shape: (n_samples, n_classes_i)
+            class_labels = estimator.classes_
+            # Find indices of classes 1 and -1
+            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
+            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
+    elif isinstance(model, ClassifierChain):
+        # For ClassifierChain: predict labels first to use as features
+        y_pred = model.predict(X_validate)  # Shape: (n_samples, n_constraints)
+        for i, estimator in enumerate(model.estimators_):
+            # Prepare input: X_validate plus previous predicted labels
+            if i == 0:
+                input_i = X_validate
+            else:
+                input_i = np.hstack((X_validate, y_pred[:, 0:i]))
+            probas = estimator.predict_proba(input_i)  # Shape: (n_samples, n_classes_i)
+            class_labels = estimator.classes_
+            # Find indices of classes 1 and -1
+            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
+            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
     else:
-        # For MultiOutputClassifier or similar models
-        for i, estimator in enumerate(model.estimators_):
-            try:
-                probas = estimator.predict_proba(X_validate)
-                class_labels = estimator.classes_
-                # Create boolean mask for classes 1 and -1
-                mask = np.isin(class_labels, [1, -1])
-                if np.any(mask):
-                    y_pred_prob[:, i] = probas[:, mask].sum(axis=1)
-            except ValueError:
-                # Handle case where estimator only has one class
-                class_labels = estimator.classes_
-                if len(class_labels) == 1 and class_labels[0] in [1, -1]:
-                    # If the single class is 1 or -1, set probability to 1.0
-                    y_pred_prob[:, i] = 1.0
-                # If the single class is 0, probability remains 0.0 (default)
+        raise ValueError("Model must be MultiOutputClassifier or ClassifierChain")
     
     return y_pred_prob
 
@@ -372,31 +364,32 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
     # get predicted probabilities from model
     y_pred_prob = getPredictedProbabilities(model, X_validate)
 
-    # Get the list of constraint names
-    constraint_name_list = getConstraintNameList(settings)
+    # # Get the list of constraint names
+    # constraint_name_list = getConstraintNameList(settings)
 
-    # Generate input for QuickXplain using the predicted probabilities
-    createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+    # # Generate input for QuickXplain using the predicted probabilities
+    # createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
-    # Run QuickXplain to analyze conflicts
-    ordered_run_start_time = time.time()
-    Solver.getConflict(settings)
-    ordered_run_end_time = time.time()
+    # # Run QuickXplain to analyze conflicts
+    # ordered_run_start_time = time.time()
+    # Solver.getConflict(settings)
+    # ordered_run_end_time = time.time()
 
-    # Same thing again but with default ordering (no predicted probabilities)
-    createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+    # # Same thing again but with default ordering (no predicted probabilities)
+    # createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
-    # Run QuickXplain with default ordering
-    unordered_run_start_time = time.time()
-    Solver.getConflict(settings)
-    unordered_run_end_time = time.time()
+    # # Run QuickXplain with default ordering
+    # unordered_run_start_time = time.time()
+    # Solver.getConflict(settings)
+    # unordered_run_end_time = time.time()
 
-    # calculate the runtime improvement
-    ordered_runtime = ordered_run_end_time - ordered_run_start_time
-    unordered_runtime = unordered_run_end_time - unordered_run_start_time
-    faster_performance = (unordered_runtime - ordered_runtime) / ordered_runtime * 100  # in percent
+    # # calculate the runtime improvement
+    # ordered_runtime = ordered_run_end_time - ordered_run_start_time
+    # unordered_runtime = unordered_run_end_time - unordered_run_start_time
+    # faster_performance = (unordered_runtime - ordered_runtime) / ordered_runtime * 100  # in percent
 
-    return [faster_performance, ordered_runtime, unordered_runtime]
+    # return [faster_performance, ordered_runtime, unordered_runtime]
+    return [0.0, 0.0, 0.0]  # Placeholder return value for testing purposes
 
 def startTesting(settings):
     print("\n\n##################### VALIDATION PHASE ########################")
