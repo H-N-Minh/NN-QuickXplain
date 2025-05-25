@@ -1,63 +1,13 @@
-import shutil
-import sys
-import os
-import yaml
-
 from Trainer import startTraining
 from Tester import startTesting
-
-
-def loadSettings():
-    """Load settings from YAML file."""
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    try:
-        # Construct the absolute path to the settings.yaml file
-        settings_path = os.path.join(root_dir, 'settings.yaml')
-
-        with open(settings_path, 'r') as file:
-            settings = yaml.safe_load(file)
-    except FileNotFoundError:
-        print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
-        sys.exit(1)
-    
-    # Ensure all paths in settings are absolute
-    for key in settings['PATHS']:
-        # Except for Java path, which is handled separately
-        if key == 'JAVA_PATH':
-            continue
-        settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
-    return settings
-
-def startClearing(settings):
-    """Clear logs and other files as per settings."""
-    print("\nClearing logs and other files as per settings...")
-    
-    if settings['CLEAR']['LOGS']:
-        log_path = settings['PATHS']['SOLVER_LOGS_PATH']
-        if os.path.exists(log_path):
-            shutil.rmtree(log_path)
-        print("...Logs cleared...")
-    if settings['CLEAR']["Solver's input/output"]:
-        input_path = settings['PATHS']['SOLVER_INPUT_PATH']
-        output_path = settings['PATHS']['SOLVER_OUTPUT_PATH']
-        if os.path.exists(input_path):
-            shutil.rmtree(input_path)
-        if os.path.exists(output_path):
-            shutil.rmtree(output_path)
-        print("...Solver's input/output cleared...")
-    if settings['CLEAR']['MODELS']:
-        model_path = settings['PATHS']['MODEL_PATH']
-        if os.path.exists(model_path):
-            shutil.rmtree(model_path)
-        print("...Models cleared...")
-    print("Clearing completed!")
+import Utils as Utils
 
 
 def main():
-    settings = loadSettings()
+    settings = Utils.loadSettings()
 
     if not settings['CLEAR']['SKIP']:
-        startClearing(settings)
+        Utils.startClearing(settings)
             
     if not settings['WORKFLOW']['TRAIN']['SKIP']:
         startTraining(settings)
