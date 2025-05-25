@@ -1,0 +1,22 @@
+{
+  "EXACT_MATCH": 1.108653930460705,
+  "AVG_F1": 0.898229568604563,
+  "total_samples": 102647,
+  "avg_accuracy": 0.984713420531589,
+  "avg_precision": 0.9049224550849824,
+  "avg_recall": 0.904929292455377,
+  "validation_indexes": [
+    28180,
+    40852
+  ],
+  "config": {
+    "test_size": 0.9,
+    "max_depth": 10,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "MultiOutputClassifier",
+    "use_pca": false,
+    "pca_components": 0.95,
+    "class_weight": "balanced",
+    "n_estimators": null
+  }
+}

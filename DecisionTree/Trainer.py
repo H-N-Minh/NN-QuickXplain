@@ -144,8 +144,6 @@ def trainAllModels(input_data, output_data , configs, settings):
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
-    print("\n\n################## TRAINING PHASE ##########################")
-
     # Import data
     input_data, output_data = Utils.importTrainingData(settings)
 

@@ -103,8 +103,6 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
 
 
 def startTesting(settings):
-    print("\n\n##################### VALIDATION PHASE ########################")
-
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
         # Import the model and the validation data
         print(f"\nTesting model '{model_name}'...")
