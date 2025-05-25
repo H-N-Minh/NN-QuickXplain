@@ -1,7 +1,10 @@
 # this file responsible for testing the model on unseen data and combined with QuickXplain.
 # Model is tested on: F1, accuracy, Exact Match, and performance on ordered vs unordered data using QuickXplain.
 
+from concurrent.futures import ProcessPoolExecutor
+import glob
 import multiprocessing
+import re
 import shutil
 import sys
 import os
@@ -35,10 +38,10 @@ def importModel(settings, model_name):
     """
     # check that the model is valid
     assert model_name in ["F1", "ExactMatch", "Both"] , f"Model '{model_name}' is unknown, check typo in model_to_test in settings.yaml."
-    model_file_name = os.path.join(settings['PATHS']['VALIDATE_MODEL_PATH'], f"Best{model_name}.pkl")
-    assert os.path.exists(model_file_name), f"Model ({model_file_name}) does not exist, i.e no model can be imported. Check path"
-    model_metrics_file_name = os.path.join(settings['PATHS']['VALIDATE_MODEL_PATH'], f"Best{model_name}_metrics.json")
-    assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist, i.e no model can be imported. Check path"
+    model_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}.pkl")
+    assert os.path.exists(model_file_name), f"Model ({model_file_name}) does not exist. Check path, and make sure the model was trained before testing."
+    model_metrics_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
+    assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist. Check path, and make sure the model was trained before testing."
 
     print(f"...Importing model {model_name}...")
 
@@ -111,7 +114,7 @@ def saveTestResults(settings, model_name, metrics, result):
     print(f"...Saving validation results for model {model_name}...")
 
     # Check if the output file exists
-    output_file = os.path.join(settings['PATHS']['VALIDATE_MODEL_PATH'], f"Best{model_name}_metrics.json")
+    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
     assert os.path.exists(output_file), f"Json file ({output_file}) does not exist. Check path"
 
     with open(output_file, 'r') as f:
@@ -119,24 +122,33 @@ def saveTestResults(settings, model_name, metrics, result):
     
     # make sure the key 'validation_result' does not already exist
     assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
-    assert len(result) == 3, "Result list must contain exactly 3 elements: [faster_performance, ordered_runtime, unordered_runtime]."
+    assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
 
     # Add the new key with the metrics dictionary
+    ordered_runtime = result[0]
+    ordered_cc = result[1]
+    unordered_runtime = result[2]
+    unordered_cc = result[3]
+    performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
+    CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
     data["validation_result"] = metrics
-    data["validation_result"]['unordered_runtime'] = result[2]  # runtime of QuickXplain with default ordering
-    data["validation_result"]['ordered_runtime'] = result[1]  # runtime of QuickXplain with predicted probabilities
-    data["validation_result"]['faster_performance_percentage'] = result[0]
+    data["validation_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
+    data["validation_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
+    data["validation_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
+    data["validation_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
+    data["validation_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
+    data["validation_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
     
     # Write the updated data back to file
     with open(output_file, 'w') as f:
         json.dump(data, f, indent=2)
 
-def printTrainingSummary(settings):
+def printTestingSummary(settings):
     """Print a summary of the validation results stored in Model folder."""
     print(f"\n\n{'='*60}")
     print("TESTING SUMMARY")
     print(f"{'='*60}")
-    saved_models_dir = settings['PATHS']['VALIDATE_MODEL_PATH']
+    saved_models_dir = settings['PATHS']['MODEL_PATH']
 
     # Go through each json file and print the result of the validation
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
@@ -149,6 +161,9 @@ def printTrainingSummary(settings):
         # extract the validation result and model's configuration
         model_config = model_metrics['config']
         validation_result = model_metrics['validation_result']
+        ordered_runtime = validation_result['ordered_runtime']
+        unordered_runtime = validation_result['unordered_runtime']
+        less_time_percentage = (unordered_runtime - ordered_runtime) / unordered_runtime * 100 if unordered_runtime > 0 else 0.0
 
         # print result out
         print(f"\nModel '{model_name}':")
@@ -158,8 +173,8 @@ def printTrainingSummary(settings):
             f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
         print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
         print(f"  F1: {validation_result['AVG_F1']:.4f}")
-        print(f"  Runtime improvement: {validation_result['faster_performance_percentage']:.4f} % "
-              f"(ordered: {validation_result['ordered_runtime']:.5f}s, unordered: {validation_result['unordered_runtime']:.5f}s)")
+        print(f"  Speed improvement: {validation_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
+              f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
 
@@ -256,7 +271,7 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     # Use ProcessPoolExecutor for true parallelism
     total_processed = 0
     with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             # Submit tasks to the executor for each chunk
             for chunk_data in chunks:
@@ -345,6 +360,107 @@ def getConstraintNameList(settings):
                 column_names_list.append(name)
     return column_names_list
 
+
+
+def processOutputFile(directory_path):
+    """
+    Process all output files of QuickXplain in the given directory. Use multiprocessing for faster processing.
+    
+    Args:
+        directory_path (str): Path to the directory containing QuickXplain output files.
+    
+    Returns:
+        tuple: (average runtime, average CC) of all processed files.
+    """
+    
+    # Get all conf*_output.txt files
+    pattern = os.path.join(directory_path, "conf*_output.txt")
+    all_files = glob.glob(pattern)
+    
+    num_samples = len(all_files)
+    assert num_samples > 0, f"Error:processOutputFile:: No output files found in {directory_path}. Check if Solver ran successfully."
+    
+    # Some settings for multiprocessing
+    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
+    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
+    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
+             for i in range(0, num_samples, chunk_size)]
+    
+    print(f"...Reading {num_samples} output files from QuickXplain...")
+    
+    # Use ProcessPoolExecutor for true parallelism
+    runtime_sum = 0.0
+    cc_sum = 0
+    total_processed = 0
+    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:           
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            # Submit tasks to the executor for each chunk
+            for chunk_data in chunks:
+                future = executor.submit(
+                    extractDataFromFile,
+                    chunk_data=chunk_data,
+                    all_files=all_files
+                )
+                futures.append(future)
+
+            # save status of each chunk as it is completed
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    total_processed += result[0]
+                    runtime_sum += result[1]
+                    cc_sum += result[2]
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"...Error processing chunk: {e}")
+                    print(traceback.format_exc())
+
+
+    # make sure all files were processed
+    assert total_processed == num_samples, f"Error:processOutputFile:: Not all files were processed. {num_samples - total_processed} files failed."
+
+    # Calculate averages
+    avg_runtime = runtime_sum / total_processed
+    avg_cc = cc_sum / total_processed
+    
+    return avg_runtime, avg_cc
+
+
+def extractDataFromFile(chunk_data, all_files):
+    """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
+    try:
+        start_idx, end_idx = chunk_data
+        processed_count = 0
+        runtime_sum = 0.0
+        cc_sum = 0
+
+        # process only the specified chunk of samples
+        for idx in range(start_idx, end_idx):
+            with open(all_files[idx], 'r') as f:
+                # Skip the first 3 lines
+                for _ in range(3):
+                    next(f)
+                
+                # Get runtime from 4th line
+                runtime_line = next(f)
+                runtime = float(re.search(r'Runtime: (\d+\.\d+)', runtime_line).group(1))
+                
+                # Get CC from 5th line
+                cc_line = next(f)
+                cc = int(re.search(r'CC: (\d+)', cc_line).group(1))
+
+                # store the results
+                runtime_sum += runtime
+                cc_sum += cc
+                processed_count += 1
+                
+        return [processed_count, runtime_sum, cc_sum]
+    except Exception as e:
+        print(traceback.format_exc())
+        return 0
+
+
 def testWithQuickXplain(settings, model, X_validate, input_data):
     """
     Test the model with QuickXplain to evaluate its performance on constraint ordering.
@@ -364,32 +480,30 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
     # get predicted probabilities from model
     y_pred_prob = getPredictedProbabilities(model, X_validate)
 
-    # # Get the list of constraint names
-    # constraint_name_list = getConstraintNameList(settings)
+    # Get the list of constraint names
+    constraint_name_list = getConstraintNameList(settings)
 
-    # # Generate input for QuickXplain using the predicted probabilities
-    # createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+    # Generate input for QuickXplain using the predicted probabilities
+    createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
-    # # Run QuickXplain to analyze conflicts
-    # ordered_run_start_time = time.time()
-    # Solver.getConflict(settings)
-    # ordered_run_end_time = time.time()
+    # Run QuickXplain to analyze conflicts
+    Solver.getConflict(settings)
 
-    # # Same thing again but with default ordering (no predicted probabilities)
-    # createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+    # process the output of QuickXplain (get average runtime and cc)
+    avg_ordered_runtime, avg_ordered_cc = processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
 
-    # # Run QuickXplain with default ordering
-    # unordered_run_start_time = time.time()
-    # Solver.getConflict(settings)
-    # unordered_run_end_time = time.time()
 
-    # # calculate the runtime improvement
-    # ordered_runtime = ordered_run_end_time - ordered_run_start_time
-    # unordered_runtime = unordered_run_end_time - unordered_run_start_time
-    # faster_performance = (unordered_runtime - ordered_runtime) / ordered_runtime * 100  # in percent
+    ########### Same thing again as above but now with default ordering (no predicted probabilities)
+    createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
-    # return [faster_performance, ordered_runtime, unordered_runtime]
-    return [0.0, 0.0, 0.0]  # Placeholder return value for testing purposes
+    # Run QuickXplain with default ordering
+    Solver.getConflict(settings)
+
+    # process the output of QuickXplain (get average runtime and cc)
+    avg_unordered_runtime, avg_unordered_cc = processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+
+    return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc]
+
 
 def startTesting(settings):
     print("\n\n##################### VALIDATION PHASE ########################")
@@ -413,5 +527,5 @@ def startTesting(settings):
         print(f"Done testing '{model_name}'!")
 
     # Print validation summary
-    printTrainingSummary(settings)
+    printTestingSummary(settings)
 

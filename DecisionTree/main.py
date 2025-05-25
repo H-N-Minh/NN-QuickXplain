@@ -1,3 +1,4 @@
+import shutil
 import sys
 import os
 import yaml
@@ -27,11 +28,37 @@ def loadSettings():
         settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
     return settings
 
+def startClearing(settings):
+    """Clear logs and other files as per settings."""
+    print("\nClearing logs and other files as per settings...")
+    
+    if settings['CLEAR']['LOGS']:
+        log_path = settings['PATHS']['SOLVER_LOGS_PATH']
+        if os.path.exists(log_path):
+            shutil.rmtree(log_path)
+        print("...Logs cleared...")
+    if settings['CLEAR']["Solver's input/output"]:
+        input_path = settings['PATHS']['SOLVER_INPUT_PATH']
+        output_path = settings['PATHS']['SOLVER_OUTPUT_PATH']
+        if os.path.exists(input_path):
+            shutil.rmtree(input_path)
+        if os.path.exists(output_path):
+            shutil.rmtree(output_path)
+        print("...Solver's input/output cleared...")
+    if settings['CLEAR']['MODELS']:
+        model_path = settings['PATHS']['MODEL_PATH']
+        if os.path.exists(model_path):
+            shutil.rmtree(model_path)
+        print("...Models cleared...")
+    print("Clearing completed!")
 
 
 def main():
     settings = loadSettings()
-    
+
+    if not settings['CLEAR']['SKIP']:
+        startClearing(settings)
+            
     if not settings['WORKFLOW']['TRAIN']['SKIP']:
         startTraining(settings)
     else:
