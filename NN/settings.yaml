@@ -49,10 +49,9 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.2, 0.9]   # test size for train/test split
-      max_depths: [10]        # max training depth, null for unlimited depth
-      use_pca_options: [true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      balanced_weights: [true]    
+      batch_sizes: [1024]   # test size for train/test split
+      max_depths: [12]        # max training depth, null for unlimited depth
+      use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
       
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: true # skip validation part completely

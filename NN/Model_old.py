@@ -4,10 +4,6 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 
 
-# Threshold for binary classification, if probability is > than this threshold, it will be considered
-# to be part of the conflict set
-PREDICTION_THRESHOLD = 0.5  
-
 # Improved Focal Loss with dynamic alpha
 class ImprovedFocalLoss(nn.Module):
     def __init__(self, alpha=0.25, gamma=2.0):
@@ -39,88 +35,7 @@ class ImprovedFocalLoss(nn.Module):
         return focal_loss.mean()
 
 
-class ConflictNN:
-    def __init__(self, constraints_size, settings, constraint_name_list, hidden_size=64, learning_rate=0.0005,
-                 batch_size=1024, max_epochs=12, patience=10):
-        """
-        Initialize the ConflictNN model.
-        
-        Args:
-            constraints_size (int): Number of constraints total
-            hidden_size (int): Number of neurons in each hidden layer
-            learning_rate (float): Learning rate for optimizer
-            batch_size (int): Batch size for training
-            max_epochs (int): Maximum number of epochs for training
-            patience (int): Number of epochs with no improvement before early stopping
-            settings (dict): the imported settings from file settings.yalm
-            constraint_name_list (1d list): list of constraint names, used to create input for QuickXplain
-        """
-        assert constraints_size != 0, "Error: constraints_size is 0, cant create a model with 0 input neurons"
-        assert len(constraint_name_list) > 0, "Error: constraint_name_list is empty, we need a name for each constraint"
 
-        # size of each layers
-        self.input_size_ = constraints_size
-        self.hidden_size_ = constraints_size
-        self.output_size_ = constraints_size
-
-        # Keep track of progress during training (after each epoch)
-        self.progress_history_ = {
-            'train_loss': [],
-            'val_loss': [],
-            'epochs_no_improve': 0,         # number of epochs that we get no/minimal improvement
-            'best_val_loss': float('inf'),  # best validation loss so far (smaller is better), initialized with infinity
-            'best_epoch': 0
-        }
-
-        # Data (train, validation and test data) (type: DataLoader)
-        # these will be defined in self.prepareData()
-        self.train_data_ = None
-        self.validation_data_ = None
-        self.test_data_ = None
-        self.pos_weight_ = None
-
-        # Other settings
-        self.learning_rate_ = learning_rate
-        self.batch_size_ = batch_size
-        self.max_epochs_ = max_epochs
-        self.patience_ = patience
-        self.device_ = torch.device('cpu')       # Train on CPU
-        self.dropout_rate_ = 0.0
-        self.use_batch_norm_ = False 
-        self.weight_decay_ = 0.0
-        self.constraint_name_list_ = constraint_name_list
-        self.settings_ = settings
-
-        # Create model
-        self.model_ = self._buildModel()
-        
-        # Define loss function and optimizer
-        # NOTE: loss_func might be redefined in self.prepareData() if the dataset is unbalanced
-        # self.loss_func_ = nn.BCELoss()      # Binary Cross-Entropy Loss for binary classification
-        self.loss_func_ = ImprovedFocalLoss(alpha=0.25, gamma=2.0)
-        self.optimizer_ = optim.Adam(self.model_.parameters(), lr=learning_rate)    # Adam optimizer to optimize the loss func
-
-    def _buildModel(self):
-        """Build the neural network model."""
-        model = nn.Sequential(
-            nn.Linear(self.input_size_, self.hidden_size_),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.Linear(self.hidden_size_, self.hidden_size_),
-            nn.ReLU(),
-            # nn.Dropout(0.2),
-            nn.Linear(self.hidden_size_, self.output_size_),
-            nn.Sigmoid()
-        )
-        
-        # Initialize weights with HeNormal, bias with 0s
-        for layer in model.modules():   # go through each layer of NN
-            if isinstance(layer, nn.Linear):
-                nn.init.kaiming_normal_(layer.weight, mode='fan_in', nonlinearity='relu')
-                nn.init.zeros_(layer.bias)
-                
-        return model.to(self.device_)        # to stands for train on (either CPU or GPU)
-    
     def prepareData(self, features_dataframe, labels_dataframe, train_ratio=0.7, val_ratio=0.2, test_ratio=0.1):
         """
         Prepare and split the data into training, validation, and test sets.
@@ -171,85 +86,6 @@ class ConflictNN:
         self.validation_data_ = DataLoader(val_dataset, batch_size=self.batch_size_)
         self.test_data_ = DataLoader(test_dataset, batch_size=self.batch_size_)
 
-    
-    def train(self):
-        """
-        Train the model: 
-        After each batch: calculate loss and update weights.
-        After each epoch: evaluate performance using validation data, store progress to .progress_history_
-        If after many epochs and we dont see an improvement, stop training
-        The best performance during the whole training will be restored 
-        
-        Args:
-            self.train_data_ (DataLoader): Training data loader
-            self.validation_data_ (DataLoader): Validation data loader
-            
-        Returns:
-            dict: Training history
-        """
-        assert self.train_data_ is not None, "Error: train_data_ is None. Please call prepareData() first."
-        assert self.validation_data_ is not None, "Error: validation_data_ is None. Please call prepareData() first." 
-        
-        print("\nTraining model...")
-        
-        training_total_size = len(self.train_data_.dataset)
-        validation_total_size = len(self.validation_data_.dataset)
-        
-        best_model_weights = None
-        # stops at max_epochs_ if not stopped earlier
-        for epoch in range(self.max_epochs_):
-            self.model_.train()      # set model to training mode
-            total_loss = 0.0       # total loss over all batches in 1 epoch
-            
-            # go through each batch of 1 epoch (inputs and targets has "batch"-size (32 samples))
-            for inputs, targets in self.train_data_:        
-                inputs, targets = inputs.to(self.device_), targets.to(self.device_)     # make sure we train on CPU
-                
-                # Zero the parameter gradients
-                self.optimizer_.zero_grad()
-                
-                # Forward pass
-                outputs = self.model_(inputs)
-                loss = self.loss_func_(outputs, targets)
-                
-                # Backward pass and optimize
-                loss.backward()             # calculate gradients of each param and store in their .grad attribute
-                self.optimizer_.step()      # update model's params based on .grad
-                
-                # some batch has different size, so we normalize by multiply loss with batch size
-                loss_per_batch = loss.item() * inputs.size(0)
-                total_loss += loss_per_batch
-            
-            # Up till here, 1 epoch has completed
-
-            # Evaluate performance using validation data, store progress to .progress_history_ 
-            epoch_train_loss = total_loss / training_total_size
-            self.progress_history_['train_loss'].append(epoch_train_loss)
-            epoch_val_loss = self.evaluate(self.validation_data_, validation_total_size)
-            self.progress_history_['val_loss'].append(epoch_val_loss)
-            
-            # Print progress (every 5 epochs to prevent spamming)
-            if ((epoch+1) % 5 == 0):
-                print(f'===> Epoch {epoch+1}/{self.max_epochs_}: Train Loss: {epoch_train_loss:.4f},  Val Loss: {epoch_val_loss:.4f}')
-            
-            # Check if this is the best model so far
-            if epoch_val_loss < self.progress_history_['best_val_loss']:
-                self.progress_history_['best_val_loss'] = epoch_val_loss
-                self.progress_history_['best_epoch'] = epoch
-                self.progress_history_['epochs_no_improve'] = 0
-                best_model_weights = self.model_.state_dict().copy()    # copy the current params of the model
-            else:
-                self.progress_history_['epochs_no_improve'] += 1
-            
-            # Early stopping check
-            epochs_no_improve = self.progress_history_['epochs_no_improve']
-            if epochs_no_improve >= self.patience_:
-                print(f'Early stopping triggered at epoch {epoch+1}. (no improvement in last {epochs_no_improve} epochs)')
-                break
-        
-        # Restore best model weights
-        if best_model_weights is not None:
-            self.model_.load_state_dict(best_model_weights)
     
     def evaluate(self, data_loader, data_size):
         """

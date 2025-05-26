@@ -15,8 +15,15 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
+import torch
 from tqdm import tqdm
 import yaml
+
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
 
 ############################################ for main.py ########################################
 
@@ -488,18 +495,16 @@ def getModelConfigs(settings):
 
     # Generate all combinations from YAML settings
     config_settings = settings['WORKFLOW']['TRAIN']['configurations']
-    for test_size in config_settings['test_sizes']:
+    for batch_size in config_settings['batch_sizes']:
         for max_depth in config_settings['max_depths']:
             for use_pca in config_settings['use_pca_options']:
-                for balanced_weight in config_settings['balanced_weights']:
-                    config = {
-                        'test_size': test_size,
-                        'max_depth': max_depth,
-                        'use_pca': use_pca,
-                        'pca_components': 0.95,
-                        'balanced_weight': balanced_weight,
-                    }
-                    configs.append(config)
+                config = {
+                    'batch_size': batch_size,
+                    'max_depth': max_depth,
+                    'use_pca': use_pca,
+                    'pca_components': 0.95
+                }
+                configs.append(config)
 
     assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
     return configs
@@ -536,8 +541,11 @@ def saveModel(best_model, model_name, settings):
 
     # If code reaches here, it means we need to save the new model
     # Save model and PCA
-    model_filename = os.path.join(model_folder_path, f"{model_name}.pkl")
-    joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
+    model_filename = os.path.join(model_folder_path, f"{model_name}.pt")
+    model = best_model['model'].model_
+    torch.save(model.state_dict(), model_filename)
+    pca_filename = os.path.join(model_folder_path, f"{model_name}_pca.joblib")
+    joblib.dump(best_model['pca'], pca_filename)
     
     # Convert metrics to JSON-serializable types
     def convert_to_serializable(obj):
@@ -648,3 +656,28 @@ def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
     print(f"  F1: {best_both['metrics']['AVG_F1']:.4f}")
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
+
+
+################################## For Model.py ########################################
+
+def prepareData(X_train, X_test, y_train, y_test, batch_size):
+    """Prepare the data for training."""
+    # Convert numpy arrays to PyTorch tensors
+    train_x_tensor = torch.tensor(X_train, dtype=torch.float32)
+    train_labels_tensor = torch.tensor(y_train, dtype=torch.float32)
+    test_x_tensor = torch.tensor(X_test, dtype=torch.float32)
+    test_labels_tensor = torch.tensor(y_test, dtype=torch.float32)
+    
+    # Create data loaders
+    train_dataset = TensorDataset(train_x_tensor, train_labels_tensor)
+    test_dataset = TensorDataset(test_x_tensor, test_labels_tensor)
+
+    # get sample size
+    train_size = len(train_dataset)
+    test_size = len(test_dataset)
+    
+    # Use a larger batch size to roughly match TensorFlow's performance
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size)
+
+    return train_loader, test_loader, train_size, test_size
