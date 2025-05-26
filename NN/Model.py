@@ -12,24 +12,26 @@ import torch.optim as optim
 import Utils as Utils
 
 class ConflictModel(nn.Module):
-    def __init__(self, input_size):
-        super(ConflictModel, self).__init__()
-        self.layer1 = nn.Linear(input_size, input_size)
-        self.layer2 = nn.Linear(input_size, input_size)
-        self.output = nn.Linear(input_size, input_size)
+
+    def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5):
+        super(MLP, self).__init__()
+        layers = []
+        current_size = input_size
+        for hidden_size in hidden_layers:
+            layers.append(nn.Linear(current_size, hidden_size))
+            layers.append(nn.BatchNorm1d(hidden_size)) # Batch norm often helps
+            layers.append(nn.ReLU())
+            layers.append(nn.Dropout(dropout_rate))
+            current_size = hidden_size
         
-        # Initialize weights with He initialization
-        nn.init.kaiming_normal_(self.layer1.weight, nonlinearity='relu')
-        nn.init.kaiming_normal_(self.layer2.weight, nonlinearity='relu')
-        nn.init.xavier_normal_(self.output.weight)  # Xavier/Glorot for sigmoid
-        
+        layers.append(nn.Linear(current_size, output_size))
+        # Sigmoid will be applied in the loss function (BCEWithLogitsLoss) or manually for predictions
+
+        self.network = nn.Sequential(*layers)
+
     def forward(self, x):
-        x = torch.relu(self.layer1(x))
-        x = torch.relu(self.layer2(x))
-        x = torch.sigmoid(self.output(x))
-        return x
-
-
+        return self.network(x)
+    
 class ModelManager:
     def __init__(self, config, X_train, X_test, y_train, y_test):
         self.model_ = ConflictModel(X_train.shape[1])
