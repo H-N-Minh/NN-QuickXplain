@@ -464,7 +464,7 @@ def printTestingSummary(settings):
 ################################## FOR Trainer.py ########################################
 
 def importTrainingData(settings):
-    """Import training data from CSV files."""
+    """Import training data from CSV files. return type is tuple of numpy arrays (input_data, output_data)."""
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
@@ -490,39 +490,16 @@ def getModelConfigs(settings):
     config_settings = settings['WORKFLOW']['TRAIN']['configurations']
     for test_size in config_settings['test_sizes']:
         for max_depth in config_settings['max_depths']:
-            for estimator_type in config_settings['estimator_types']:
-                for multi_output_type in config_settings['multi_output_types']:
-                    for use_pca in config_settings['use_pca_options']:
-                        for class_weight in config_settings['class_weight_options']:
-                            config = {
-                                'test_size': test_size,
-                                'max_depth': max_depth,
-                                'estimator_type': estimator_type,
-                                'multi_output_type': multi_output_type,
-                                'use_pca': use_pca,
-                                'pca_components': 0.95,
-                                'class_weight': class_weight,
-                                'n_estimators': 100 if estimator_type == 'RandomForest' else None
-                            }
-                            configs.append(config)
-
-    # Add direct multi-output RandomForest configurations
-    if not config_settings['random_forest_direct']['skip']:
-        for test_size in config_settings['test_sizes']:
-            for max_depth in config_settings['max_depths']:
-                for use_pca in config_settings['use_pca_options']:
-                    for class_weight in config_settings['class_weight_options']:
-                        config = {
-                            'test_size': test_size,
-                            'max_depth': max_depth,
-                            'estimator_type': 'RandomForest',
-                            'multi_output_type': 'Direct',
-                            'use_pca': use_pca,
-                            'pca_components': 0.95,
-                            'class_weight': class_weight,
-                            'n_estimators': 100
-                        }
-                        configs.append(config)
+            for use_pca in config_settings['use_pca_options']:
+                for balanced_weight in config_settings['balanced_weights']:
+                    config = {
+                        'test_size': test_size,
+                        'max_depth': max_depth,
+                        'use_pca': use_pca,
+                        'pca_components': 0.95,
+                        'balanced_weight': balanced_weight,
+                    }
+                    configs.append(config)
 
     assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
     return configs

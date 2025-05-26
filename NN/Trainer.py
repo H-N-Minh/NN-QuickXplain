@@ -67,25 +67,9 @@ def trainOneModel(input_data, output_data, config):
         pca = None
     
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=config['test_size'], random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=0.2, random_state=42)
     
-    # Create base estimator
-    base_estimator = createBaseEstimator(config['estimator_type'], config)
-    
-    # Create multi-output model
-    if config['multi_output_type'] == 'MultiOutputClassifier':
-        model = MultiOutputClassifier(base_estimator)
-    elif config['multi_output_type'] == 'ClassifierChain':
-        model = ClassifierChain(base_estimator, random_state=42)
-    else:
-        # Direct RandomForest for multi-output
-        model = RandomForestClassifier(
-            n_estimators=config.get('n_estimators', 100),
-            max_depth=config.get('max_depth', None),
-            random_state=42,
-            class_weight=config.get('class_weight', None),
-            n_jobs=-1
-        )
+    # TODOMINH: create model and train it 
     
     # Train model
     model.fit(X_train, y_train)

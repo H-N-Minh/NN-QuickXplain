@@ -6,8 +6,8 @@
 
 import numpy as np
 import time
-from DataHandling import createSolverInput
-from DataHandling import processOutputFile
+from NN.DataHandling_old import createSolverInput
+from NN.DataHandling_old import processOutputFile
 import Solver.RunQuickXplain as Solver
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
