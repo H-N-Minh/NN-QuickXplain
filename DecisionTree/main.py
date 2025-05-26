@@ -4,6 +4,7 @@ import Utils as Utils
 
 
 def main():
+    print("\n\n================== DECISION TREE ===========================")
     settings = Utils.loadSettings()
 
     print("\n\n################## CLEANING PHASE ##########################")

@@ -1,138 +1,126 @@
-# test and build a report about the performance of the NN model
-# this includes: 
-# - comparing ordered and unordered constraints (runtime) (this will be used as main benchmark on how well the model performs)
-# - test for overfitting/underfitting
-# - test on how similar the predictions are to the true labels (this will be used to improve the model) (f1, accuracy, precision, recall)
+# this file responsible for testing the model on unseen data and combined with QuickXplain.
+# Model is tested on: F1, accuracy, Exact Match, and performance on ordered vs unordered data using QuickXplain.
+# only important funcs are here, the rest is in Utils.py
 
 import numpy as np
-import time
-from DataHandling import createSolverInput
-from DataHandling import processOutputFile
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier
+import Utils as Utils
+
 import Solver.RunQuickXplain as Solver
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from Trainer import evaluateModel
 
-def predictTestData(model):
+def getPredictedProbabilities(model, X_validate):
     """
-    Get predictions of the test data
+    Get the predicted probabilities for each output constraint using the model.
+    Probability is calculated as follow:
+    - for each constraint, the model predicts the probability of each class (1, -1, 0).
+    - Since we only want 1 probability per constraint, we sum the probabilities of classes 1 and -1 and assign
+        that as the predicted probability for that constraint.
+    This means it is the probability that the constraint will be parted of the conflict set or not. 
     
-    Args:
-        test_data_loader (DataLoader): Data loader including both input values and true labels.
-        
+    Parameters:
+    model: The trained model to use for predictions
+    X_validate (numpy.ndarray): Input data for validation
+    
     Returns:
-        tuple: inputs, Predicted probabilities and true labels (each is 2d NumPy array)
+    numpy.ndarray: Predicted probabilities for each output constraint
     """
-    # inputs values and true labels are currently both in test_data_loader
-    # we extract them and put them into a list, then convert to numpy array 
-    # these lists are 2d, each row represent 1 sample
-    all_inputs = []    
-    all_preds = []      
-    all_targets = [] 
-
-    test_data_loader = model.test_data_
-    assert test_data_loader is not None, "Error: predictTestData:: test_data_loader is None."
-    assert len(test_data_loader) > 0, "Error: predictTestData:: test_data_loader is empty."
-
-    # TODO: WAIT WHY IS THIS IN BATCHES?
-    for inputs, targets in test_data_loader:     # loop through each batch
-        # make the prediction
-        prediction = model.predict(inputs)
-
-        assert prediction is not None, "Error: predictTestData:: model.predict() returned None."
-
-        all_inputs.append(inputs.numpy())
-        all_preds.append(prediction.numpy())
-        all_targets.append(targets.numpy())
+    # Initialize output array: (n_samples, n_constraints)
+    n_constraints = len(model.estimators_)
+    y_pred_prob = np.zeros((X_validate.shape[0], n_constraints), dtype=float)
     
-    # each row represent 1 samples, we use vstack to concatenates all samples, so result is still 2D each
-    return np.vstack(all_inputs), np.vstack(all_preds), np.vstack(all_targets)     
+    if isinstance(model, MultiOutputClassifier):
+        # For MultiOutputClassifier: each estimator is independent
+        for i, estimator in enumerate(model.estimators_):
+            probas = estimator.predict_proba(X_validate)  # Shape: (n_samples, n_classes_i)
+            class_labels = estimator.classes_
+            # Find indices of classes 1 and -1
+            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
+            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
+    elif isinstance(model, ClassifierChain):
+        # For ClassifierChain: predict labels first to use as features
+        y_pred = model.predict(X_validate)  # Shape: (n_samples, n_constraints)
+        for i, estimator in enumerate(model.estimators_):
+            # Prepare input: X_validate plus previous predicted labels
+            if i == 0:
+                input_i = X_validate
+            else:
+                input_i = np.hstack((X_validate, y_pred[:, 0:i]))
+            probas = estimator.predict_proba(input_i)  # Shape: (n_samples, n_classes_i)
+            class_labels = estimator.classes_
+            # Find indices of classes 1 and -1
+            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
+            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
+            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
+    else:
+        raise ValueError("Model must be MultiOutputClassifier or ClassifierChain")
+    
+    return y_pred_prob
 
-
-def test(model):
+def testWithQuickXplain(settings, model, X_validate, input_data):
     """
-    Test the model and compute metrics.
+    Test the model with QuickXplain to evaluate its performance on constraint ordering.
     
-    produce input , get diagnosis from quickxplain, process the output (store also the conflict)
-    produce input (unordered), get diagnosis and process the output
-    compare the performance of 2 results (runtime and cc)
-    evaluate how good the test_pred is (accuracy, precision, recall, f1 score, loss)
-    test overfitting/underfitting
-    build report (with suggestions for improvement)
-
-    Args:
-        test_loader (DataLoader): Test data loader
-        PREDICTION_THRESHOLD (float): PREDICTION_THRESHOLD for binary classification
-        
-    Returns:
-        dict: the test report
-    """
-    print("\nTesting model...")
-
-    test_input, test_pred, test_true = predictTestData(model)
-
-    # This test is main benchmark to evaluate the model's performance
-    runtime_improv, cc_improv = testModelRealImprovement(test_input, test_pred, model)
-
-
-    y_pred = (test_pred >= 0.5).astype(int)
-    
-    # Calculate metrics
-    test_result = {
-        'accuracy (% of predictions that are correct, higher is better)': accuracy_score(test_true.flatten(), y_pred.flatten()),
-        'precision (% of true positives, higher is better)': precision_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
-        'recall': recall_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
-        'f1': f1_score(test_true.flatten(), y_pred.flatten(), zero_division=0),
-        'loss': model.evaluate(model.test_data_, test_input.shape[0])
-    }
-    
-    # print("Test result:")
-    for metric, value in test_result.items():
-        print(f"{metric}: {value:.4f}")
-    
-    # return test_result
-    
-    return 0, 0  # Placeholder for the test result
-
-def testModelRealImprovement(test_input, test_pred, model):
-    """
-    Use predictions of model to generate input for QuickXplain, then run it and get the runtime.
-    Then do the same but with default constraint odering, and get the runtime.
-    The 2 runtimes are compared to see how much the model improves or not.
-
-    This improvement on runtime and CC is the main benchmark to evaluate the model.
-
-    Args:
-        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
-        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints.
-        model (Model): The trained model
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    model: The trained model to test
+    X_validate (numpy.ndarray): input data but was transformed with PCA (if PCA was used during training)
+    input_data (numpy.ndarray): Original input data without PCA transformation
 
     Returns:
-        tuple: (runtime improvement, CC improvement) (in %)
-        NOTE: runtime improvement here is how much faster the model is, not how much less time it takes to run. Its different.
+    list: [faster_performance, ordered_runtime, unordered_runtime]
+        - faster_performance: Percentage improvement in runtime with predicted probabilities vs default ordering
+        - ordered_runtime: Runtime of QuickXplain with predicted probabilities
+        - unordered_runtime: Runtime of QuickXplain with default ordering
     """
-    # generate input for QuickXplain (using test data), constraints are ordered based on probability highest to lowest
-    createSolverInput(test_input, test_pred, 
-                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
-                      constraint_name_list= model.constraint_name_list_)
+    # get predicted probabilities from model
+    y_pred_prob = getPredictedProbabilities(model, X_validate)
 
-    # Runs QuickXplain to analyze conflicts
-    Solver.getConflict(model.settings_)
+    # Get the list of constraint names
+    constraint_name_list = Utils.getConstraintNameList(settings)
+
+    # Generate input for QuickXplain using the predicted probabilities
+    Utils.createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+
+    # Run QuickXplain to analyze conflicts
+    Solver.getConflict(settings)
 
     # process the output of QuickXplain (get average runtime and cc)
-    avg_ordered_runtime, avg_ordered_cc = processOutputFile(model.settings_["PATHS"]["SOLVER_OUTPUT_PATH"])
+    avg_ordered_runtime, avg_ordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
 
-    # same process again but with unordered constraints (default ordering)
-    createSolverInput(test_input, test_pred= None, 
-                      output_dir= model.settings_["PATHS"]["SOLVER_INPUT_PATH"],
-                      constraint_name_list= model.constraint_name_list_)
-    
-    Solver.getConflict(model.settings_)
 
-    avg_unordered_runtime, avg_unordered_cc = processOutputFile(model.settings_["PATHS"]["SOLVER_OUTPUT_PATH"])
+    ########### Same thing again as above but now with default ordering (no predicted probabilities)
+    Utils.createSolverInput(input_data, None, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
-    # calculate the improvement in percentage
-    runtime_improv = (avg_unordered_runtime - avg_ordered_runtime) / avg_ordered_runtime * 100
-    cc_improv = (avg_unordered_cc - avg_ordered_cc) / avg_unordered_cc * 100
-    print(f"Runtime improvement: {runtime_improv:.2f}% (ordered: {avg_ordered_runtime:.5f}s, unordered: {avg_unordered_runtime:.5f}s)")
-    print(f"CC improvement: {cc_improv:.2f}% (ordered: {avg_ordered_cc:.2f}, unordered: {avg_unordered_cc:.2f})")
-    # return runtime_improv, cc_improv
-    return 0, 0
+    # Run QuickXplain with default ordering
+    Solver.getConflict(settings)
+
+    # process the output of QuickXplain (get average runtime and cc)
+    avg_unordered_runtime, avg_unordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+
+    return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc]
+
+
+def startTesting(settings):
+    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
+        # Import the model and the validation data
+        print(f"\nTesting model '{model_name}'...")
+        model, pca, model_metadata = Utils.importModel(settings, model_name)
+        X_validate, y_validate, input_data = Utils.importValidationData(settings, model_metadata, pca)
+        
+        # Test model on validation data.
+        print(f"...Testing model '{model_name}' on validation data...")
+        metrics = evaluateModel(model, X_validate, y_validate)
+
+        # Test the model on QX
+        print(f"...Testing model '{model_name}' with QuickXplain...")
+        result = testWithQuickXplain(settings, model, X_validate, input_data)
+
+        # store the result in json file
+        Utils.saveTestResults(settings, model_name, metrics, result)
+        print(f"Done testing '{model_name}'!")
+
+    # Print validation summary
+    Utils.printTestingSummary(settings)
+
