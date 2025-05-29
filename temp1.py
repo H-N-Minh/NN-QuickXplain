@@ -100,34 +100,34 @@ def load_and_preprocess_data(
 
 
 # Exactly same as Model.py, only diff is it allows activation func and dropout modification. also it doesnt have batch norm
-# # --- MLP Model ---
-# class MLP(nn.Module):
-#     def __init__(self, input_dim: int, output_dim: int, hidden_layers_config: List[int], dropout_rate: float = 0.0, activation_fn_str: str = "relu"):
-#         super(MLP, self).__init__()
-#         layers = []
-#         current_dim = input_dim
+# --- MLP Model ---
+class MLP(nn.Module):
+    def __init__(self, input_dim: int, output_dim: int, hidden_layers_config: List[int], dropout_rate: float = 0.0, activation_fn_str: str = "relu"):
+        super(MLP, self).__init__()
+        layers = []
+        current_dim = input_dim
 
-#         if activation_fn_str.lower() == "relu":
-#             activation_fn = nn.ReLU()
-#         elif activation_fn_str.lower() == "leakyrelu":
-#             activation_fn = nn.LeakyReLU()
-#         else:
-#             raise ValueError(f"Unsupported activation function: {activation_fn_str}")
+        if activation_fn_str.lower() == "relu":
+            activation_fn = nn.ReLU()
+        elif activation_fn_str.lower() == "leakyrelu":
+            activation_fn = nn.LeakyReLU()
+        else:
+            raise ValueError(f"Unsupported activation function: {activation_fn_str}")
 
-#         for hidden_dim in hidden_layers_config:
-#             layers.append(nn.Linear(current_dim, hidden_dim))
-#             layers.append(activation_fn)
-#             if dropout_rate > 0:
-#                 layers.append(nn.Dropout(dropout_rate))
-#             current_dim = hidden_dim
+        for hidden_dim in hidden_layers_config:
+            layers.append(nn.Linear(current_dim, hidden_dim))
+            layers.append(activation_fn)
+            if dropout_rate > 0:
+                layers.append(nn.Dropout(dropout_rate))
+            current_dim = hidden_dim
         
-#         layers.append(nn.Linear(current_dim, output_dim))
-#         # No sigmoid here, BCEWithLogitsLoss will handle it
+        layers.append(nn.Linear(current_dim, output_dim))
+        # No sigmoid here, BCEWithLogitsLoss will handle it
 
-#         self.network = nn.Sequential(*layers)
+        self.network = nn.Sequential(*layers)
 
-#     def forward(self, x: torch.Tensor) -> torch.Tensor:
-#         return self.network(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.network(x)
 
 # --- Evaluation Metrics ---
 def calculate_metrics(
@@ -140,7 +140,7 @@ def calculate_metrics(
     """Calculates various performance metrics."""
     model_outputs_probs = torch.sigmoid(model_outputs_logits)
     predicted_mcs_membership = (model_outputs_probs > threshold).float().cpu()
-    
+
     targets_mcs_cpu = targets_mcs.cpu()
     targets_original_cpu = targets_original.cpu()
     inputs_original_cpu = inputs_original.cpu()
@@ -170,7 +170,7 @@ def calculate_metrics(
     
     # Alternative: Macro F1 across labels (sklearn's interpretation of multilabel macro)
     # This calculates F1 for each of the 47 constraints and then averages.
-    # f1_mcs_macro_sk = f1_score(targets_mcs_cpu.numpy(), predicted_mcs_membership.numpy(), average='macro', zero_division=0)
+    f1_mcs_macro_sk = f1_score(targets_mcs_cpu.numpy(), predicted_mcs_membership.numpy(), average='macro', zero_division=0)
     # The user implied more of a sample-by-sample performance.
 
     # 3. Mean Average Precision (mAP) for MCS prediction probabilities
@@ -545,8 +545,8 @@ def testing_phase(input_csv: Path, output_csv: Path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train or Test MLP for Minimal Conflict Set Prediction.")
     parser.add_argument("phase", choices=["train", "test"], help="Phase to run: 'train' or 'test'.")
-    parser.add_argument("--input_csv", type=str, default="input_trainingdata.csv", help="Path to input CSV file.")
-    parser.add_argument("--output_csv", type=str, default="output_trainingdata.csv", help="Path to output CSV file.")
+    parser.add_argument("--input_csv", type=str, default="NN/TrainingData/arcade/invalid_confs_48752.csv", help="Path to input CSV file.")
+    parser.add_argument("--output_csv", type=str, default="NN/TrainingData/arcade/conflicts_48752.csv", help="Path to output CSV file.")
     parser.add_argument("--epochs", type=int, default=100, help="Number of epochs for training.")
     parser.add_argument("--patience", type=int, default=15, help="Patience for early stopping.")
     # Can add more CLI args for model configs if desired, or define them in script
