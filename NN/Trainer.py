@@ -38,8 +38,8 @@ def trainOneModel(input_data, output_data, config):
     metrics = model_manager.evaluateModel()
     
     # print results
-    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
-          f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
+    print(f"Batch size: {config['batch_size']}, "
+          f"PCA: {config['use_pca']}, Max Depth: {config.get('max_depth', 'None')}")
     print(f"Exact Match = {metrics['EXACT_MATCH']:.2f}%, F1 = {metrics['AVG_F1']:.4f}")
     
     return metrics, model_manager, pca

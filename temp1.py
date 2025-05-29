@@ -99,34 +99,35 @@ def load_and_preprocess_data(
     )
 
 
-# --- MLP Model ---
-class MLP(nn.Module):
-    def __init__(self, input_dim: int, output_dim: int, hidden_layers_config: List[int], dropout_rate: float = 0.0, activation_fn_str: str = "relu"):
-        super(MLP, self).__init__()
-        layers = []
-        current_dim = input_dim
+# Exactly same as Model.py, only diff is it allows activation func and dropout modification. also it doesnt have batch norm
+# # --- MLP Model ---
+# class MLP(nn.Module):
+#     def __init__(self, input_dim: int, output_dim: int, hidden_layers_config: List[int], dropout_rate: float = 0.0, activation_fn_str: str = "relu"):
+#         super(MLP, self).__init__()
+#         layers = []
+#         current_dim = input_dim
 
-        if activation_fn_str.lower() == "relu":
-            activation_fn = nn.ReLU()
-        elif activation_fn_str.lower() == "leakyrelu":
-            activation_fn = nn.LeakyReLU()
-        else:
-            raise ValueError(f"Unsupported activation function: {activation_fn_str}")
+#         if activation_fn_str.lower() == "relu":
+#             activation_fn = nn.ReLU()
+#         elif activation_fn_str.lower() == "leakyrelu":
+#             activation_fn = nn.LeakyReLU()
+#         else:
+#             raise ValueError(f"Unsupported activation function: {activation_fn_str}")
 
-        for hidden_dim in hidden_layers_config:
-            layers.append(nn.Linear(current_dim, hidden_dim))
-            layers.append(activation_fn)
-            if dropout_rate > 0:
-                layers.append(nn.Dropout(dropout_rate))
-            current_dim = hidden_dim
+#         for hidden_dim in hidden_layers_config:
+#             layers.append(nn.Linear(current_dim, hidden_dim))
+#             layers.append(activation_fn)
+#             if dropout_rate > 0:
+#                 layers.append(nn.Dropout(dropout_rate))
+#             current_dim = hidden_dim
         
-        layers.append(nn.Linear(current_dim, output_dim))
-        # No sigmoid here, BCEWithLogitsLoss will handle it
+#         layers.append(nn.Linear(current_dim, output_dim))
+#         # No sigmoid here, BCEWithLogitsLoss will handle it
 
-        self.network = nn.Sequential(*layers)
+#         self.network = nn.Sequential(*layers)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.network(x)
+#     def forward(self, x: torch.Tensor) -> torch.Tensor:
+#         return self.network(x)
 
 # --- Evaluation Metrics ---
 def calculate_metrics(
@@ -139,6 +140,7 @@ def calculate_metrics(
     """Calculates various performance metrics."""
     model_outputs_probs = torch.sigmoid(model_outputs_logits)
     predicted_mcs_membership = (model_outputs_probs > threshold).float().cpu()
+    
     targets_mcs_cpu = targets_mcs.cpu()
     targets_original_cpu = targets_original.cpu()
     inputs_original_cpu = inputs_original.cpu()
@@ -240,11 +242,11 @@ def evaluate_model(
             
             if criterion:
                 loss = criterion(outputs_logits, targets_mcs)
-                total_loss += loss.item()
+                total_loss += loss.item()       # used to later apply patience if val loss does not improve
             
             all_outputs_logits.append(outputs_logits.cpu())
             all_targets_mcs.append(targets_mcs.cpu())
-            all_targets_original.append(targets_original_batch.cpu()) # This is from dataloader
+            all_targets_original.append(targets_original_batch.cpu()) # This is from dataloader, used to later calculate exact match
 
     avg_loss = total_loss / len(dataloader) if criterion and len(dataloader) > 0 else 0.0
     
@@ -369,6 +371,7 @@ def training_phase(
     # but can be good practice for full reproducibility.
     # For now, we only save test_indices with each model.
 
+    # this should be part of load_and_preprocess_data, but we keep it here for changing batch sizes
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True) # Batch size can be part of config
     # For val_loader, pass X_val_orig directly to evaluate_model
     # We need to ensure original inputs (X) align with batches from DataLoader
@@ -379,6 +382,7 @@ def training_phase(
     input_dim = X_train_orig.shape[1]
     output_dim = X_train_orig.shape[1] # Predicting MCS membership for each of 47 constraints
 
+    # start training for each model configuration
     for i, config in enumerate(model_configurations):
         print(f"\nTraining model {i+1}/{len(model_configurations)}: {config.get('name', 'Unnamed Config')}")
         print(f"Config: {config}")

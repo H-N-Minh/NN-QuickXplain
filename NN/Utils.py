@@ -481,11 +481,12 @@ def importTrainingData(settings):
     print("Importing data...")
     input_data = pd.read_csv(input_file).iloc[:, 1:]
     output_data = pd.read_csv(output_file).iloc[:, 1:]
+    output_data = output_data.replace(-1, 1)
 
     assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
     assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
     assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
-    assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
+    assert set(output_data.values.flatten()).issubset({1, 0}), "Output data values should only be 1 or 0."
 
     return input_data.values , output_data.values
 
@@ -635,23 +636,21 @@ def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
     print("TRAINING SUMMARY")
     print(f"{'='*60}")
     print(f"\nBest Exact Match Model:")
-    print(f"  Estimator: {exact_match_config['estimator_type']}, MultiOutput: {exact_match_config['multi_output_type']}, "
-          f"PCA: {exact_match_config['use_pca']}, Class Weight: {exact_match_config['class_weight']}, "
-          f"Test Size: {exact_match_config['test_size']}, Max Depth: {exact_match_config.get('max_depth', 'None')}")
+
+    print(f"Batch size: {exact_match_config['batch_size']}, "
+          f"PCA: {exact_match_config['use_pca']}, Max Depth: {exact_match_config.get('max_depth', 'None')}")
     print(f"  Exact Match: {best_exact_match['metrics']['EXACT_MATCH']:.2f}%")
     print(f"  F1: {best_exact_match['metrics']['AVG_F1']:.4f}")
 
     print(f"\nBest F1 Model:")
-    print(f"  Estimator: {f1_config['estimator_type']}, MultiOutput: {f1_config['multi_output_type']}, "
-          f"PCA: {f1_config['use_pca']}, Class Weight: {f1_config['class_weight']}, "
-          f"Test Size: {f1_config['test_size']}, Max Depth: {f1_config.get('max_depth', 'None')}")
+    print(f"Batch size: {f1_config['batch_size']}, "
+          f"PCA: {f1_config['use_pca']}, Max Depth: {f1_config.get('max_depth', 'None')}")
     print(f"  Exact Match: {best_f1['metrics']['EXACT_MATCH']:.2f}%")
     print(f"  F1: {best_f1['metrics']['AVG_F1']:.4f}")
 
     print(f"\nBest Both Model:")
-    print(f"  Estimator: {both_config['estimator_type']}, MultiOutput: {both_config['multi_output_type']}, "
-          f"PCA: {both_config['use_pca']}, Class Weight: {both_config['class_weight']}, "
-          f"Test Size: {both_config['test_size']}, Max Depth: {both_config.get('max_depth', 'None')}")
+    print(f"Batch size: {both_config['batch_size']}, "
+          f"PCA: {both_config['use_pca']}, Max Depth: {both_config.get('max_depth', 'None')}")
     print(f"  Exact Match: {best_both['metrics']['EXACT_MATCH']:.2f}%")
     print(f"  F1: {best_both['metrics']['AVG_F1']:.4f}")
 
@@ -668,7 +667,7 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     test_x_tensor = torch.tensor(X_test, dtype=torch.float32)
     test_labels_tensor = torch.tensor(y_test, dtype=torch.float32)
     
-    # Create data loaders
+    # combine features and labels into TensorDatasets
     train_dataset = TensorDataset(train_x_tensor, train_labels_tensor)
     test_dataset = TensorDataset(test_x_tensor, test_labels_tensor)
 
@@ -676,8 +675,14 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     train_size = len(train_dataset)
     test_size = len(test_dataset)
     
-    # Use a larger batch size to roughly match TensorFlow's performance
+    # Use Dataloader for easier batch processing later
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    return train_loader, test_loader, train_size, test_size
+    # Calculate pos_weight for BCEWithLogitsLoss loss func (messure the imbalance of class 0 and 1)
+    num_positive_train = train_labels_tensor.sum(dim=0)
+    num_negative_train = train_labels_tensor.shape[0] - num_positive_train
+    pos_weight = num_negative_train / (num_positive_train + 1e-6) # Add epsilon to avoid division by zero
+    pos_weight = pos_weight.to('cpu')
+
+    return train_loader, test_loader, train_size, test_size, pos_weight

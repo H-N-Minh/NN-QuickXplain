@@ -14,7 +14,7 @@ import Utils as Utils
 class ConflictModel(nn.Module):
 
     def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5):
-        super(MLP, self).__init__()
+        super(ConflictModel, self).__init__()
         layers = []
         current_size = input_size
         for hidden_size in hidden_layers:
@@ -34,17 +34,17 @@ class ConflictModel(nn.Module):
     
 class ModelManager:
     def __init__(self, config, X_train, X_test, y_train, y_test):
-        self.model_ = ConflictModel(X_train.shape[1])
+        self.model_ = ConflictModel(X_train.shape[1], [X_train.shape[1]], X_train.shape[1])
         self.config_ = config
 
         # Prepare data loaders
         batch_size = config['batch_size']
         assert batch_size > 0, "Batch size must be greater than 0"
-        self.train_loader_, self.test_loader_, self.train_size_, self.test_size_ = \
+        self.train_loader_, self.test_loader_, self.train_size_, self.test_size_, pos_weight = \
                 Utils.prepareData(X_train, X_test, y_train, y_test, batch_size)
         
         # Define loss and optimizer
-        self.loss_func_ = nn.BCELoss()
+        self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=0.0005)
 
         # Epochs
@@ -80,28 +80,30 @@ class ModelManager:
         with torch.no_grad():
             for inputs, labels in self.test_loader_:
                 outputs = self.model_(inputs)
-                y_pred.append(outputs.numpy())
-                y_test.append(labels.numpy())
+                y_pred.append(outputs.cpu())
+                y_test.append(labels.cpu())
         
         # Concatenate results
-        y_pred = np.vstack(y_pred)
-        y_test = np.vstack(y_test)
+        y_pred = torch.cat(y_pred, dim=0)
+        y_test = torch.cat(y_test, dim=0)
+
+        # calculate metrics
+        y_pred_probs = torch.sigmoid(y_pred)
+        y_pred_probs_rounded = (y_pred_probs > 0.5).float().cpu()
 
         # Exact matches
-        exact_matches = np.sum(np.all(y_pred == y_test, axis=1))
-        total_rows = y_test.shape[0]
-        exact_match_pct = (exact_matches / total_rows) * 100
+        exact_match_pct = torch.all(y_pred_probs_rounded == y_test, dim=1).float().mean().item() * 100
         
         # Per-constraint metrics
-        accuracies = [accuracy_score(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])]
-        precisions = [precision_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-        recalls = [recall_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-        f1_scores = [f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
+        accuracies = [accuracy_score(y_test[:, i], y_pred_probs_rounded[:, i]) for i in range(y_test.shape[1])]
+        precisions = [precision_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
+        recalls = [recall_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
+        f1_scores = [f1_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
         
         metrics = {
             'EXACT_MATCH': exact_match_pct,
             'AVG_F1': np.mean(f1_scores),
-            'total_samples': total_rows,
+            'total_samples': y_test.shape[0],
             'avg_accuracy': np.mean(accuracies),
             'avg_precision': np.mean(precisions),
             'avg_recall': np.mean(recalls)

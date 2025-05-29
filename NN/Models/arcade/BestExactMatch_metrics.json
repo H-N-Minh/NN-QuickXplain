@@ -1,0 +1,18 @@
+{
+  "EXACT_MATCH": 0.0,
+  "AVG_F1": 0.3292461215078333,
+  "total_samples": 74,
+  "avg_accuracy": 0.4758481886141462,
+  "avg_precision": 0.4911542742665884,
+  "avg_recall": 0.42821143927060684,
+  "validation_indexes": [
+    100,
+    140
+  ],
+  "config": {
+    "batch_size": 1024,
+    "max_depth": 12,
+    "use_pca": false,
+    "pca_components": 0.95
+  }
+}
