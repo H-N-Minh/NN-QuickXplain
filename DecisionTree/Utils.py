@@ -463,6 +463,18 @@ def printTestingSummary(settings):
 
 ################################## FOR Trainer.py ########################################
 
+# names for all the metrics used in the evaluation.
+METRIC_EXACT_MATCH = 'EXACT_MATCH'
+METRIC_F1 = 'F1'
+METRIC_MCC = 'MCC'
+METRIC_MAP = 'MAP'
+METRIC_HAMMING_LOSS = 'HAMMING_LOSS'
+METRIC_COMBINED = 'COMBINED'
+METRIC_ACCURACY = 'accuracy'
+METRIC_ROC_AUC = 'roc_auc'
+METRIC_TOTAL_SAMPLES = 'total_samples'
+
+
 def importTrainingData(settings):
     """Import training data from CSV files."""
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
@@ -528,7 +540,7 @@ def getModelConfigs(settings):
     return configs
 
 
-def saveModel(best_model, model_name, settings):
+def saveModel(best_models, settings):
     """Save the model object, pca object and the metrices of the best models."""
 
     # get an appropriate name for the folder to save these models
@@ -537,32 +549,8 @@ def saveModel(best_model, model_name, settings):
     model_folder_path = os.path.join(current_folder, "Models", model_folder_name)
     if not os.path.exists(model_folder_path):
         os.makedirs(model_folder_path)
-    metrics_filename = os.path.join(model_folder_path, f"{model_name}_metrics.json")
 
-    # Dont save this model if it is not better than the one already stored in this folder (if any exists)
-    if os.path.exists(metrics_filename):
-        with open(metrics_filename, 'r') as f:
-            old_model = json.load(f)
-            old_exact_match = old_model['EXACT_MATCH']
-            new_exact_match = best_model['metrics']['EXACT_MATCH']
-            old_f1 = old_model['AVG_F1']
-            new_f1 = best_model['metrics']['AVG_F1']
-            old_both = old_exact_match + old_f1 * 100
-            new_both = new_exact_match + new_f1 * 100
-
-            # Check if the new model is better than the old one
-            if (model_name == "BestExactMatch" and old_exact_match >= new_exact_match) or \
-               (model_name == "BestF1" and old_f1 >= new_f1) or \
-               (model_name == "BestBoth" and old_both >= new_both):
-                print(f"Skipping saving '{model_name}' model as it is not better than the existing one.")
-                return model_folder_path
-
-    # If code reaches here, it means we need to save the new model
-    # Save model and PCA
-    model_filename = os.path.join(model_folder_path, f"{model_name}.pkl")
-    joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
-    
-    # Convert metrics to JSON-serializable types
+    # Helper func to Convert metrics to JSON-serializable types later
     def convert_to_serializable(obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -572,12 +560,36 @@ def saveModel(best_model, model_name, settings):
             return obj.tolist()
         else:
             return obj
-
-    # Save metrics
-    metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['metrics'].items()}
-    with open(metrics_filename, 'w') as f:
-        json.dump(metrics_serializable, f, indent=2)
     
+    # Save the best models if they are better than the existing ones
+    for name, best_model in best_models.items():
+        if best_model is None:      # this should never happen, but just in case
+            print(f"No best model found for {name}. Skipping saving.")
+            continue
+        
+        metrics_filename = os.path.join(model_folder_path, f"Best_{name}_metrics.json")
+
+        if os.path.exists(metrics_filename):
+            with open(metrics_filename, 'r') as f:
+                old_model = json.load(f)
+                old_score = old_model['training_result'][name]
+                new_score = best_model['training_result'][name]
+
+                # Dont save this model if it is not better than the one already stored in this folder
+                if new_score <= old_score or (name == METRIC_HAMMING_LOSS and new_score >= old_score):
+                    print(f"Skipping saving '{name}' model as it is not better than the existing one.")
+                    continue
+                
+        # If code reaches here, it means we need to save the new model
+        # Save model and PCA
+        model_filename = os.path.join(model_folder_path, f"Best_{name}.pkl")
+        joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
+
+        # Save metrics
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['training_result'].items()}
+        with open(metrics_filename, 'w') as f:
+            json.dump(metrics_serializable, f, indent=2)
+                    
     return model_folder_path
 
 
@@ -601,74 +613,48 @@ def splitData(input_data, output_data):
     return input_data, output_data, (start_index, end_index)
 
 
-def updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both):
+def updateBestModel(model_info, best_models):
     """
     Update the best model if the current model is better than the previous best.
     """
-    # Check if the model is the best so far
-    current_exact_match = metrics['EXACT_MATCH']
-    current_f1 = metrics['AVG_F1']
-    current_both = current_exact_match + current_f1 * 100
-
-    # Check if this is the best exact match model
-    if current_exact_match > best_exact_match['EXACT_MATCH']:
-        best_exact_match = {
-            'EXACT_MATCH': current_exact_match,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    # Check if this is the best F1 model
-    if current_f1 > best_f1['AVG_F1']:
-        best_f1 = {
-            'AVG_F1': current_f1,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    # Check if this is the best model of both metrics above
-    if current_both > best_both['f1_and_exact_match']:
-        best_both = {
-            'f1_and_exact_match': current_both,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    return best_exact_match, best_f1, best_both
+    current_metric = model_info['training_result']['metric']
+    # go through the dictionary of best models, and update the best model if the current model is better
+    for name, best_model in best_models.items():
+        # if this is the first model, initialize the best model
+        if best_model is None:
+            best_models[name] = model_info.copy()
+            continue
+        
+        # Else, check if the current model is better than the best model
+        current = current_metric[name]
+        best = best_model['training_result'][name]
+        if current > best or (name == METRIC_HAMMING_LOSS and current < best):
+            best_models[name] = model_info.copy()
 
 
-def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir):
+def printTrainingSummary(best_models, saved_models_dir):
     """Print a summary of the training results."""
-    exact_match_config = best_exact_match['metrics']['config']
-    f1_config = best_f1['metrics']['config']   
-    both_config = best_both['metrics']['config']
 
     print(f"\n\n{'='*60}")
-    print("TRAINING SUMMARY")
+    print("TRAINING SUMMARY: best models of this training session:")
     print(f"{'='*60}")
-    print(f"\nBest Exact Match Model:")
-    print(f"  Estimator: {exact_match_config['estimator_type']}, MultiOutput: {exact_match_config['multi_output_type']}, "
-          f"PCA: {exact_match_config['use_pca']}, Class Weight: {exact_match_config['class_weight']}, "
-          f"Test Size: {exact_match_config['test_size']}, Max Depth: {exact_match_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_exact_match['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_exact_match['metrics']['AVG_F1']:.4f}")
 
-    print(f"\nBest F1 Model:")
-    print(f"  Estimator: {f1_config['estimator_type']}, MultiOutput: {f1_config['multi_output_type']}, "
-          f"PCA: {f1_config['use_pca']}, Class Weight: {f1_config['class_weight']}, "
-          f"Test Size: {f1_config['test_size']}, Max Depth: {f1_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_f1['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_f1['metrics']['AVG_F1']:.4f}")
-
-    print(f"\nBest Both Model:")
-    print(f"  Estimator: {both_config['estimator_type']}, MultiOutput: {both_config['multi_output_type']}, "
-          f"PCA: {both_config['use_pca']}, Class Weight: {both_config['class_weight']}, "
-          f"Test Size: {both_config['test_size']}, Max Depth: {both_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_both['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_both['metrics']['AVG_F1']:.4f}")
+    # Print the best models of this training session
+    for name, best_model in best_models.items():
+        config = best_model['config']
+        metrics = best_model['training_result']
+        print(f"\nBest '{name}' Model:")
+        print(f"  Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, "
+            f"PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
+            f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
+        print(
+            f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+            f"F1 = {metrics[METRIC_F1]:.4f}, "
+            f"MCC = {metrics[METRIC_MCC]:.4f}, "
+            f"MAP = {metrics[METRIC_MAP]:.4f}, "
+            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        )
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
 

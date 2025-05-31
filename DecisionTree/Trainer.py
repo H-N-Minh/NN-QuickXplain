@@ -14,17 +14,6 @@ from sklearn.metrics import matthews_corrcoef, average_precision_score, hamming_
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import label_binarize
 
-# names for all the metrics used in the evaluation.
-METRIC_EXACT_MATCH = 'EXACT_MATCH'
-METRIC_F1 = 'F1'
-METRIC_MCC = 'MCC'
-METRIC_MAP = 'MAP'
-METRIC_HAMMING_LOSS = 'HAMMING_LOSS'
-METRIC_COMBINED = 'COMBINED'
-METRIC_ACCURACY = 'accuracy'
-METRIC_ROC_AUC = 'roc_auc'
-METRIC_TOTAL_SAMPLES = 'total_samples'
-
 
 def createBaseEstimator(estimator_type, config):
     """Create base estimator for Model according to configuration."""
@@ -70,15 +59,15 @@ def evaluateModel(model, X_test, y_test):
     combined_score = Utils.calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming)
 
     metrics = {
-        METRIC_EXACT_MATCH: exact_match_pct,
-        METRIC_F1: f1_scores,
-        METRIC_MCC: avg_mcc,
-        METRIC_MAP: mAP,
-        METRIC_HAMMING_LOSS: hamming,
-        METRIC_COMBINED: combined_score,
-        METRIC_ACCURACY: avg_accuracy,
-        METRIC_ROC_AUC: roc_auc,
-        METRIC_TOTAL_SAMPLES: total_rows
+        Utils.METRIC_EXACT_MATCH: exact_match_pct,
+        Utils.METRIC_F1: f1_scores,
+        Utils.METRIC_MCC: avg_mcc,
+        Utils.METRIC_MAP: mAP,
+        Utils.METRIC_HAMMING_LOSS: hamming,
+        Utils.METRIC_COMBINED: combined_score,
+        Utils.METRIC_ACCURACY: avg_accuracy,
+        Utils.METRIC_ROC_AUC: roc_auc,
+        Utils.METRIC_TOTAL_SAMPLES: total_rows
     }
     
     return metrics
@@ -126,12 +115,12 @@ def trainOneModel(input_data, output_data, config):
     print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
           f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
     print(
-        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
-        f"F1 = {metrics[METRIC_F1]:.4f}, "
-        f"MCC = {metrics[METRIC_MCC]:.4f}, "
-        f"MAP = {metrics[METRIC_MAP]:.4f}, "
-        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
-        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        f"Exact Match = {metrics[Utils.METRIC_EXACT_MATCH]:.2f}%, "
+        f"F1 = {metrics[Utils.METRIC_F1]:.4f}, "
+        f"MCC = {metrics[Utils.METRIC_MCC]:.4f}, "
+        f"MAP = {metrics[Utils.METRIC_MAP]:.4f}, "
+        f"Hamming Loss = {metrics[Utils.METRIC_HAMMING_LOSS]:.4f}, "
+        f"Combined Score = {metrics[Utils.METRIC_COMBINED]:.2f}%"
     )
     
     return metrics, model, pca
@@ -147,9 +136,14 @@ def trainAllModels(input_data, output_data , configs, settings):
     print(f"Training {configs_count} configurations...")
     
     # these metrics will be used to track the best models
-    best_exact_match = {'EXACT_MATCH': -1, 'metrics': None, 'model': None, 'pca': None}       
-    best_f1 = {'AVG_F1': -1, 'metrics': None, 'model': None, 'pca': None}
-    best_both = {'f1_and_exact_match': -1, 'metrics': None, 'model': None, 'pca': None}
+    best_models = {
+        Utils.METRIC_EXACT_MATCH: None,
+        Utils.METRIC_F1: None,
+        Utils.METRIC_MCC: None,
+        Utils.METRIC_MAP: None,
+        Utils.METRIC_HAMMING_LOSS: None,
+        Utils.METRIC_COMBINED: None
+    }
     
     error_count = 0
     for i, config in enumerate(configs):
@@ -161,9 +155,11 @@ def trainAllModels(input_data, output_data , configs, settings):
             model_info['training_result'] = metrics
             model_info['validation_indexes'] = validation_indexes
             model_info['config'] = config
+            model_info['model'] = model
+            model_info['pca'] = pca
 
             # If the model is the best so far, save it
-            best_exact_match, best_f1, best_both = Utils.updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both)
+            Utils.updateBestModel(model_info, best_models)
                 
         except Exception as e:
             print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
@@ -173,12 +169,10 @@ def trainAllModels(input_data, output_data , configs, settings):
     print(f"\n\n...Training completed with {error_count} error(s).")
 
     # Save only the best models
-    saved_models_dir = Utils.saveModel(best_exact_match, "BestExactMatch", settings)
-    Utils.saveModel(best_f1, "BestF1", settings)
-    Utils.saveModel(best_both, "BestBoth", settings)
+    saved_models_dir = Utils.saveModel(best_models, settings)
 
     # Training summary
-    Utils.printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
+    Utils.printTrainingSummary(best_models, saved_models_dir)
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
