@@ -671,3 +671,50 @@ def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
     print(f"  F1: {best_both['metrics']['AVG_F1']:.4f}")
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
+
+
+def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
+    """Calculate combined score from exact match, F1, MCC, mAP, and Hamming Loss."""
+    # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
+    norm_exact_match = exact_match_pct / 100.0  # already percentage
+    norm_f1 = f1_scores  # already in [0,1]
+    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not None else 0.0  # MCC is [-1,1], normalize to [0,1]
+    norm_map = mAP if mAP is not None else 0.0  # already in [0,1]
+    norm_hamming = 1 - hamming_loss  # already in [0,1], lower hamming is better, so invert
+
+    # Combine and average
+    norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
+    combined_score = np.mean(norm_metrics) * 100  # as percentage
+        
+    return combined_score
+
+def calculateMapAndROC(model, X_test, y_test):
+    """Test model for mAP and ROC-AUC scores."""
+    y_pred_proba = model.predict_proba(X_test)
+    roc_aucs = []
+    mAPs = []
+    classes = [-1, 0, 1]  # Define possible classes
+    for i in range(y_test.shape[1]):
+        if len(np.unique(y_test[:, i])) > 1:  # Ensure label has variation
+            # Binarize y_test for the current label
+            y_test_bin = label_binarize(y_test[:, i], classes=classes)
+            if isinstance(y_pred_proba, list):
+                # MultiOutputClassifier: y_pred_proba[i] is (n_samples, n_classes)
+                roc_auc = roc_auc_score(y_test_bin, y_pred_proba[i], multi_class='ovr', average='macro')
+                ap = np.mean([average_precision_score(y_test_bin[:, j], y_pred_proba[i][:, j]) 
+                                for j in range(len(classes)) if np.sum(y_test_bin[:, j]) > 0])
+            else:
+                # ClassifierChain or Direct: y_pred_proba[:, i, :] is (n_samples, n_classes)
+                roc_auc = roc_auc_score(y_test_bin, y_pred_proba[:, i, :], multi_class='ovr', average='macro')
+                ap = np.mean([average_precision_score(y_test_bin[:, j], y_pred_proba[:, i, j]) 
+                                for j in range(len(classes)) if np.sum(y_test_bin[:, j]) > 0])
+        else:
+            roc_auc = 0
+            ap = 0
+        roc_aucs.append(roc_auc)
+        mAPs.append(ap)
+    
+    avg_map = np.mean([x for x in mAPs if x is not None]) if any(x is not None for x in mAPs) else None
+    avg_roc_auc = np.mean([x for x in roc_aucs if x is not None]) if any(x is not None for x in roc_aucs) else None
+    
+    return avg_map, avg_roc_auc

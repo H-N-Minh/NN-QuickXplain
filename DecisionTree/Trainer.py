@@ -10,7 +10,21 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.multioutput import MultiOutputClassifier, ClassifierChain
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import matthews_corrcoef, average_precision_score, hamming_loss, roc_auc_score
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import label_binarize
+
+# names for all the metrics used in the evaluation.
+METRIC_EXACT_MATCH = 'EXACT_MATCH'
+METRIC_F1 = 'F1'
+METRIC_MCC = 'MCC'
+METRIC_MAP = 'MAP'
+METRIC_HAMMING_LOSS = 'HAMMING_LOSS'
+METRIC_COMBINED = 'COMBINED'
+METRIC_ACCURACY = 'accuracy'
+METRIC_ROC_AUC = 'roc_auc'
+METRIC_TOTAL_SAMPLES = 'total_samples'
+
 
 def createBaseEstimator(estimator_type, config):
     """Create base estimator for Model according to configuration."""
@@ -29,8 +43,9 @@ def createBaseEstimator(estimator_type, config):
             n_jobs=-1
         )
 
+
 def evaluateModel(model, X_test, y_test):
-    """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
+    """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, and ROC-AUC"""
     y_pred = model.predict(X_test)
     
     # Exact matches
@@ -39,21 +54,35 @@ def evaluateModel(model, X_test, y_test):
     exact_match_pct = (exact_matches / total_rows) * 100
     
     # Per-constraint metrics
+    f1_scores = np.mean([f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])])
     accuracies = [accuracy_score(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])]
-    precisions = [precision_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-    recalls = [recall_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-    f1_scores = [f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
+    mcc_scores = [matthews_corrcoef(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])]
+    avg_mcc = np.mean([x for x in mcc_scores if x is not None])
+    avg_accuracy = np.mean(accuracies)
+
+    # Hamming Loss
+    hamming = hamming_loss(y_test, y_pred)
     
+    # For ROC-AUC and mAP, we need probability scores
+    mAP, roc_auc = Utils.calculateMapAndROC(model, X_test, y_test)
+
+    # Calculate combined score from exact match, F1, MCC, mAP, Hamming Loss. In percentage
+    combined_score = Utils.calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming)
+
     metrics = {
-        'EXACT_MATCH': exact_match_pct,
-        'AVG_F1': np.mean(f1_scores),
-        'total_samples': total_rows,
-        'avg_accuracy': np.mean(accuracies),
-        'avg_precision': np.mean(precisions),
-        'avg_recall': np.mean(recalls)
+        METRIC_EXACT_MATCH: exact_match_pct,
+        METRIC_F1: f1_scores,
+        METRIC_MCC: avg_mcc,
+        METRIC_MAP: mAP,
+        METRIC_HAMMING_LOSS: hamming,
+        METRIC_COMBINED: combined_score,
+        METRIC_ACCURACY: avg_accuracy,
+        METRIC_ROC_AUC: roc_auc,
+        METRIC_TOTAL_SAMPLES: total_rows
     }
     
     return metrics
+
 
 def trainOneModel(input_data, output_data, config):
     """Train and evaluate a single model configuration."""
@@ -96,7 +125,14 @@ def trainOneModel(input_data, output_data, config):
     # print results
     print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
           f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
-    print(f"Exact Match = {metrics['EXACT_MATCH']:.2f}%, F1 = {metrics['AVG_F1']:.4f}")
+    print(
+        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+        f"F1 = {metrics[METRIC_F1]:.4f}, "
+        f"MCC = {metrics[METRIC_MCC]:.4f}, "
+        f"MAP = {metrics[METRIC_MAP]:.4f}, "
+        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+    )
     
     return metrics, model, pca
 
@@ -120,9 +156,11 @@ def trainAllModels(input_data, output_data , configs, settings):
         try:
             print(f"\nConfiguration {i+1}/{configs_count}")
 
+            model_info = {}
             metrics, model, pca = trainOneModel(input_data, output_data, config)
-            metrics['validation_indexes'] = validation_indexes
-            metrics['config'] = config
+            model_info['training_result'] = metrics
+            model_info['validation_indexes'] = validation_indexes
+            model_info['config'] = config
 
             # If the model is the best so far, save it
             best_exact_match, best_f1, best_both = Utils.updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both)
