@@ -64,7 +64,9 @@ def evaluateModel(model, X_test, y_test):
     avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_test)
 
     # Hamming Loss
-    hamming = 0 #hamming_loss(y_test, y_pred)
+    y_test_bin = np.where(y_test == -1, 1, y_test)
+    y_pred_bin = np.where(y_pred == -1, 1, y_pred)
+    hamming = hamming_loss(y_test_bin, y_pred_bin)
 
     # For ROC-AUC and mAP, we need probability scores
     mAP, roc_auc = Utils.calculateMapAndROC(model, X_test, y_test)
