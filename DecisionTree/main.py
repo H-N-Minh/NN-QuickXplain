@@ -6,6 +6,7 @@ import Utils as Utils
 def main():
     print("\n\n================== DECISION TREE ===========================")
     settings = Utils.loadSettings()
+    error_count = 0
 
     print("\n\n################## CLEANING PHASE ##########################")
     if not settings['CLEAR']['SKIP']:
@@ -13,7 +14,7 @@ def main():
             
     print("\n\n################## TRAINING PHASE ##########################")
     if not settings['WORKFLOW']['TRAIN']['SKIP']:
-        startTraining(settings)
+        error_count = startTraining(settings)
     else:
         print("\n\n<Training phase skipped (as per settings.yaml file)>")
 
@@ -22,8 +23,11 @@ def main():
         startTesting(settings)
     else:
         print("\n<Validation phase skipped (as per settings.yaml file)>")
-
-    print("\n===Process completed successfully!===\n")
+    
+    if error_count > 0:
+        print(f"Process completed with {error_count} error(s). Please check the logs above for details.")
+    else:
+        print("\n===Process completed successfully!===\n")
         
     
 

@@ -699,6 +699,39 @@ def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_los
        
     return combined_score
 
+def calculateF1_Mcc_Accuracy(y_pred, y_test):
+    """Calculate F1 and MCC and accuracy scores for each label."""
+    f1_scores = []
+    accuracies = []
+    mcc_scores = []
+    
+    for i in range(y_test.shape[1]):
+        # F1 and MCC:
+        # - only calculate f1 if theres at least 2 unique classes in the test set for that label
+        # - only calculate MCC if there are at least 2 unique classes in both test and predicted labels for that label
+        if len(np.unique(y_test[:, i])) > 1:
+            f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
+            f1_scores.append(f1)
+
+            if len(np.unique(y_pred[:, i])) > 1:
+                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+                mcc_scores.append(mcc)
+            else:
+                mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
+        else:
+            f1_scores.append(np.nan)
+            mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
+        
+        # Accuracy
+        acc = accuracy_score(y_test[:, i], y_pred[:, i])
+        accuracies.append(acc)
+    
+    avg_f1 = np.nanmean(f1_scores)
+    avg_mcc = np.nanmean(mcc_scores)
+    avg_accuracy = np.mean(accuracies)
+
+    return avg_f1, avg_mcc, avg_accuracy
+
 def calculateMapAndROC(model, X_test, y_test):
     """Calculate mAP and ROC-AUC scores for multi-label classification."""
     try:
@@ -716,26 +749,31 @@ def calculateMapAndROC(model, X_test, y_test):
         
         # Skip if no variation in true labels
         if len(np.unique(y_true_label)) <= 1:
-            roc_aucs.append(0.0)
-            mAPs.append(0.0)
+            roc_aucs.append(np.nan)
+            mAPs.append(np.nan)
             continue
         
         # Handle different probability output formats
         if isinstance(y_pred_proba, list):
             # MultiOutputClassifier: y_pred_proba[i] is (n_samples, n_classes)
             y_proba_label = y_pred_proba[i]
+            # Get the class order for this label
+            class_order = model.estimators_[i].classes_
         else:
             # Direct output: y_pred_proba is (n_samples, n_labels, n_classes)
             y_proba_label = y_pred_proba[:, i, :]
+            class_order = model.classes_
         
         # Calculate metrics for each class vs rest
         label_roc_aucs = []
         label_aps = []
         
         unique_classes = np.unique(y_true_label)
+        class_order = np.array(class_order)
         
         for class_idx, class_val in enumerate([-1, 0, 1]):
-            if class_val not in unique_classes:
+            if class_val not in unique_classes or class_val not in class_order:
+                # Skip if class is not present in the true labels or model didn't learn this class
                 continue
                 
             # Create binary labels: current class vs all others
@@ -746,10 +784,8 @@ def calculateMapAndROC(model, X_test, y_test):
                 continue
             
             # Get probabilities for current class
-            if y_proba_label.shape[1] > class_idx:
-                y_prob_class = y_proba_label[:, class_idx]
-            else:
-                continue
+            class_idx = np.where(class_order == class_val)[0][0]
+            y_prob_class = y_proba_label[:, class_idx]
             
             try:
                 # ROC-AUC
@@ -765,14 +801,14 @@ def calculateMapAndROC(model, X_test, y_test):
                 continue
         
         # Average across classes for this label
-        avg_roc_auc = np.mean(label_roc_aucs) if label_roc_aucs else 0.0
-        avg_ap = np.mean(label_aps) if label_aps else 0.0
+        avg_roc_auc = np.mean(label_roc_aucs) if label_roc_aucs else np.nan
+        avg_ap = np.mean(label_aps) if label_aps else np.nan
         
         roc_aucs.append(avg_roc_auc)
         mAPs.append(avg_ap)
    
     # Average across all labels
-    avg_map = np.mean(mAPs) if mAPs else None
-    avg_roc_auc = np.mean(roc_aucs) if roc_aucs else None
+    avg_map = np.nanmean(mAPs) if len(mAPs) > 0 else np.nan
+    avg_roc_auc = np.nanmean(roc_aucs) if len(roc_aucs) > 0 else np.nan
    
     return avg_map, avg_roc_auc

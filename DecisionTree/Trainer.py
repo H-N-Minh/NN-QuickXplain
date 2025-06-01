@@ -48,6 +48,7 @@ def createMultiOutputModel(base_estimator, config):
             class_weight=config.get('class_weight', None),
             n_jobs=-1
         )
+    
 
 def evaluateModel(model, X_test, y_test):
     """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, and ROC-AUC"""
@@ -60,34 +61,7 @@ def evaluateModel(model, X_test, y_test):
     exact_match_pct = (exact_matches / total_rows) * 100
    
     # F1, Accuracy, and MCC for each label
-    f1_scores = []
-    accuracies = []
-    mcc_scores = []
-    
-    for i in range(y_test.shape[1]):
-        # F1 and MCC:
-        # - only calculate f1 if theres at least 2 unique classes in the test set for that label
-        # - only calculate MCC if there are at least 2 unique classes in both test and predicted labels for that label
-        if len(np.unique(y_test[:, i])) > 1:
-            f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
-            f1_scores.append(f1)
-            
-            if len(np.unique(y_pred[:, i])) > 1:
-                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
-                mcc_scores.append(mcc)
-            else:
-                mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
-        else:
-            f1_scores.append(np.nan)
-            mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
-        
-        # Accuracy
-        acc = accuracy_score(y_test[:, i], y_pred[:, i])
-        accuracies.append(acc)
-    
-    avg_f1 = np.nanmean(f1_scores)
-    avg_mcc = np.nanmean(mcc_scores)
-    avg_accuracy = np.mean(accuracies)
+    avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_test)
 
     # Hamming Loss
     hamming = 0 #hamming_loss(y_test, y_pred)
@@ -193,6 +167,8 @@ def trainAllModels(input_data, output_data , configs, settings):
 
     # Training summary
     Utils.printTrainingSummary(best_models, saved_models_dir)
+
+    return error_count
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
@@ -203,5 +179,5 @@ def startTraining(settings):
     configs = Utils.getModelConfigs(settings)
 
     # Train all models with different configurations. The best ones will be saved.
-    trainAllModels(input_data, output_data, configs, settings)
+    return trainAllModels(input_data, output_data, configs, settings)
 
