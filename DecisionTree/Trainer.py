@@ -3,6 +3,7 @@
 # The best models are saved in the Models folder, the rest are discarded.
 # Only important funcs are here, the rest is in Utils.py
 
+import traceback
 import Utils as Utils
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -32,6 +33,21 @@ def createBaseEstimator(estimator_type, config):
             n_jobs=-1
         )
 
+def createMultiOutputModel(base_estimator, config):
+    """Create a multi-output model based on the configuration."""
+    if config['multi_output_type'] == 'MultiOutputClassifier':
+        return MultiOutputClassifier(base_estimator)
+    elif config['multi_output_type'] == 'ClassifierChain':
+        return ClassifierChain(base_estimator, random_state=42)
+    else:
+        # Direct RandomForest for multi-output
+        return RandomForestClassifier(
+            n_estimators=config.get('n_estimators', 100),
+            max_depth=config.get('max_depth', None),
+            random_state=42,
+            class_weight=config.get('class_weight', None),
+            n_jobs=-1
+        )
 
 def evaluateModel(model, X_test, y_test):
     """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, and ROC-AUC"""
@@ -43,34 +59,39 @@ def evaluateModel(model, X_test, y_test):
     total_rows = y_test.shape[0]
     exact_match_pct = (exact_matches / total_rows) * 100
    
-    # Per-constraint metrics
+    # F1, Accuracy, and MCC for each label
     f1_scores = []
     accuracies = []
     mcc_scores = []
     
     for i in range(y_test.shape[1]):
-        # F1 score
-        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
-        f1_scores.append(f1)
+        # F1 and MCC:
+        # - only calculate f1 if theres at least 2 unique classes in the test set for that label
+        # - only calculate MCC if there are at least 2 unique classes in both test and predicted labels for that label
+        if len(np.unique(y_test[:, i])) > 1:
+            f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
+            f1_scores.append(f1)
+            
+            if len(np.unique(y_pred[:, i])) > 1:
+                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+                mcc_scores.append(mcc)
+            else:
+                mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
+        else:
+            f1_scores.append(np.nan)
+            mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
         
         # Accuracy
         acc = accuracy_score(y_test[:, i], y_pred[:, i])
         accuracies.append(acc)
-        
-        # MCC - only calculate if there's variation in both true and predicted labels
-        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
-            mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
-            mcc_scores.append(mcc)
-        else:
-            mcc_scores.append(0.0)  # or np.nan if you prefer
     
-    avg_f1 = np.mean(f1_scores)
-    avg_mcc = np.mean(mcc_scores)
+    avg_f1 = np.nanmean(f1_scores)
+    avg_mcc = np.nanmean(mcc_scores)
     avg_accuracy = np.mean(accuracies)
 
     # Hamming Loss
-    hamming = hamming_loss(y_test, y_pred)
-   
+    hamming = 0 #hamming_loss(y_test, y_pred)
+
     # For ROC-AUC and mAP, we need probability scores
     mAP, roc_auc = Utils.calculateMapAndROC(model, X_test, y_test)
 
@@ -78,15 +99,15 @@ def evaluateModel(model, X_test, y_test):
     combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)
 
     metrics = {
-        'METRIC_EXACT_MATCH': exact_match_pct,
-        'METRIC_F1': avg_f1,
-        'METRIC_MCC': avg_mcc,
-        'METRIC_MAP': mAP,
-        'METRIC_HAMMING_LOSS': hamming,
-        'METRIC_COMBINED': combined_score,
-        'METRIC_ACCURACY': avg_accuracy,
-        'METRIC_ROC_AUC': roc_auc,
-        'METRIC_TOTAL_SAMPLES': total_rows
+        Utils.METRIC_EXACT_MATCH: exact_match_pct,
+        Utils.METRIC_F1: avg_f1,
+        Utils.METRIC_MCC: avg_mcc,
+        Utils.METRIC_MAP: mAP,
+        Utils.METRIC_HAMMING_LOSS: hamming,
+        Utils.METRIC_COMBINED: combined_score,
+        Utils.METRIC_ACCURACY: avg_accuracy,
+        Utils.METRIC_ROC_AUC: roc_auc,
+        Utils.METRIC_TOTAL_SAMPLES: total_rows
     }
    
     return metrics
@@ -110,20 +131,8 @@ def trainOneModel(input_data, output_data, config):
     base_estimator = createBaseEstimator(config['estimator_type'], config)
     
     # Create multi-output model
-    if config['multi_output_type'] == 'MultiOutputClassifier':
-        model = MultiOutputClassifier(base_estimator)
-    elif config['multi_output_type'] == 'ClassifierChain':
-        model = ClassifierChain(base_estimator, random_state=42)
-    else:
-        # Direct RandomForest for multi-output
-        model = RandomForestClassifier(
-            n_estimators=config.get('n_estimators', 100),
-            max_depth=config.get('max_depth', None),
-            random_state=42,
-            class_weight=config.get('class_weight', None),
-            n_jobs=-1
-        )
-    
+    model = createMultiOutputModel(base_estimator, config)  
+
     # Train model
     model.fit(X_train, y_train)
 
@@ -131,16 +140,7 @@ def trainOneModel(input_data, output_data, config):
     metrics = evaluateModel(model, X_test, y_test)
     
     # print results
-    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
-          f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
-    print(
-        f"Exact Match = {metrics[Utils.METRIC_EXACT_MATCH]:.2f}%, "
-        f"F1 = {metrics[Utils.METRIC_F1]:.4f}, "
-        f"MCC = {metrics[Utils.METRIC_MCC]:.4f}, "
-        f"MAP = {metrics[Utils.METRIC_MAP]:.4f}, "
-        f"Hamming Loss = {metrics[Utils.METRIC_HAMMING_LOSS]:.4f}, "
-        f"Combined Score = {metrics[Utils.METRIC_COMBINED]:.2f}%"
-    )
+    Utils.printOneModelTrainResult(config, metrics)
     
     return metrics, model, pca
 
@@ -182,6 +182,7 @@ def trainAllModels(input_data, output_data , configs, settings):
                 
         except Exception as e:
             print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
+            traceback.print_exc()  # print the full traceback of the error
             error_count += 1
             continue
     

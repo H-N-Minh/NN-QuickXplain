@@ -479,6 +479,19 @@ METRIC_ACCURACY = 'accuracy'
 METRIC_ROC_AUC = 'roc_auc'
 METRIC_TOTAL_SAMPLES = 'total_samples'
 
+def printOneModelTrainResult(config, metrics):
+    """Print the training result of one model configuration."""
+    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
+          f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
+    print(
+        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+        f"F1 = {metrics[METRIC_F1]:.4f}, "
+        f"MCC = {metrics[METRIC_MCC]:.4f}, "
+        f"MAP = {metrics[METRIC_MAP]:.4f}, "
+        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+    )
+
 
 def importTrainingData(settings):
     """Import training data from CSV files."""
@@ -582,16 +595,17 @@ def saveModel(best_models, settings):
 
                 # Dont save this model if it is not better than the one already stored in this folder
                 if new_score <= old_score or (name == METRIC_HAMMING_LOSS and new_score >= old_score):
-                    print(f"Skipping saving '{name}' model as it is not better than the existing one.")
                     continue
                 
         # If code reaches here, it means we need to save the new model
+        print(f"Saving '{name}' model as it is better than the existing one.")
+        
         # Save model and PCA
         model_filename = os.path.join(model_folder_path, f"Best_{name}.pkl")
         joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
 
         # Save metrics
-        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['training_result'].items()}
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model', 'pca']}
         with open(metrics_filename, 'w') as f:
             json.dump(metrics_serializable, f, indent=2)
                     
@@ -622,7 +636,7 @@ def updateBestModel(model_info, best_models):
     """
     Update the best model if the current model is better than the previous best.
     """
-    current_metric = model_info['training_result']['metric']
+    current_metric = model_info['training_result']
     # go through the dictionary of best models, and update the best model if the current model is better
     for name, best_model in best_models.items():
         # if this is the first model, initialize the best model
@@ -687,12 +701,12 @@ def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_los
 
 def calculateMapAndROC(model, X_test, y_test):
     """Calculate mAP and ROC-AUC scores for multi-label classification."""
-    
     try:
         y_pred_proba = model.predict_proba(X_test)
     except AttributeError:
         # Model doesn't support predict_proba
-        return None, None
+        print("Model does not support predict_proba. Returning zeros for mAP and ROC-AUC.")
+        return 0, 0
     
     roc_aucs = []
     mAPs = []
