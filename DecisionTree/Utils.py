@@ -706,27 +706,20 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
     mcc_scores = []
     
     for i in range(y_test.shape[1]):
-        # F1 and MCC:
-        # - only calculate f1 if theres at least 2 unique classes in the test set for that label
-        # - only calculate MCC if there are at least 2 unique classes in both test and predicted labels for that label
-        if len(np.unique(y_test[:, i])) > 1:
-            f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
-            f1_scores.append(f1)
-
-            if len(np.unique(y_pred[:, i])) > 1:
+        # MCC: If either y_test or y_pred has only one class, MCC result is undefined, so we skip this label
+        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
                 mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
                 mcc_scores.append(mcc)
-            else:
-                mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
         else:
-            f1_scores.append(np.nan)
             mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
         
-        # Accuracy
+        # f1 and Accuracy
+        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
+        f1_scores.append(f1)
         acc = accuracy_score(y_test[:, i], y_pred[:, i])
         accuracies.append(acc)
     
-    avg_f1 = np.nanmean(f1_scores)
+    avg_f1 = np.mean(f1_scores)
     avg_mcc = np.nanmean(mcc_scores)
     avg_accuracy = np.mean(accuracies)
 
