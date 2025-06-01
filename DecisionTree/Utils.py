@@ -18,6 +18,11 @@ import pandas as pd
 from tqdm import tqdm
 import yaml
 
+from sklearn.metrics import (f1_score, accuracy_score, matthews_corrcoef, 
+                           hamming_loss, roc_auc_score, average_precision_score)
+from sklearn.preprocessing import LabelBinarizer
+import warnings
+
 ############################################ for main.py ########################################
 
 def loadSettings():
@@ -660,47 +665,100 @@ def printTrainingSummary(best_models, saved_models_dir):
 
 
 def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
-    """Calculate combined score from exact match, F1, MCC, mAP, and Hamming Loss."""
     # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
-    norm_exact_match = exact_match_pct / 100.0  # already percentage
+    norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
     norm_f1 = f1_scores  # already in [0,1]
     norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not None else 0.0  # MCC is [-1,1], normalize to [0,1]
     norm_map = mAP if mAP is not None else 0.0  # already in [0,1]
-    norm_hamming = 1 - hamming_loss  # already in [0,1], lower hamming is better, so invert
+    norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
 
-    # Combine and average
+    # Combine metrics with equal weights
     norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
-    combined_score = np.mean(norm_metrics) * 100  # as percentage
-        
+    
+    # Filter out None values
+    valid_metrics = [m for m in norm_metrics if m is not None]
+    
+    if valid_metrics:
+        combined_score = np.mean(valid_metrics) * 100  # convert back to percentage
+    else:
+        combined_score = 0.0
+       
     return combined_score
 
 def calculateMapAndROC(model, X_test, y_test):
-    """Test model for mAP and ROC-AUC scores."""
-    y_pred_proba = model.predict_proba(X_test)
+    """Calculate mAP and ROC-AUC scores for multi-label classification."""
+    
+    try:
+        y_pred_proba = model.predict_proba(X_test)
+    except AttributeError:
+        # Model doesn't support predict_proba
+        return None, None
+    
     roc_aucs = []
     mAPs = []
-    classes = [-1, 0, 1]  # Define possible classes
+    
     for i in range(y_test.shape[1]):
-        if len(np.unique(y_test[:, i])) > 1:  # Ensure label has variation
-            # Binarize y_test for the current label
-            y_test_bin = label_binarize(y_test[:, i], classes=classes)
-            if isinstance(y_pred_proba, list):
-                # MultiOutputClassifier: y_pred_proba[i] is (n_samples, n_classes)
-                roc_auc = roc_auc_score(y_test_bin, y_pred_proba[i], multi_class='ovr', average='macro')
-                ap = np.mean([average_precision_score(y_test_bin[:, j], y_pred_proba[i][:, j]) 
-                                for j in range(len(classes)) if np.sum(y_test_bin[:, j]) > 0])
-            else:
-                # ClassifierChain or Direct: y_pred_proba[:, i, :] is (n_samples, n_classes)
-                roc_auc = roc_auc_score(y_test_bin, y_pred_proba[:, i, :], multi_class='ovr', average='macro')
-                ap = np.mean([average_precision_score(y_test_bin[:, j], y_pred_proba[:, i, j]) 
-                                for j in range(len(classes)) if np.sum(y_test_bin[:, j]) > 0])
+        y_true_label = y_test[:, i]
+        
+        # Skip if no variation in true labels
+        if len(np.unique(y_true_label)) <= 1:
+            roc_aucs.append(0.0)
+            mAPs.append(0.0)
+            continue
+        
+        # Handle different probability output formats
+        if isinstance(y_pred_proba, list):
+            # MultiOutputClassifier: y_pred_proba[i] is (n_samples, n_classes)
+            y_proba_label = y_pred_proba[i]
         else:
-            roc_auc = 0
-            ap = 0
-        roc_aucs.append(roc_auc)
-        mAPs.append(ap)
-    
-    avg_map = np.mean([x for x in mAPs if x is not None]) if any(x is not None for x in mAPs) else None
-    avg_roc_auc = np.mean([x for x in roc_aucs if x is not None]) if any(x is not None for x in roc_aucs) else None
-    
+            # Direct output: y_pred_proba is (n_samples, n_labels, n_classes)
+            y_proba_label = y_pred_proba[:, i, :]
+        
+        # Calculate metrics for each class vs rest
+        label_roc_aucs = []
+        label_aps = []
+        
+        unique_classes = np.unique(y_true_label)
+        
+        for class_idx, class_val in enumerate([-1, 0, 1]):
+            if class_val not in unique_classes:
+                continue
+                
+            # Create binary labels: current class vs all others
+            y_binary = (y_true_label == class_val).astype(int)
+            
+            # Skip if all samples are of the same class
+            if len(np.unique(y_binary)) <= 1:
+                continue
+            
+            # Get probabilities for current class
+            if y_proba_label.shape[1] > class_idx:
+                y_prob_class = y_proba_label[:, class_idx]
+            else:
+                continue
+            
+            try:
+                # ROC-AUC
+                roc_auc = roc_auc_score(y_binary, y_prob_class)
+                label_roc_aucs.append(roc_auc)
+                
+                # Average Precision
+                ap = average_precision_score(y_binary, y_prob_class)
+                label_aps.append(ap)
+                
+            except ValueError as e:
+                # Handle edge cases
+                continue
+        
+        # Average across classes for this label
+        avg_roc_auc = np.mean(label_roc_aucs) if label_roc_aucs else 0.0
+        avg_ap = np.mean(label_aps) if label_aps else 0.0
+        
+        roc_aucs.append(avg_roc_auc)
+        mAPs.append(avg_ap)
+   
+    # Average across all labels
+    avg_map = np.mean(mAPs) if mAPs else None
+    avg_roc_auc = np.mean(roc_aucs) if roc_aucs else None
+   
     return avg_map, avg_roc_auc

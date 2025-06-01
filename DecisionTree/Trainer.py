@@ -35,41 +35,60 @@ def createBaseEstimator(estimator_type, config):
 
 def evaluateModel(model, X_test, y_test):
     """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, and ROC-AUC"""
-    y_pred = model.predict(X_test)
     
+    y_pred = model.predict(X_test)
+   
     # Exact matches
     exact_matches = np.sum(np.all(y_pred == y_test, axis=1))
     total_rows = y_test.shape[0]
     exact_match_pct = (exact_matches / total_rows) * 100
-    
+   
     # Per-constraint metrics
-    f1_scores = np.mean([f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])])
-    accuracies = [accuracy_score(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])]
-    mcc_scores = [matthews_corrcoef(y_test[:, i], y_pred[:, i]) for i in range(y_test.shape[1])]
-    avg_mcc = np.mean([x for x in mcc_scores if x is not None])
+    f1_scores = []
+    accuracies = []
+    mcc_scores = []
+    
+    for i in range(y_test.shape[1]):
+        # F1 score
+        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro', zero_division=0)
+        f1_scores.append(f1)
+        
+        # Accuracy
+        acc = accuracy_score(y_test[:, i], y_pred[:, i])
+        accuracies.append(acc)
+        
+        # MCC - only calculate if there's variation in both true and predicted labels
+        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
+            mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+            mcc_scores.append(mcc)
+        else:
+            mcc_scores.append(0.0)  # or np.nan if you prefer
+    
+    avg_f1 = np.mean(f1_scores)
+    avg_mcc = np.mean(mcc_scores)
     avg_accuracy = np.mean(accuracies)
 
     # Hamming Loss
     hamming = hamming_loss(y_test, y_pred)
-    
+   
     # For ROC-AUC and mAP, we need probability scores
     mAP, roc_auc = Utils.calculateMapAndROC(model, X_test, y_test)
 
-    # Calculate combined score from exact match, F1, MCC, mAP, Hamming Loss. In percentage
-    combined_score = Utils.calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming)
+    # Calculate combined score
+    combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)
 
     metrics = {
-        Utils.METRIC_EXACT_MATCH: exact_match_pct,
-        Utils.METRIC_F1: f1_scores,
-        Utils.METRIC_MCC: avg_mcc,
-        Utils.METRIC_MAP: mAP,
-        Utils.METRIC_HAMMING_LOSS: hamming,
-        Utils.METRIC_COMBINED: combined_score,
-        Utils.METRIC_ACCURACY: avg_accuracy,
-        Utils.METRIC_ROC_AUC: roc_auc,
-        Utils.METRIC_TOTAL_SAMPLES: total_rows
+        'METRIC_EXACT_MATCH': exact_match_pct,
+        'METRIC_F1': avg_f1,
+        'METRIC_MCC': avg_mcc,
+        'METRIC_MAP': mAP,
+        'METRIC_HAMMING_LOSS': hamming,
+        'METRIC_COMBINED': combined_score,
+        'METRIC_ACCURACY': avg_accuracy,
+        'METRIC_ROC_AUC': roc_auc,
+        'METRIC_TOTAL_SAMPLES': total_rows
     }
-    
+   
     return metrics
 
 
