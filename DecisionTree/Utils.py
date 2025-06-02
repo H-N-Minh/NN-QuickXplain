@@ -517,6 +517,7 @@ def importTrainingData(settings):
         input_data = input_data.iloc[random_indices]
         output_data = output_data.iloc[random_indices]
     print(f"Data imported successfully. Number of samples (set to 70k max for faster training): {input_data.shape[0]}")
+    
     return input_data.values , output_data.values
 
 def getModelConfigs(settings):

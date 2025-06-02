@@ -14,6 +14,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.metrics import matthews_corrcoef, average_precision_score, hamming_loss, roc_auc_score
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import label_binarize
+from sklearn.feature_selection import VarianceThreshold
 
 
 def createBaseEstimator(estimator_type, config):
@@ -88,9 +89,43 @@ def evaluateModel(model, X_test, y_test):
    
     return metrics
 
+def preprocessTrainingData(X_transformed, output_data):
+    """Preprocess training data by removing features with variance lower than threshold and labels with constant values.
+        in other words, remove features in X_transformed and labels in output_data that has constant values or low variance (almost constant)
+        Features are removed because low variance features do not contribute to the model's learning.
+        Constant labels are removed because they are trivial to predict and model doesnt need to learn anything to predict them correctly.
+        Removing them will helps with more precise training and evaluation of the model. 
+        @Returns:
+        The indexes of the removed features are stored so later during evaluation and testing, we also remove the same features before making predictions.
+        The removed labels are stored so we can add them later to the model's predictions to get a final output with all labels.
+    """
+    
+    # Remove features with low variance, mark their indexes
+    selector = VarianceThreshold(threshold=0.01)
+    X_transformed = selector.fit_transform(X_transformed)
+    removed_features = np.where(selector.variances_ < 0.01)[0]
+    
+    # Remove labels with constant values, mark their indexes and values
+    output_variances = np.var(output_data, axis=0)
+    constant_label_mask = output_variances == 0
+    removed_label_info = {}
+    for i, is_constant in enumerate(constant_label_mask):
+        if is_constant:
+            constant_value = output_data[0, i]
+            removed_label_info[i] = constant_value
+    new_output_data = output_data[:, ~constant_label_mask]
+    
+    return X_transformed, new_output_data, removed_features, removed_label_info
 
 def trainOneModel(input_data, output_data, config):
-    """Train and evaluate a single model configuration."""
+    """Train and evaluate a single model configuration.
+    Returns:
+    - metrics: Dictionary of evaluation metrics result for test set
+    - model: The trained model
+    - pca: PCA object if PCA was used, otherwise None
+    - removed_features: List of Indices of removed features due to low variance
+    - removed_labels: Dictionary of removed labels with their constant values
+    """
     
     # Apply PCA if specified
     if config['use_pca']:
@@ -100,6 +135,9 @@ def trainOneModel(input_data, output_data, config):
         X_transformed = input_data
         pca = None
     
+    # preprocess training data
+    X_transformed, output_data, removed_features, removed_labels = preprocessTrainingData(X_transformed, output_data)
+
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=config['test_size'], random_state=42)
     
@@ -118,10 +156,15 @@ def trainOneModel(input_data, output_data, config):
     # print results
     Utils.printOneModelTrainResult(config, metrics)
     
-    return metrics, model, pca
+    return metrics, model, pca, removed_features, removed_labels
 
 def trainAllModels(input_data, output_data , configs, settings):
-    """Train all models with different configurations."""
+    """Train all models with different configurations.
+    Each model will be evaluated on test set and the best models will be saved.
+    After all models are trained and best ones are saved, the best ones will be compared with the models stored in the Models folder.
+    If the new model has better performance, it will be stored in Models folder (overwritting the old models), otherwise it will be discarded.
+    A summary of the training will be printed at the end.
+    """
 
     # split a section of the data out for validation after the training
     input_data, output_data, validation_indexes = Utils.splitData(input_data, output_data)
@@ -146,12 +189,14 @@ def trainAllModels(input_data, output_data , configs, settings):
             print(f"\nConfiguration {i+1}/{configs_count}")
 
             model_info = {}
-            metrics, model, pca = trainOneModel(input_data, output_data, config)
+            metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
             model_info['training_result'] = metrics
             model_info['validation_indexes'] = validation_indexes
             model_info['config'] = config
             model_info['model'] = model
             model_info['pca'] = pca
+            model_info['removed_features'] = removed_features
+            model_info['removed_labels'] = removed_labels
 
             # If the model is the best so far, save it
             Utils.updateBestModel(model_info, best_models)
