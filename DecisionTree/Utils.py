@@ -89,10 +89,11 @@ def importModel(settings, model_name):
     model_metadata: the metrics of model, including F1, Exact Match, ... and the model's configuration
     """
     # check that the model is valid
-    assert model_name in ["F1", "ExactMatch", "Both"] , f"Model '{model_name}' is unknown, check typo in model_to_test in settings.yaml."
-    model_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}.pkl")
-    assert os.path.exists(model_file_name), f"Model ({model_file_name}) does not exist. Check path, and make sure the model was trained before testing."
-    model_metrics_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
+    known_model_name = [METRIC_F1, METRIC_EXACT_MATCH, METRIC_COMBINED, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS]
+    assert model_name in known_model_name , f"Model '{model_name}' is unknown, check typo in model_to_test in settings.yaml."
+    model_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}.pkl")
+    assert os.path.exists(model_file_name), f"File ({model_file_name}) is not found. Check path, and make sure the model was trained before testing."
+    model_metrics_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
     assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist. Check path, and make sure the model was trained before testing."
 
     print(f"...Importing model {model_name}...")
@@ -146,11 +147,25 @@ def importValidationData(settings, model_metadata, pca):
     # Apply PCA if it was used during training
     if pca is not None:
         assert model_metadata['config']['use_pca'] == True, "PCA was not used during training, but PCA object is provided."
-        input_data_transformed = pca.transform(input_data)
+        print("DEBUGMINH Feature names of input_data:")
+        print(input_data.columns.tolist())
+        input_data_transformed = pca.transform(input_data)  # result is a numpy array
     else:
-        input_data_transformed = input_data.copy()  # No transformation, just convert to numpy array
+        input_data_transformed = input_data.copy().values  # No transformation, just convert to numpy array
 
-    return input_data_transformed.values , output_data.values, input_data.values
+    # remove features that were also removed during training due to low variance
+    removed_feature_indexes = model_metadata['removed_features']
+    if removed_feature_indexes:
+        input_data_transformed = np.delete(input_data_transformed, removed_feature_indexes, axis=1)
+    
+    # remove labels that were also removed during training due to constant values
+    removed_label_info = model_metadata.get("removed_labels", {})
+    if removed_label_info:
+        output_data = np.delete(output_data, [int(k) for k in removed_label_info.keys()], axis=1)
+    else:
+        output_data = output_data.values
+    
+    return input_data_transformed , output_data, input_data.values
 
 
 
@@ -296,7 +311,7 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
         "Error:createSolverInput:: constraint_name_list must be a non-empty list."
     if test_pred is not None:
         assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
-            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
+            f"Error:createSolverInput:: test_pred({test_pred.shape}) must be a numpy array with the same shape as test_input({test_input.shape})."
     assert len(constraint_name_list) == test_input.shape[1], \
         "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
 
@@ -400,13 +415,13 @@ def saveTestResults(settings, model_name, metrics, result):
     print(f"...Saving validation results for model {model_name}...")
 
     # Check if the output file exists
-    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
+    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
     assert os.path.exists(output_file), f"Json file ({output_file}) does not exist. Check path"
 
     with open(output_file, 'r') as f:
         data = json.load(f)
     
-    # make sure the key 'validation_result' does not already exist
+    # make sure the key 'QX_result' does not already exist
     assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
     assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
 
@@ -417,13 +432,14 @@ def saveTestResults(settings, model_name, metrics, result):
     unordered_cc = result[3]
     performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
     CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
-    data["validation_result"] = metrics
-    data["validation_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
-    data["validation_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
-    data["validation_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
-    data["validation_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
-    data["validation_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
-    data["validation_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
+    data["testing_result"] = metrics
+    data["QX_result"] = {}
+    data["QX_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
+    data["QX_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
+    data["QX_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
+    data["QX_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
+    data["QX_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
+    data["QX_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
     
     # Write the updated data back to file
     with open(output_file, 'w') as f:
@@ -439,7 +455,7 @@ def printTestingSummary(settings):
 
     # Go through each json file and print the result of the validation
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
-        model_file_name = os.path.join(saved_models_dir, f"Best{model_name}_metrics.json")
+        model_file_name = os.path.join(saved_models_dir, f"Best_{model_name}_metrics.json")
         assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
         
         with open(model_file_name, 'r') as json_file:
@@ -447,9 +463,10 @@ def printTestingSummary(settings):
 
         # extract the validation result and model's configuration
         model_config = model_metrics['config']
-        validation_result = model_metrics['validation_result']
-        ordered_runtime = validation_result['ordered_runtime']
-        unordered_runtime = validation_result['unordered_runtime']
+        metrics = model_metrics['testing_result']
+        QX_result = model_metrics['QX_result']
+        ordered_runtime = QX_result['ordered_runtime']
+        unordered_runtime = QX_result['unordered_runtime']
         less_time_percentage = (unordered_runtime - ordered_runtime) / unordered_runtime * 100 if unordered_runtime > 0 else 0.0
 
         # print result out
@@ -458,9 +475,14 @@ def printTestingSummary(settings):
         print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
             f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
             f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
-        print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
-        print(f"  F1: {validation_result['AVG_F1']:.4f}")
-        print(f"  Speed improvement: {validation_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
+        print(f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+            f"F1 = {metrics[METRIC_F1]:.4f}, "
+            f"MCC = {metrics[METRIC_MCC]:.4f}, "
+            f"MAP = {metrics[METRIC_MAP]:.4f}, "
+            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        )
+        print(f"  Speed improvement: {QX_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
               f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
