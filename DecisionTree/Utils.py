@@ -15,6 +15,7 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.multioutput import ClassifierChain, MultiOutputClassifier
 from tqdm import tqdm
 import yaml
 
@@ -517,7 +518,7 @@ def importTrainingData(settings):
         input_data = input_data.iloc[random_indices]
         output_data = output_data.iloc[random_indices]
     print(f"Data imported successfully. Number of samples (set to 70k max for faster training): {input_data.shape[0]}")
-    
+
     return input_data.values , output_data.values
 
 def getModelConfigs(settings):
@@ -734,85 +735,116 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
     return avg_f1, avg_mcc, avg_accuracy
 
 def calculateMapAndROC(model, X_test, y_test):
-    """Calculate mAP and ROC-AUC scores for multi-label classification.
-        these metrics requires probabilities, so the model must support predict_proba.
+    """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
+    for multi-label classification.
+    - Treats classes 1 and -1 in y_test as positive.
+    - Treats class 0 in y_test as negative.
+    - Aggregates P(class=1) + P(class=-1) from model's predict_proba for positive event probability.
+    These metrics require probability scores, so the model must support predict_proba.
     """
+    mAP = 0.0001  # Default value for when map and roc_auc cannot be calculated.
+    roc_auc_mean = 0.0001
+
+    if not hasattr(model, 'predict_proba'):
+        # Model does not support probability prediction
+        return mAP, roc_auc_mean
+
     try:
-        y_pred_proba = model.predict_proba(X_test)
-    except AttributeError:
-        # Model doesn't support predict_proba
-        print("Model does not support predict_proba. Returning zeros for mAP and ROC-AUC.")
-        return 0, 0
-    
-    roc_aucs = []
-    mAPs = []
-    
-    for i in range(y_test.shape[1]):
-        y_true_label = y_test[:, i]
-        
-        # Skip if no variation in true labels
-        if len(np.unique(y_true_label)) <= 1:
-            roc_aucs.append(np.nan)
-            mAPs.append(np.nan)
-            continue
-        
-        # Handle different probability output formats
-        if isinstance(y_pred_proba, list):
-            # MultiOutputClassifier: y_pred_proba[i] is (n_samples, n_classes)
-            y_proba_label = y_pred_proba[i]
-            # Get the class order for this label
-            class_order = model.estimators_[i].classes_
+        y_pred_probas_list = model.predict_proba(X_test)
+    except Exception:
+        # Error during predict_proba call
+        return mAP, roc_auc_mean
+
+    n_labels = y_test.shape[1]
+
+    if not isinstance(y_pred_probas_list, list) or len(y_pred_probas_list) != n_labels:
+        if n_labels == 1 and not isinstance(y_pred_probas_list, list) and isinstance(y_pred_probas_list, np.ndarray):
+            y_pred_probas_list = [y_pred_probas_list]
         else:
-            # Direct output: y_pred_proba is (n_samples, n_labels, n_classes)
-            y_proba_label = y_pred_proba[:, i, :]
-            class_order = model.classes_
-        
-        # Calculate metrics for each class vs rest
-        label_roc_aucs = []
-        label_aps = []
-        
-        unique_classes = np.unique(y_true_label)
-        class_order = np.array(class_order)
-        
-        for class_idx, class_val in enumerate([-1, 0, 1]):
-            if class_val not in unique_classes or class_val not in class_order:
-                # Skip if class is not present in the true labels or in y_proba
+            # Mismatch in expected structure
+            return mAP, roc_auc_mean
+    
+    mAP = np.nan
+    roc_auc_mean = np.nan  # Use np.nan as a default if calculation is not possible
+
+    all_aps = []
+    all_roc_aucs = []
+
+    for i in range(n_labels):
+        y_true_single_label = y_test[:, i]
+        y_pred_proba_for_label_i = y_pred_probas_list[i]
+
+        current_estimator_classes = None
+        if isinstance(model, (MultiOutputClassifier, ClassifierChain)):
+            if i < len(model.estimators_):
+                current_estimator_classes = model.estimators_[i].classes_
+            else:
+                all_aps.append(np.nan)
+                all_roc_aucs.append(np.nan)
                 continue
-                
-            # Create binary labels: current class vs all others (1 for current class, 0 for others) 
-            # (ROC and MAP only works with binary labels)
-            y_binary = (y_true_label == class_val).astype(int)
-            
-            # Skip if all samples are of the same class
-            if len(np.unique(y_binary)) <= 1:
+        else:
+            if hasattr(model, 'classes_') and isinstance(model.classes_, list) and i < len(model.classes_):
+                current_estimator_classes = model.classes_[i]
+            else:
+                all_aps.append(np.nan)
+                all_roc_aucs.append(np.nan)
                 continue
-            
-            # Get probabilities for current class
-            class_idx = np.where(class_order == class_val)[0][0]
-            y_prob_class = y_proba_label[:, class_idx]
-            
+        
+        current_estimator_classes = np.array(current_estimator_classes)
+
+        # Calculate probability of the "positive event" (class is 1 OR -1)
+        proba_positive_event = np.zeros(y_true_single_label.shape[0])
+
+        # Find index and add probability for class 1
+        idx_class_1_arr = np.where(current_estimator_classes == 1)[0]
+        if len(idx_class_1_arr) > 0:
+            idx_class_1 = idx_class_1_arr[0]
+            if idx_class_1 < y_pred_proba_for_label_i.shape[1]:
+                proba_positive_event += y_pred_proba_for_label_i[:, idx_class_1]
+
+        # Find index and add probability for class -1
+        idx_class_neg1_arr = np.where(current_estimator_classes == -1)[0]
+        if len(idx_class_neg1_arr) > 0:
+            idx_class_neg1 = idx_class_neg1_arr[0]
+            if idx_class_neg1 < y_pred_proba_for_label_i.shape[1]:
+                proba_positive_event += y_pred_proba_for_label_i[:, idx_class_neg1]
+        
+        # Probabilities for mutually exclusive classes sum up.
+        # Clipping is a safeguard for any potential floating point arithmetic issues.
+        proba_positive_event = np.clip(proba_positive_event, 0.0, 1.0)
+
+        # Convert true labels for the current class to binary {0, 1} format
+        # where 1 indicates a positive value (1 or -1), and 0 otherwise.
+        y_true_binary = np.isin(y_true_single_label, [1, -1]).astype(int)
+
+        # Calculate Average Precision for the current label
+        if np.sum(y_true_binary) == 0: # No positive instances
+            all_aps.append(0.0)
+        else:
             try:
-                # ROC-AUC
-                roc_auc = roc_auc_score(y_binary, y_prob_class)
-                label_roc_aucs.append(roc_auc)
-                
-                # Average Precision
-                ap = average_precision_score(y_binary, y_prob_class)
-                label_aps.append(ap)
-                
-            except ValueError as e:
-                # Handle edge cases
-                continue
-        
-        # Average across classes for this label
-        avg_roc_auc = np.mean(label_roc_aucs) if label_roc_aucs else np.nan
-        avg_ap = np.mean(label_aps) if label_aps else np.nan
-        
-        roc_aucs.append(avg_roc_auc)
-        mAPs.append(avg_ap)
-   
-    # Average across all labels
-    avg_map = np.nanmean(mAPs) if len(mAPs) > 0 else np.nan
-    avg_roc_auc = np.nanmean(roc_aucs) if len(roc_aucs) > 0 else np.nan
-   
-    return avg_map, avg_roc_auc
+                ap = average_precision_score(y_true_binary, proba_positive_event)
+                all_aps.append(ap)
+            except ValueError:
+                all_aps.append(np.nan)
+
+        # Calculate ROC-AUC score for the current label
+        if len(np.unique(y_true_binary)) < 2:
+            all_roc_aucs.append(np.nan)
+        else:
+            try:
+                roc_auc = roc_auc_score(y_true_binary, proba_positive_event)
+                all_roc_aucs.append(roc_auc)
+            except ValueError:
+                all_roc_aucs.append(np.nan)
+
+    if all_aps: # Check if list is not empty
+        mAP = np.nanmean(all_aps)
+    
+    if all_roc_aucs: # Check if list is not empty
+        roc_auc_mean = np.nanmean(all_roc_aucs)
+    
+    assert not np.isnan(mAP), "mAP calculation resulted in NaN. this will affect score of combined_score."
+    assert not np.isnan(roc_auc_mean), "ROC-AUC calculation resulted in NaN. this will affect score of combined_score."
+    
+    print(f"...mAP: {mAP:.4f}, ROC-AUC: {roc_auc_mean:.4f} (mean across all labels)")
+    return mAP, roc_auc_mean
