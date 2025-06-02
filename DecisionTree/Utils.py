@@ -726,7 +726,9 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
     return avg_f1, avg_mcc, avg_accuracy
 
 def calculateMapAndROC(model, X_test, y_test):
-    """Calculate mAP and ROC-AUC scores for multi-label classification."""
+    """Calculate mAP and ROC-AUC scores for multi-label classification.
+        these metrics requires probabilities, so the model must support predict_proba.
+    """
     try:
         y_pred_proba = model.predict_proba(X_test)
     except AttributeError:
@@ -766,10 +768,11 @@ def calculateMapAndROC(model, X_test, y_test):
         
         for class_idx, class_val in enumerate([-1, 0, 1]):
             if class_val not in unique_classes or class_val not in class_order:
-                # Skip if class is not present in the true labels or model didn't learn this class
+                # Skip if class is not present in the true labels or in y_proba
                 continue
                 
-            # Create binary labels: current class vs all others
+            # Create binary labels: current class vs all others (1 for current class, 0 for others) 
+            # (ROC and MAP only works with binary labels)
             y_binary = (y_true_label == class_val).astype(int)
             
             # Skip if all samples are of the same class
