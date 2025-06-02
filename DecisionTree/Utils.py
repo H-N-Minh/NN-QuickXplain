@@ -631,11 +631,14 @@ def saveModel(best_models, settings):
                 new_score = best_model['training_result'][name]
 
                 # Dont save this model if it is not better than the one already stored in this folder
-                is_new_score_invalid = np.isnan(new_score)
-                is_old_score_valid = not np.isnan(old_score)
-                if is_new_score_invalid or (is_old_score_valid and \
-                    ((name == METRIC_HAMMING_LOSS and new_score >= old_score) or new_score <= old_score)): # only compare the scores when both old and new scores are not np.nan
+                # If the new score is NaN, we skip saving this model
+                if np.isnan(new_score):
                     continue
+                # If the old score is not NaN and has better score than the new score, we skip saving this model
+                if not np.isnan(old_score):
+                    if (name != METRIC_HAMMING_LOSS and new_score <= old_score) or \
+                       (name == METRIC_HAMMING_LOSS and new_score >= old_score): 
+                        continue
                 
         # If code reaches here, it means we need to save the new model
         print(f"Saving '{name}' model as it is better than the existing one.")
@@ -686,9 +689,15 @@ def updateBestModel(model_info, best_models):
         # Else, check if the current model is better than the best model
         current = model_info['training_result'][name]
         best = best_model['training_result'][name]
-        if not np.isnan(current) and \
-           (np.isnan(best) or (name == METRIC_HAMMING_LOSS and current < best) or current > best):
-            best_models[name] = model_info.copy()
+        if not np.isnan(current):
+            if np.isnan(best):
+                # If the best model is not defined, set the current model as the best
+                best_models[name] = model_info.copy()
+            else:
+                # If best model is defined, only save the current model if it is better
+                if (name == METRIC_HAMMING_LOSS and current < best) or \
+                   (name != METRIC_HAMMING_LOSS and current > best):
+                    best_models[name] = model_info.copy()
 
 
 def printTrainingSummary(best_models, saved_models_dir):
