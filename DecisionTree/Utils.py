@@ -585,6 +585,12 @@ def saveModel(best_models, settings):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, dict):
+            # Recursively process dictionary values
+            return {k: convert_to_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            # Recursively process list elements
+            return [convert_to_serializable(item) for item in obj]
         else:
             return obj
     
@@ -603,7 +609,10 @@ def saveModel(best_models, settings):
                 new_score = best_model['training_result'][name]
 
                 # Dont save this model if it is not better than the one already stored in this folder
-                if new_score <= old_score or (name == METRIC_HAMMING_LOSS and new_score >= old_score):
+                is_new_score_invalid = np.isnan(new_score)
+                is_old_score_valid = not np.isnan(old_score)
+                if is_new_score_invalid or (is_old_score_valid and \
+                    ((name == METRIC_HAMMING_LOSS and new_score >= old_score) or new_score <= old_score)): # only compare the scores when both old and new scores are not np.nan
                     continue
                 
         # If code reaches here, it means we need to save the new model
@@ -645,7 +654,6 @@ def updateBestModel(model_info, best_models):
     """
     Update the best model if the current model is better than the previous best.
     """
-    current_metric = model_info['training_result']
     # go through the dictionary of best models, and update the best model if the current model is better
     for name, best_model in best_models.items():
         # if this is the first model, initialize the best model
@@ -654,9 +662,10 @@ def updateBestModel(model_info, best_models):
             continue
         
         # Else, check if the current model is better than the best model
-        current = current_metric[name]
+        current = model_info['training_result'][name]
         best = best_model['training_result'][name]
-        if current > best or (name == METRIC_HAMMING_LOSS and current < best):
+        if not np.isnan(current) and \
+           (np.isnan(best) or (name == METRIC_HAMMING_LOSS and current < best) or current > best):
             best_models[name] = model_info.copy()
 
 
@@ -690,9 +699,9 @@ def printTrainingSummary(best_models, saved_models_dir):
 def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
     # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
     norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
-    norm_f1 = f1_scores  # already in [0,1]
-    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not None else 0.0  # MCC is [-1,1], normalize to [0,1]
-    norm_map = mAP if mAP is not None else 0.0  # already in [0,1]
+    norm_f1 = f1_scores  if f1_scores is not np.nan else None  # F1 is [0,1], so no normalization needed
+    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not np.nan else None  # MCC is [-1,1], normalize to [0,1]
+    norm_map = mAP if mAP is not np.nan else None  # already in [0,1]
     norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
 
     # Combine metrics with equal weights
@@ -719,8 +728,6 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
         if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
                 mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
                 mcc_scores.append(mcc)
-        else:
-            mcc_scores.append(np.nan)  # this value will be ignored in np.nanmean below
         
         # f1 and Accuracy
         f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
@@ -728,9 +735,9 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
         acc = accuracy_score(y_test[:, i], y_pred[:, i])
         accuracies.append(acc)
     
-    avg_f1 = np.mean(f1_scores)
-    avg_mcc = np.nanmean(mcc_scores)
-    avg_accuracy = np.mean(accuracies)
+    avg_f1 = np.mean(f1_scores) if len(f1_scores) > 0 else np.nan
+    avg_mcc = np.mean(mcc_scores) if len(mcc_scores) > 0 else np.nan
+    avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
 
     return avg_f1, avg_mcc, avg_accuracy
 
@@ -742,8 +749,8 @@ def calculateMapAndROC(model, X_test, y_test):
     - Aggregates P(class=1) + P(class=-1) from model's predict_proba for positive event probability.
     These metrics require probability scores, so the model must support predict_proba.
     """
-    mAP = 0.0001  # Default value for when map and roc_auc cannot be calculated.
-    roc_auc_mean = 0.0001
+    mAP = np.nan  # Default value for when map and roc_auc cannot be calculated.
+    roc_auc_mean = np.nan
 
     if not hasattr(model, 'predict_proba'):
         # Model does not support probability prediction
@@ -763,9 +770,6 @@ def calculateMapAndROC(model, X_test, y_test):
         else:
             # Mismatch in expected structure
             return mAP, roc_auc_mean
-    
-    mAP = np.nan
-    roc_auc_mean = np.nan  # Use np.nan as a default if calculation is not possible
 
     all_aps = []
     all_roc_aucs = []
@@ -842,9 +846,5 @@ def calculateMapAndROC(model, X_test, y_test):
     
     if all_roc_aucs: # Check if list is not empty
         roc_auc_mean = np.nanmean(all_roc_aucs)
-    
-    assert not np.isnan(mAP), "mAP calculation resulted in NaN. this will affect score of combined_score."
-    assert not np.isnan(roc_auc_mean), "ROC-AUC calculation resulted in NaN. this will affect score of combined_score."
-    
-    print(f"...mAP: {mAP:.4f}, ROC-AUC: {roc_auc_mean:.4f} (mean across all labels)")
+
     return mAP, roc_auc_mean
