@@ -144,14 +144,14 @@ def importValidationData(settings, model_metadata, pca):
     assert input_data.shape[0] == (end_index - start_index), "Input data row count does not match the specified validation indexes."
     assert output_data.shape[0] == (end_index - start_index), "Output data row count does not match the specified validation indexes."
 
+    input_data = input_data.values  # convert to numpy array
+
     # Apply PCA if it was used during training
     if pca is not None:
         assert model_metadata['config']['use_pca'] == True, "PCA was not used during training, but PCA object is provided."
-        print("DEBUGMINH Feature names of input_data:")
-        print(input_data.columns.tolist())
         input_data_transformed = pca.transform(input_data)  # result is a numpy array
     else:
-        input_data_transformed = input_data.copy().values  # No transformation, just convert to numpy array
+        input_data_transformed = input_data.copy()  # No transformation
 
     # remove features that were also removed during training due to low variance
     removed_feature_indexes = model_metadata['removed_features']
@@ -165,7 +165,7 @@ def importValidationData(settings, model_metadata, pca):
     else:
         output_data = output_data.values
     
-    return input_data_transformed , output_data, input_data.values
+    return input_data_transformed , output_data, input_data
 
 
 

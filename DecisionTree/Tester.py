@@ -10,7 +10,7 @@ import Utils as Utils
 import Solver.RunQuickXplain as Solver
 from Trainer import evaluateModel
 
-def getPredictedProbabilities(model, X_validate, model_metadata):
+def getPredictedProbabilities(model, X_validate, model_metadata, num_labels):
     """
     Get the predicted probabilities for each output constraint using the model.
     Probability is calculated as follow:
@@ -29,8 +29,7 @@ def getPredictedProbabilities(model, X_validate, model_metadata):
     numpy.ndarray: Predicted probabilities for each output constraint
     """
     # Initialize output array: (n_samples, n_constraints)
-    n_constraints = len(model.estimators_) if hasattr(model, 'estimators_') else model.n_outputs_
-    y_pred_prob = np.zeros((X_validate.shape[0], n_constraints), dtype=float)
+    y_pred_prob = np.zeros((X_validate.shape[0], num_labels), dtype=float)
     
     if isinstance(model, MultiOutputClassifier):
         # For MultiOutputClassifier: each estimator is independent
@@ -95,7 +94,7 @@ def getPredictedProbabilities(model, X_validate, model_metadata):
 
     return y_pred_prob
 
-def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_metadata):
+def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_metadata, num_labels):
     """
     Test the model with QuickXplain to evaluate its performance on constraint ordering.
     
@@ -105,6 +104,7 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
     X_validate (numpy.ndarray): input data but was transformed with PCA (if PCA was used during training)
     input_data (numpy.ndarray): Original input data without PCA transformation
     model_metadata (dict): Metadata of the model, loaded from the json file
+    num_labels (int): Number of output labels (constraints) in the model
 
     Returns:
     list: [faster_performance, ordered_runtime, unordered_runtime]
@@ -113,7 +113,7 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
         - unordered_runtime: Runtime of QuickXplain with default ordering
     """
     # get predicted probabilities from model
-    y_pred_prob = getPredictedProbabilities(model, X_validate, model_metadata)
+    y_pred_prob = getPredictedProbabilities(model, X_validate, model_metadata, num_labels)
 
     # Get the list of constraint names
     constraint_name_list = Utils.getConstraintNameList(settings)
@@ -153,7 +153,7 @@ def startTesting(settings):
 
         # Test the model on QX
         print(f"...Testing model '{model_name}' with QuickXplain...")
-        result = testWithQuickXplain(settings, model, X_validate, orig_input_data, model_metadata)
+        result = testWithQuickXplain(settings, model, X_validate, orig_input_data, model_metadata, y_validate.shape[1])
 
         # store the result in json file
         Utils.saveTestResults(settings, model_name, metrics, result)

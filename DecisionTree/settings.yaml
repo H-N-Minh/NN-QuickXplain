@@ -1,15 +1,15 @@
 PATHS:
   # ARCADE small dataset
-  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
-  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
-  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
-  
-  # ARCADE bigger dataset (48752 invalid configurations)
-  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_410.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_410.csv"    # conflicts computed by the solver (also stored in .csv format)
   # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
   # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  
+  # ARCADE bigger dataset (48752 invalid configurations)
+  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
 
   #BUSYBOX small dataset
   # TRAINDATA_INPUT_PATH: "TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
@@ -45,13 +45,13 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: true # skip training if the model already exists and stored in the model folder
+    SKIP: false # skip training if the model already exists and stored in the model folder
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
       test_sizes: [0.2] #, 0.5, 0.8]   # test size for train/test split
-      max_depths: [null] #, 15, 30]        # max training depth, null for unlimited depth
-      estimator_types: ['DecisionTree'] #, 'RandomForest']   # ['DecisionTree', 'RandomForest']
+      max_depths: [null, 10] # 15, 30]        # max training depth, null for unlimited depth
+      estimator_types: ['DecisionTree', 'RandomForest']   # ['DecisionTree', 'RandomForest']
       multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']
       use_pca_options: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
       class_weight_options: [null, 'balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
@@ -62,6 +62,6 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: false # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
-    models_to_test: ["HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.
+    models_to_test: ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.
 
 
