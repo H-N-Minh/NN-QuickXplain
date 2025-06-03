@@ -665,6 +665,7 @@ def splitData(input_data, output_data):
     chunk_size = int(0.1 * total_data)  # 10% of the total data
 
     # Randomly select the start index for the chunk
+    np.random.seed(420)  # For reproducibility
     start_index = np.random.randint(0, total_data - chunk_size)
     end_index = start_index + chunk_size
 
