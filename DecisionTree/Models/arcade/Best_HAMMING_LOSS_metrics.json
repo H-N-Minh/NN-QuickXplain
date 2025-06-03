@@ -1,18 +1,18 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.0,
-    "F1": 0.40152860991304284,
-    "MCC": 0.10980960791832985,
-    "MAP": 0.3474725327298292,
-    "HAMMING_LOSS": 0.03637316735593698,
-    "COMBINED": 45.35065558492201,
-    "accuracy": 0.9636268326440631,
-    "roc_auc": 0.8684396916473887,
+    "EXACT_MATCH": 0.004558300665511898,
+    "F1": 0.4027099072039503,
+    "MCC": 0.08995058344670409,
+    "MAP": 0.35025266940973165,
+    "HAMMING_LOSS": 0.036255065929603265,
+    "COMBINED": 45.234567708281716,
+    "accuracy": 0.963744934070397,
+    "roc_auc": 0.8454198875537681,
     "total_samples": 21938
   },
   "validation_indexes": [
-    43661,
-    48536
+    11185,
+    16060
   ],
   "config": {
     "test_size": 0.5,
@@ -32,21 +32,21 @@
   },
   "testing_result": {
     "EXACT_MATCH": 0.0,
-    "F1": 0.7223313108567181,
+    "F1": 0.8166266130161607,
     "MCC": NaN,
-    "MAP": 0.03971746998459514,
-    "HAMMING_LOSS": 0.03524941724941725,
-    "COMBINED": 43.169984089797396,
-    "accuracy": 0.9647505827505828,
-    "roc_auc": 0.5581224507992952,
+    "MAP": 0.08198434536240648,
+    "HAMMING_LOSS": 0.035557109557109556,
+    "COMBINED": 46.57634622053644,
+    "accuracy": 0.9644428904428906,
+    "roc_auc": 0.8117514186162025,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 1.6283018970051282,
-    "ordered_cc": 8.68451282051282,
-    "unordered_runtime": 0.005168944205128204,
-    "unordered_cc": 14.812923076923077,
-    "faster_performance_percentage": -99.68255615161813,
-    "CC_less_percentage": 41.37205212357886
+    "ordered_runtime": 0.10515241817435887,
+    "ordered_cc": 10.54646153846154,
+    "unordered_runtime": 0.54116730945641,
+    "unordered_cc": 11.054358974358975,
+    "faster_performance_percentage": 414.65037024547684,
+    "CC_less_percentage": 4.5945444423826265
   }
 }
