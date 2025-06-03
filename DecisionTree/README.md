@@ -21,47 +21,34 @@ faster_performance_percentage: 20% means new model is 20% faster than no model, 
 CC_less_percentage: 20% means if no model needs 100CC, new model needs 80.
 
 
-log for training the 126k data
-Clearing completed!
+
+Training logs:
+for arcade, i trained on this tweaks
+    configurations: 
+      test_sizes: [0.2, 0.5, 0.8] 
+      max_depths: [null, 10, 20, 30]
+      estimator_types: ['DecisionTree', 'RandomForest'] 
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']
+      use_pca_options: [false, true]
+      class_weight_options: [null, 'balanced'] 
+      
+      random_forest_direct: 
+        skip: false
+This results in 240 different models trained and evaluated. 6 best models were then tested
 
 
-################## TRAINING PHASE ##########################
-Importing data...
-Data imported successfully. Number of samples (set to 70k max for faster training): 70000
-Training 60 configurations...
+for busy box, i trained on this tweaks
+    configurations: 
 
-Configuration 1/60
-Estimator: DecisionTree, MultiOutput: MultiOutputClassifier, PCA: False, Class Weight: None, Test Size: 0.2, Max Depth: None
-Exact Match = 1.42%, F1 = 0.6660, MCC = 0.4239, MAP = 0.2820, Hamming Loss = 0.0088, Combined Score = 53.31%
-
-Configuration 2/60
-Estimator: DecisionTree, MultiOutput: MultiOutputClassifier, PCA: False, Class Weight: balanced, Test Size: 0.2, Max Depth: None
-Exact Match = 0.96%, F1 = 0.6021, MCC = 0.2789, MAP = 0.1976, Hamming Loss = 0.0886, Combined Score = 47.20%
-
-Configuration 3/60
-Estimator: DecisionTree, MultiOutput: MultiOutputClassifier, PCA: True, Class Weight: None, Test Size: 0.2, Max Depth: None
-Exact Match = 0.16%, F1 = 0.4772, MCC = 0.0172, MAP = 0.0118, Hamming Loss = 0.0092, Combined Score = 39.80%
-
-Configuration 4/60
-Estimator: DecisionTree, MultiOutput: MultiOutputClassifier, PCA: True, Class Weight: balanced, Test Size: 0.2, Max Depth: None
-Exact Match = 0.14%, F1 = 0.4586, MCC = -0.0043, MAP = 0.0100, Hamming Loss = 0.0892, Combined Score = 37.57%
-
-Configuration 5/60
-Estimator: DecisionTree, MultiOutput: ClassifierChain, PCA: False, Class Weight: None, Test Size: 0.2, Max Depth: None
-Exact Match = 2.57%, F1 = 0.6417, MCC = 0.3920, MAP = nan, Hamming Loss = 0.0151, Combined Score = 58.71%
-
-Configuration 6/60
-Estimator: DecisionTree, MultiOutput: ClassifierChain, PCA: False, Class Weight: balanced, Test Size: 0.2, Max Depth: None
-Exact Match = 2.48%, F1 = 0.5933, MCC = 0.2638, MAP = nan, Hamming Loss = 0.0149, Combined Score = 55.88%
-
-Configuration 7/60
-Estimator: DecisionTree, MultiOutput: ClassifierChain, PCA: True, Class Weight: None, Test Size: 0.2, Max Depth: None
-Exact Match = 0.90%, F1 = 0.4819, MCC = 0.0108, MAP = nan, Hamming Loss = 0.0156, Combined Score = 49.52%
-
-Configuration 8/60
-Estimator: DecisionTree, MultiOutput: ClassifierChain, PCA: True, Class Weight: balanced, Test Size: 0.2, Max Depth: None
-Exact Match = 0.98%, F1 = 0.4835, MCC = 0.0139, MAP = nan, Hamming Loss = 0.0154, Combined Score = 49.62%
-
-Configuration 9/60
-Estimator: RandomForest, MultiOutput: MultiOutputClassifier, PCA: False, Class Weight: None, Test Size: 0.2, Max Depth: None
-Exact Match = 0.10%, F1 = 0.5135, MCC = 0.0469, MAP = 0.0526, Hamming Loss = 0.0085, Combined Score = 41.64%
+      test_sizes: [0.2, 0.5, 0.8] 
+      max_depths: [10] 
+      estimator_types: ['DecisionTree']
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']    
+      use_pca_options: [false]  
+      class_weight_options: [null, 'balanced']   
+      
+      random_forest_direct:  
+        skip: true  
+Since data is much larger and theres more constraints, training each model takes significantly longer, so its not practical to
+test every possible tweaks. Training data was capped at 70k samples to shorten training time.
+The configurations above result in 12 models trained and evaluated, again the top 6 is saved and tested later on
