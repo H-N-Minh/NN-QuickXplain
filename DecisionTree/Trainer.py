@@ -171,7 +171,7 @@ def trainAllModels(input_data, output_data , configs, settings):
 
     # Train all models and save the best ones
     configs_count = len(configs)
-    print(f"Training {configs_count} configurations...")
+    print(f"\nTraining {configs_count} configurations...")
     
     # these metrics will be used to track the best models
     best_models = {
