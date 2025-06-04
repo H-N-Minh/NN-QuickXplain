@@ -49,9 +49,45 @@ for busy box, i trained on this tweaks
       
       random_forest_direct:  
         skip: true  
-Since data is much larger and theres more constraints, training each model takes significantly longer, so its not practical to
-test every possible tweaks. Training data was capped at 70k samples to shorten training time.
-The configurations above result in 12 models trained and evaluated, again the top 6 is saved and tested later on
+  Since data is much larger and theres more constraints, training each model takes significantly longer, so its not practical to
+  test every possible tweaks. Training data was capped at 70k samples to shorten training time.
+  The configurations above result in 12 models trained and evaluated, again the top 6 is saved and tested later on
+  Best was Multioutput, test size 0.2, class weight null.
 
+for busy box 2nd training session:
+      test_sizes: [0.1, 0.3]  
+      max_depths: [null, 20]      
+      estimator_types: ['RandomForest'] 
+      multi_output_types: ['ClassifierChain']       
+      use_pca_options: [true]  
+      class_weight_options: ['balanced']   
+  this is again trained on 70k max
+  This is testing 4 models, none of which beat the last training session
+  best was 01 test size, max depth null
+      
+for busy box 3rd training session
+      test_sizes: [0.1, 0.2]  
+      max_depths: [10, 30]    
+      estimator_types: ['RandomForest']   
+      multi_output_types: ['MultiOutputClassifier']      
+      use_pca_options: [false, true]   
+      class_weight_options: [null]     
+      
+      random_forest_direct:    
+        skip: false 
+  This tests 16 models on 70k data
+  Best test size 0.1, max depth 10, pca false
 
-next configs to test for 120k
+for busy box 4th training session
+      test_sizes: [0.1] 
+      max_depths: [null]  
+      estimator_types: ['DecisionTree', 'RandomForest']  
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']  
+      use_pca_options: [false, true]   
+      class_weight_options: [null, 'balanced']  
+      
+      random_forest_direct: 
+        skip: false
+  This tests 20 models on 70k data
+
+for futures testing: same setting as 4th session but max depth is 10 or 5 or 15
