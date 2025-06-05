@@ -565,5 +565,24 @@
     "677": 0,
     "680": 0,
     "682": 0
+  },
+  "testing_result": {
+    "EXACT_MATCH": 0.0,
+    "F1": 0.9565152376660421,
+    "MCC": NaN,
+    "MAP": 0.014100659764084755,
+    "HAMMING_LOSS": 0.006944444444444444,
+    "COMBINED": 49.09178632464206,
+    "accuracy": 0.9930555555555556,
+    "roc_auc": 0.7646527716043193,
+    "total_samples": 12672
+  },
+  "QX_result": {
+    "ordered_runtime": 0.02921916887626262,
+    "ordered_cc": 16.609059343434343,
+    "unordered_runtime": 0.06691373760061556,
+    "unordered_cc": 13.342724116161616,
+    "faster_performance_percentage": 129.00630022702546,
+    "CC_less_percentage": -24.480272535323717
   }
 }
