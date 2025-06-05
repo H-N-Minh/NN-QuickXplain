@@ -1,21 +1,21 @@
 {
   "training_result": {
-    "EXACT_MATCH": 2.5238095238095237,
-    "F1": 0.6417327892444646,
-    "MCC": 0.3898976879307261,
+    "EXACT_MATCH": 3.571428571428571,
+    "F1": 0.7165368628771039,
+    "MCC": 0.47003485425862446,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.008309634038800705,
-    "COMBINED": 58.84025236022805,
-    "accuracy": 0.9916903659611993,
+    "HAMMING_LOSS": 0.008468915343915345,
+    "COMBINED": 61.969991509419664,
+    "accuracy": 0.9915288800705468,
     "roc_auc": NaN,
-    "total_samples": 12600
+    "total_samples": 6300
   },
   "validation_indexes": [
-    4199,
-    11199
+    11185,
+    18185
   ],
   "config": {
-    "test_size": 0.2,
+    "test_size": 0.1,
     "max_depth": 10,
     "estimator_type": "DecisionTree",
     "multi_output_type": "ClassifierChain",
@@ -565,24 +565,5 @@
     "677": 0,
     "680": 0,
     "682": 0
-  },
-  "testing_result": {
-    "EXACT_MATCH": 19.185714285714287,
-    "F1": 0.9329326617332784,
-    "MCC": 0.37038342010219943,
-    "MAP": NaN,
-    "HAMMING_LOSS": 0.008101190476190475,
-    "COMBINED": 70.04700810413327,
-    "accuracy": 0.9918988095238094,
-    "roc_auc": NaN,
-    "total_samples": 7000
-  },
-  "QX_result": {
-    "ordered_runtime": 0.060513760671428565,
-    "ordered_cc": 16.553285714285714,
-    "unordered_runtime": 0.08495473874285712,
-    "unordered_cc": 13.991857142857143,
-    "faster_performance_percentage": 40.38912439128628,
-    "CC_less_percentage": -18.306566063935144
   }
 }

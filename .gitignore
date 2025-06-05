@@ -1,4 +1,5 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 java/
@@ -23,4 +24,3 @@ DecisionTree/Models/**/*.pkl
 
 # others
 jdk-24_windows-x64_bin/
-

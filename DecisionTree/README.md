@@ -36,6 +36,7 @@ for arcade, i trained on this tweaks
         skip: false
 This results in 240 different models trained and evaluated. 6 best models were then tested
 
+-----------------------------------------------------------------------------------------------------------------------------------
 
 for busy box, i trained on this tweaks
     configurations: 
@@ -80,7 +81,7 @@ for busy box 3rd training session
 
 for busy box 4th training session
       test_sizes: [0.1] 
-      max_depths: [null]  
+      max_depths: [10, null]  
       estimator_types: ['DecisionTree', 'RandomForest']  
       multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']  
       use_pca_options: [false, true]   
@@ -88,6 +89,27 @@ for busy box 4th training session
       
       random_forest_direct: 
         skip: false
-  This tests 20 models on 70k data
+  This tests 40 models on 70k data
+  best was decisiontree, clasifierchain, depth 10, pca false
 
-for futures testing: same setting as 4th session but max depth is 10 or 5 or 15
+(it got canceled halfway) to finish:
+    #   test_sizes: [0.1]  
+    #   max_depths: [null, 10]     
+    #   estimator_types: ['DecisionTree']   
+    #   multi_output_types: ['ClassifierChain', 'MultiOutputClassifier']        
+    #   use_pca_options: [false, true]    
+    #   class_weight_options: [null, 'balanced']    
+      
+    #   random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
+    #     skip: true 
+    merge result with last one
+
+for busy box 5th training session
+      test_sizes: [0.1, 0.3, 0.5, 0.9]  
+      max_depths: [5, 10, 15, 20]      
+      estimator_types: ['DecisionTree']  
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']  
+      use_pca_options: [false]   
+      class_weight_options: [null]      
+  this tests 32 models on 70k data
+      
