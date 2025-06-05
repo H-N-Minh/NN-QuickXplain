@@ -545,13 +545,14 @@ def importTrainingData(settings):
     assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
 
     
-    # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
-    max_samples = 70000
-    if input_data.shape[0] > max_samples:
-        print(f"(Importing only {max_samples} samples for faster training on busybox data)")
-        random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
-        input_data = input_data.iloc[random_indices]
-        output_data = output_data.iloc[random_indices]
+    # # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
+    # max_samples = 70000
+    # if input_data.shape[0] > max_samples:
+    #     print(f"(Importing only {max_samples} samples for faster training on busybox data)")
+    #     random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
+    #     input_data = input_data.iloc[random_indices]
+    #     output_data = output_data.iloc[random_indices]
+
     print(f"...Imported {input_data.shape[0]} samples with {input_data.shape[1]} features and {output_data.shape[1]} labels.")
 
     return input_data.values , output_data.values
@@ -646,15 +647,17 @@ def saveModel(best_models, settings):
                 # Dont save this model if it is not better than the one already stored in this folder
                 # If the new score is NaN, we skip saving this model
                 if np.isnan(new_score):
+                    print(f"❌ Skipping '{name}' model as it is worse than existing one.")
                     continue
                 # If the old score is not NaN and has better score than the new score, we skip saving this model
                 if not np.isnan(old_score):
                     if (name != METRIC_HAMMING_LOSS and new_score <= old_score) or \
                        (name == METRIC_HAMMING_LOSS and new_score >= old_score): 
+                        print(f"❌ Skipping '{name}' model as it is worse than existing one.")
                         continue
                 
         # If code reaches here, it means we need to save the new model
-        print(f"Saving '{name}' model as it is better than the existing one.")
+        print(f"✅ Saving '{name}' model as it is better than the existing one.")
         
         # Save model and PCA
         model_filename = os.path.join(model_folder_path, f"Best_{name}.pkl")
@@ -730,7 +733,7 @@ def printTrainingSummary(best_models, saved_models_dir):
             f"PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
             f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
         print(
-            f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+            f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
             f"F1 = {metrics[METRIC_F1]:.4f}, "
             f"MCC = {metrics[METRIC_MCC]:.4f}, "
             f"MAP = {metrics[METRIC_MAP]:.4f}, "

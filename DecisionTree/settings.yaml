@@ -58,7 +58,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       class_weight_options: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
 
       random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
-        skip: false     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
+        skip: true     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
 
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: true # skip validation part completely if set to true
