@@ -50,15 +50,15 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.1, 0.3, 0.5, 0.9]   # test size for train/test split
-      max_depths: [5, 10, 15, 20]       # max training depth, null for unlimited depth
+      test_sizes: [0.1, 0.3]   # test size for train/test split
+      max_depths: [5, 10]       # max training depth, null for unlimited depth
       estimator_types: ['DecisionTree']    # ['DecisionTree', 'RandomForest']
       multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']
       use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      class_weight_options: [null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
-      
+      class_weight_options: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+
       random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
-        skip: true     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
+        skip: false     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
 
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: true # skip validation part completely if set to true

@@ -92,18 +92,6 @@ for busy box 4th training session
   This tests 40 models on 70k data
   best was decisiontree, clasifierchain, depth 10, pca false
 
-(it got canceled halfway) to finish:
-    #   test_sizes: [0.1]  
-    #   max_depths: [null, 10]     
-    #   estimator_types: ['DecisionTree']   
-    #   multi_output_types: ['ClassifierChain', 'MultiOutputClassifier']        
-    #   use_pca_options: [false, true]    
-    #   class_weight_options: [null, 'balanced']    
-      
-    #   random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
-    #     skip: true 
-    merge result with last one
-
 for busy box 5th training session
       test_sizes: [0.1, 0.3, 0.5, 0.9]  
       max_depths: [5, 10, 15, 20]      
@@ -112,4 +100,15 @@ for busy box 5th training session
       use_pca_options: [false]   
       class_weight_options: [null]      
   this tests 32 models on 70k data
-      
+  0.1 and 0.3 test size won, max depth 5, multioutputclassifier
+
+last session
+      test_sizes: [0.1, 0.3]  
+      max_depths: [5, 10]    
+      estimator_types: ['DecisionTree']  
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']        
+      use_pca_options: [false]    
+      class_weight_options: ['balanced']    
+
+      random_forest_direct:   
+        skip: false  
