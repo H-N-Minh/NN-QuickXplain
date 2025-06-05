@@ -1,18 +1,18 @@
 {
   "training_result": {
-    "EXACT_MATCH": 3.571428571428571,
-    "F1": 0.7165368628771039,
-    "MCC": 0.47003485425862446,
+    "EXACT_MATCH": 2.7529370506750834,
+    "F1": 0.6973937412988622,
+    "MCC": 0.4458796293566316,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.008468915343915345,
-    "COMBINED": 61.969991509419664,
-    "accuracy": 0.9915288800705468,
+    "HAMMING_LOSS": 0.008316772848598204,
+    "COMBINED": 60.988653840883266,
+    "accuracy": 0.9916826183100511,
     "roc_auc": NaN,
-    "total_samples": 6300
+    "total_samples": 11406
   },
   "validation_indexes": [
     11185,
-    18185
+    23857
   ],
   "config": {
     "test_size": 0.1,

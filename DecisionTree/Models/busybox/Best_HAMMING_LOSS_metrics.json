@@ -1,21 +1,21 @@
 {
   "training_result": {
-    "EXACT_MATCH": 1.164021164021164,
-    "F1": 0.6467878772748895,
-    "MCC": 0.4675075609545429,
-    "MAP": 0.29958753052177917,
-    "HAMMING_LOSS": 0.007926954732510288,
-    "COMBINED": 53.67684890363284,
-    "accuracy": 0.9920730452674896,
-    "roc_auc": 0.7850342938181795,
-    "total_samples": 18900
+    "EXACT_MATCH": 1.2449587936173945,
+    "F1": 0.6884605492622824,
+    "MCC": 0.5368918370936976,
+    "MAP": 0.38205725506548355,
+    "HAMMING_LOSS": 0.008025137841681766,
+    "COMBINED": 56.86776345938214,
+    "accuracy": 0.9919748621583181,
+    "roc_auc": 0.8531008586476142,
+    "total_samples": 11406
   },
   "validation_indexes": [
     11185,
-    18185
+    23857
   ],
   "config": {
-    "test_size": 0.3,
+    "test_size": 0.1,
     "max_depth": 5,
     "estimator_type": "DecisionTree",
     "multi_output_type": "MultiOutputClassifier",

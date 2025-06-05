@@ -1,18 +1,18 @@
 {
   "training_result": {
-    "EXACT_MATCH": 4.412698412698413,
-    "F1": 0.6306558783472097,
-    "MCC": 0.24327612086709952,
+    "EXACT_MATCH": 2.7529370506750834,
+    "F1": 0.6973937412988622,
+    "MCC": 0.4458796293566316,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.04940145502645503,
-    "COMBINED": 56.175486697032206,
-    "accuracy": 0.9505985449735452,
+    "HAMMING_LOSS": 0.008316772848598204,
+    "COMBINED": 60.988653840883266,
+    "accuracy": 0.9916826183100511,
     "roc_auc": NaN,
-    "total_samples": 6300
+    "total_samples": 11406
   },
   "validation_indexes": [
     11185,
-    18185
+    23857
   ],
   "config": {
     "test_size": 0.1,
@@ -21,7 +21,7 @@
     "multi_output_type": "ClassifierChain",
     "use_pca": false,
     "pca_components": 0.95,
-    "class_weight": "balanced",
+    "class_weight": null,
     "n_estimators": null
   },
   "removed_features": [],
