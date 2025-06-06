@@ -3,6 +3,7 @@
 # The best models are saved in the Models folder, the rest are discarded.
 # Only important funcs are here, the rest is in Utils.py
 
+import traceback
 import Utils as Utils
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -52,39 +53,51 @@ def trainAllModels(input_data, output_data , configs, settings):
 
     # Train all models and save the best ones
     configs_count = len(configs)
-    print(f"Training {configs_count} configurations...")
+    print(f"\nTraining {configs_count} configurations...")
     
     # these metrics will be used to track the best models
-    best_exact_match = {'EXACT_MATCH': -1, 'metrics': None, 'model': None, 'pca': None}       
-    best_f1 = {'AVG_F1': -1, 'metrics': None, 'model': None, 'pca': None}
-    best_both = {'f1_and_exact_match': -1, 'metrics': None, 'model': None, 'pca': None}
+    best_models = {
+        Utils.METRIC_EXACT_MATCH: None,
+        Utils.METRIC_F1: None,
+        Utils.METRIC_MCC: None,
+        Utils.METRIC_MAP: None,
+        Utils.METRIC_HAMMING_LOSS: None,
+        Utils.METRIC_COMBINED: None
+    }
     
     error_count = 0
     for i, config in enumerate(configs):
-        # try:
-        print(f"\nConfiguration {i+1}/{configs_count}")
+        try:
+            print(f"\nConfiguration {i+1}/{configs_count}")
 
-        metrics, model, pca = trainOneModel(input_data, output_data, config)
-        metrics['validation_indexes'] = validation_indexes
-        metrics['config'] = config
+            model_info = {}
+            metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
+            model_info['training_result'] = metrics
+            model_info['validation_indexes'] = validation_indexes
+            model_info['config'] = config
+            model_info['model'] = model
+            model_info['pca'] = pca
+            model_info['removed_features'] = removed_features
+            model_info['removed_labels'] = removed_labels
 
-        # If the model is the best so far, save it
-        best_exact_match, best_f1, best_both = Utils.updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both)
+            # If the model is the best so far, save it
+            Utils.updateBestModel(model_info, best_models)
                 
-        # except Exception as e:
-        #     print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
-        #     error_count += 1
-        #     continue
+        except Exception as e:
+            print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
+            traceback.print_exc()  # print the full traceback of the error
+            error_count += 1
+            continue
     
     print(f"\n\n...Training completed with {error_count} error(s).")
 
     # Save only the best models
-    saved_models_dir = Utils.saveModel(best_exact_match, "BestExactMatch", settings)
-    Utils.saveModel(best_f1, "BestF1", settings)
-    Utils.saveModel(best_both, "BestBoth", settings)
+    saved_models_dir = Utils.saveModel(best_models, settings)
 
     # Training summary
-    Utils.printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir)
+    Utils.printTrainingSummary(best_models, saved_models_dir)
+
+    return error_count
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
@@ -95,5 +108,5 @@ def startTraining(settings):
     configs = Utils.getModelConfigs(settings)
 
     # Train all models with different configurations. The best ones will be saved.
-    trainAllModels(input_data, output_data, configs, settings)
+    return trainAllModels(input_data, output_data, configs, settings)
 
