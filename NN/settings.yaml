@@ -49,8 +49,23 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      batch_sizes: [1024]   # test size for train/test split
-      max_depths: [12]        # max training depth, null for unlimited depth
+      convert_input: [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
+
+      # number of neurons in hidden layers, can be more than one layer, e.g. [2, 3] means 2 hidden layers with 2 and 3 neurons respectively
+      hidden_layers: [[32], [64], [128], [32, 32], [64, 32], [64, 64], [128, 64], [128, 128], [256, 128, 64] ]
+      dropout_rates: [0.0, 0.1, 0.2, 0.3, 0.4]  # dropout rate for the hidden layers (to prevent overfitting)
+      hidden_activation_funcs: ['relu', 'leaky relu']  # activation function for the hidden layers
+
+      batch_sizes: [32, 64, 128, 256, 512, 1024]   # test size for train/test split
+      batch_norm: [false, true]  # use batch normalization or not
+
+      patience: [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
+
+      loss_funcs: ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
+      optimizers: ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
+      learning_rates: [0.001, 0.01, 0.1]  # learning rate for the optimizer
+      weight_decays: [0.0001, 0.001, 0.01]  # weight decay for the optimizer
+
       use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
       
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
