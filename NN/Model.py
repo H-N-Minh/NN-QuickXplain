@@ -48,7 +48,7 @@ class ModelManager:
         self.optimizer_ = optim.Adam(self.model_.parameters(), lr=0.0005)
 
         # Epochs
-        self.num_epochs_ = config['max_depth']
+        self.num_epochs_ = 100
         
 
 

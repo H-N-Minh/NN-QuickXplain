@@ -71,6 +71,6 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: true # skip validation part completely
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
-    models_to_test: ["F1", "ExactMatch", "Both"]  # ["F1", "ExactMatch", "Both"] specify which models to be tested.
+    models_to_test: ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "ExactMatch", "Both"] specify which models to be tested.
 
 

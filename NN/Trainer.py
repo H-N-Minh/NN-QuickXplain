@@ -79,7 +79,6 @@ def trainOneModel(input_data, output_data, config):
     model_manager = ModelManager(config, X_train, X_test, y_train, y_test)
     
     # Train model
-    # TODO
     model_manager.trainModel()
 
     # Evaluate
