@@ -2,7 +2,7 @@ import os
 import uuid
 import matplotlib
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, hamming_loss, precision_score, recall_score
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -94,21 +94,30 @@ class ModelManager:
         # Exact matches
         exact_match_pct = torch.all(y_pred_probs_rounded == y_test, dim=1).float().mean().item() * 100
         
-        # Per-constraint metrics
-        accuracies = [accuracy_score(y_test[:, i], y_pred_probs_rounded[:, i]) for i in range(y_test.shape[1])]
-        precisions = [precision_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-        recalls = [recall_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-        f1_scores = [f1_score(y_test[:, i], y_pred_probs_rounded[:, i], average='macro', zero_division=0) for i in range(y_test.shape[1])]
-        
+        # F1, Accuracy, and MCC for each label
+        avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_test)
+
+        # Hamming Loss
+        hamming = hamming_loss(y_test, y_pred_probs_rounded)
+
+        # For ROC-AUC and mAP, we need probability scores
+        mAP, roc_auc = Utils.calculateMapAndROC(y_pred_probs, y_test)
+
+        # Calculate combined score
+        combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)
+
         metrics = {
-            'EXACT_MATCH': exact_match_pct,
-            'AVG_F1': np.mean(f1_scores),
-            'total_samples': y_test.shape[0],
-            'avg_accuracy': np.mean(accuracies),
-            'avg_precision': np.mean(precisions),
-            'avg_recall': np.mean(recalls)
+            Utils.METRIC_EXACT_MATCH: exact_match_pct,
+            Utils.METRIC_F1: avg_f1,
+            Utils.METRIC_MCC: avg_mcc,
+            Utils.METRIC_MAP: mAP,
+            Utils.METRIC_HAMMING_LOSS: hamming,
+            Utils.METRIC_COMBINED: combined_score,
+            Utils.METRIC_ACCURACY: avg_accuracy,
+            Utils.METRIC_ROC_AUC: roc_auc,
+            Utils.METRIC_TOTAL_SAMPLES: y_test.shape[0]
         }
-        
+    
         return metrics
 
     

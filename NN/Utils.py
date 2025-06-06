@@ -15,6 +15,8 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.base import accuracy_score
+from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score
 import torch
 from tqdm import tqdm
 import yaml
@@ -73,6 +75,107 @@ def startClearing(settings):
         print("...Models cleared...")
     print("Clearing completed!")
 
+################################## For Model.py ########################################
+
+
+
+def calculateF1_Mcc_Accuracy(y_pred, y_test):
+    """Calculate F1 and MCC and accuracy scores for each label."""
+    f1_scores = []
+    accuracies = []
+    mcc_scores = []
+    
+    for i in range(y_test.shape[1]):
+        # MCC: If either y_test or y_pred has only one class, MCC result is undefined, so we skip this label
+        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
+                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+                mcc_scores.append(mcc)
+        
+        # f1 and Accuracy
+        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
+        f1_scores.append(f1)
+        acc = accuracy_score(y_test[:, i], y_pred[:, i])
+        accuracies.append(acc)
+    
+    avg_f1 = np.mean(f1_scores) if len(f1_scores) > 0 else np.nan
+    avg_mcc = np.mean(mcc_scores) if len(mcc_scores) > 0 else np.nan
+    avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
+
+    return avg_f1, avg_mcc, avg_accuracy
+
+
+def calculateMapAndROC(y_pred_probs, y_test):
+    """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
+    for multi-label classification.
+    """    
+    # Validate input shapes
+    if y_pred_probs.shape != y_test.shape:
+        raise ValueError(f"Shape mismatch: y_pred_probs {y_pred_probs.shape} != y_test {y_test.shape}")
+    
+    n_samples, n_labels = y_test.shape
+    
+    # Initialize lists to store per-label scores
+    map_scores = []
+    roc_scores = []
+    
+    # Calculate scores for each label
+    for i in range(n_labels):
+        y_true_label = y_test[:, i]
+        y_prob_label = y_pred_probs[:, i]
+        
+        # Skip labels that have no positive samples (all zeros)
+        if np.sum(y_true_label) == 0:
+            print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+            
+        # Skip labels that have no negative samples (all ones)
+        if np.sum(y_true_label) == len(y_true_label):
+            print(f"Warning: Label {i} has no negative samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+        
+        # Calculate Average Precision (AP) for this label
+        ap_score = average_precision_score(y_true_label, y_prob_label)
+        map_scores.append(ap_score)
+        
+        # Calculate ROC AUC for this label
+        roc_score = roc_auc_score(y_true_label, y_prob_label)
+        roc_scores.append(roc_score)
+    
+    # Convert to numpy arrays for easier handling
+    map_scores = np.array(map_scores)
+    roc_scores = np.array(roc_scores)
+    
+    # Calculate macro averages (ignoring NaN values)
+    map_macro = np.nanmean(map_scores)
+    roc_macro = np.nanmean(roc_scores)
+    
+    return map_macro, roc_macro
+
+
+def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
+    # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
+    norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
+    norm_f1 = f1_scores  if f1_scores is not np.nan else None  # F1 is [0,1], so no normalization needed
+    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not np.nan else None  # MCC is [-1,1], normalize to [0,1]
+    norm_map = mAP if mAP is not np.nan else None  # already in [0,1]
+    norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
+
+    # Combine metrics with equal weights
+    norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
+    
+    # Filter out None values
+    valid_metrics = [m for m in norm_metrics if m is not None]
+    
+    if valid_metrics:
+        combined_score = np.mean(valid_metrics) * 100  # convert back to percentage
+    else:
+        combined_score = 0.0
+       
+    return combined_score
 
 ################################## FOR Trainer.py ########################################
 
@@ -86,6 +189,22 @@ METRIC_COMBINED = 'COMBINED'
 METRIC_ACCURACY = 'accuracy'
 METRIC_ROC_AUC = 'roc_auc'
 METRIC_TOTAL_SAMPLES = 'total_samples'
+
+
+def printOneModelTrainResult(config, metrics):
+    """Print the training result of one model configuration."""
+    print(f"convert_input: {config['convert_input']}, hidden_layers: {config['hidden_layers']}, dropout_rate: {config['dropout_rate']}, "
+          f"hidden_activation_func: {config['hidden_activation_func']}, batch_size: {config['batch_size']}, batch_norm: {config['batch_norm']}\n"
+          f"patience: {config['patience']}, loss_func: {config['loss_func']}, optimizer: {config['optimizer']}, learning_rate: {config['learning_rate']}, "
+          f"weight_decay: {config['weight_decay']}, use_pca: {config['use_pca']}, pca_components: {config['pca_components']}")
+    print(
+        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+        f"F1 = {metrics[METRIC_F1]:.4f}, "
+        f"MCC = {metrics[METRIC_MCC]:.4f}, "
+        f"MAP = {metrics[METRIC_MAP]:.4f}, "
+        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+    )
 
 def importTrainingData(settings):
     """Import training data from CSV files. return type is tuple of numpy arrays (input_data, output_data)."""
@@ -163,7 +282,7 @@ def getModelConfigs(settings):
     return configs
 
 
-def saveModel(best_model, model_name, settings):
+def saveModel(best_models, settings):
     """Save the model object, pca object and the metrices of the best models."""
 
     # get an appropriate name for the folder to save these models
@@ -172,35 +291,8 @@ def saveModel(best_model, model_name, settings):
     model_folder_path = os.path.join(current_folder, "Models", model_folder_name)
     if not os.path.exists(model_folder_path):
         os.makedirs(model_folder_path)
-    metrics_filename = os.path.join(model_folder_path, f"{model_name}_metrics.json")
 
-    # Dont save this model if it is not better than the one already stored in this folder (if any exists)
-    if os.path.exists(metrics_filename):
-        with open(metrics_filename, 'r') as f:
-            old_model = json.load(f)
-            old_exact_match = old_model['EXACT_MATCH']
-            new_exact_match = best_model['metrics']['EXACT_MATCH']
-            old_f1 = old_model['AVG_F1']
-            new_f1 = best_model['metrics']['AVG_F1']
-            old_both = old_exact_match + old_f1 * 100
-            new_both = new_exact_match + new_f1 * 100
-
-            # Check if the new model is better than the old one
-            if (model_name == "BestExactMatch" and old_exact_match >= new_exact_match) or \
-               (model_name == "BestF1" and old_f1 >= new_f1) or \
-               (model_name == "BestBoth" and old_both >= new_both):
-                print(f"Skipping saving '{model_name}' model as it is not better than the existing one.")
-                return model_folder_path
-
-    # If code reaches here, it means we need to save the new model
-    # Save model and PCA
-    model_filename = os.path.join(model_folder_path, f"{model_name}.pt")
-    model = best_model['model'].model_
-    torch.save(model.state_dict(), model_filename)
-    pca_filename = os.path.join(model_folder_path, f"{model_name}_pca.joblib")
-    joblib.dump(best_model['pca'], pca_filename)
-    
-    # Convert metrics to JSON-serializable types
+    # Helper func to Convert metrics to JSON-serializable types later
     def convert_to_serializable(obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -208,14 +300,56 @@ def saveModel(best_model, model_name, settings):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, dict):
+            # Recursively process dictionary values
+            return {k: convert_to_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            # Recursively process list elements
+            return [convert_to_serializable(item) for item in obj]
         else:
             return obj
-
-    # Save metrics
-    metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['metrics'].items()}
-    with open(metrics_filename, 'w') as f:
-        json.dump(metrics_serializable, f, indent=2)
     
+    # Save the best models if they are better than the existing ones
+    for name, best_model in best_models.items():
+        if best_model is None:      # this should never happen, but just in case
+            print(f"No best model found for {name}. Skipping saving.")
+            continue
+        
+        metrics_filename = os.path.join(model_folder_path, f"Best_{name}_metrics.json")
+
+        if os.path.exists(metrics_filename):
+            with open(metrics_filename, 'r') as f:
+                old_model = json.load(f)
+                old_score = old_model['training_result'][name]
+                new_score = best_model['training_result'][name]
+
+                # Dont save this model if it is not better than the one already stored in this folder
+                # If the new score is NaN, we skip saving this model
+                if np.isnan(new_score):
+                    print(f"❌ Skipping '{name}' model as it is worse than existing one.")
+                    continue
+                # If the old score is not NaN and has better score than the new score, we skip saving this model
+                if not np.isnan(old_score):
+                    if (name != METRIC_HAMMING_LOSS and new_score <= old_score) or \
+                       (name == METRIC_HAMMING_LOSS and new_score >= old_score): 
+                        print(f"❌ Skipping '{name}' model as it is worse than existing one.")
+                        continue
+                
+        # If code reaches here, it means we need to save the new model
+        print(f"✅ Saving '{name}' model as it is better than the existing one.")
+        
+        # Save model and PCA
+        model_filename = os.path.join(model_folder_path, f"Best_{name}.pt")
+        model = best_model['model'].model_
+        torch.save(model.state_dict(), model_filename)
+        pca_filename = os.path.join(model_folder_path, f"Best_{name}_pca.joblib")
+        joblib.dump(best_model['pca'], pca_filename)
+
+        # Save metrics
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model', 'pca']}
+        with open(metrics_filename, 'w') as f:
+            json.dump(metrics_serializable, f, indent=2)
+                    
     return model_folder_path
 
 

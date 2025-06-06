@@ -4,6 +4,8 @@
 # Only important funcs are here, the rest is in Utils.py
 
 import traceback
+
+from sklearn.feature_selection import VarianceThreshold
 import Utils as Utils
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -14,6 +16,46 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from sklearn.decomposition import PCA
 from Model import ModelManager
 
+def preprocessTrainingData(X_transformed, output_data, config):
+    """
+    1. convert input data to binary format if specified in config.
+    2. convert output data to binary format (1, 0) (-1 is converted to 1).
+    3. remove features with low variance (variance < 0.01) and mark their indexes.
+    4. remove labels with constant values (variance == 0) and mark their indexes and values. 
+    
+    Features are removed because low variance features do not contribute to the model's learning.
+    Constant labels are removed because they are trivial to predict and model doesnt need to learn anything to predict them correctly.
+    Removing them will helps with more precise training and evaluation of the model. 
+    @Parameters:
+        - X_transformed: The input data to be transformed. (numpy array)
+        - output_data: The output data (labels) to be transformed. (numpy array)
+    @Returns:
+    The indexes of the removed features are stored so later during evaluation and testing, we also remove the same features before making predictions.
+    The removed labels are stored so we can add them later to the model's predictions to get a final output with all labels.
+    """
+    # convert input data to binary format if needed
+    if config['convert_input']:
+        X_transformed = (X_transformed > 0).astype(int)
+    
+    # Convert output data to binary format
+    output_data[output_data == -1] = 1
+
+    # Remove features with low variance, mark their indexes
+    selector = VarianceThreshold(threshold=0.01)
+    X_transformed = selector.fit_transform(X_transformed)
+    removed_features = np.where(selector.variances_ < 0.01)[0]
+    
+    # Remove labels with constant values, mark their indexes and values
+    output_variances = np.var(output_data, axis=0)
+    constant_label_mask = output_variances == 0
+    removed_label_info = {}
+    for i, is_constant in enumerate(constant_label_mask):
+        if is_constant:
+            constant_value = output_data[0, i]
+            removed_label_info[i] = constant_value
+    new_output_data = output_data[:, ~constant_label_mask]
+    
+    return X_transformed, new_output_data, removed_features, removed_label_info
 
 def trainOneModel(input_data, output_data, config):
     """Train and evaluate a single model configuration."""
@@ -26,24 +68,27 @@ def trainOneModel(input_data, output_data, config):
         X_transformed = input_data
         pca = None
     
+    # preprocess training data
+    X_transformed, output_data, removed_features, removed_labels = preprocessTrainingData(X_transformed, output_data, config)
+    
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=0.2, random_state=42)
     
     # Create model manager
+    # TODO
     model_manager = ModelManager(config, X_train, X_test, y_train, y_test)
     
     # Train model
+    # TODO
     model_manager.trainModel()
 
     # Evaluate
     metrics = model_manager.evaluateModel()
     
     # print results
-    print(f"Batch size: {config['batch_size']}, "
-          f"PCA: {config['use_pca']}, Max Depth: {config.get('max_depth', 'None')}")
-    print(f"Exact Match = {metrics['EXACT_MATCH']:.2f}%, F1 = {metrics['AVG_F1']:.4f}")
+    Utils.printOneModelTrainResult(config, metrics)
     
-    return metrics, model_manager, pca
+    return metrics, model_manager, pca, removed_features, removed_labels
 
 def trainAllModels(input_data, output_data , configs, settings):
     """Train all models with different configurations."""
@@ -71,11 +116,11 @@ def trainAllModels(input_data, output_data , configs, settings):
             print(f"\nConfiguration {i+1}/{configs_count}")
 
             model_info = {}
-            metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
+            metrics, model_manager, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
             model_info['training_result'] = metrics
             model_info['validation_indexes'] = validation_indexes
             model_info['config'] = config
-            model_info['model'] = model
+            model_info['model_manager'] = model_manager
             model_info['pca'] = pca
             model_info['removed_features'] = removed_features
             model_info['removed_labels'] = removed_labels
