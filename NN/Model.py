@@ -4,7 +4,7 @@ import copy
 import uuid
 import matplotlib
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, hamming_loss, precision_score, recall_score, precision_recall_curve
+from sklearn.metrics import hamming_loss
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -16,6 +16,8 @@ import Utils as Utils
 import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
+    """ Class that acts like a loss function. Loss is calculated as a weighted binary cross entropy loss.
+        The weights are calculated based on the probability of the positive class and the gamma parameter."""
     def __init__(self, alpha=1, gamma=2, pos_weight=None):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
@@ -41,9 +43,11 @@ class FocalLoss(nn.Module):
         
         return focal_loss.mean()
 
-class ConflictModel(nn.Module):
 
+class ConflictModel(nn.Module):
+    """ A simple feedforward neural network model for conflict detection. """
     def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5, hidden_activation_func='relu', batch_norm=True):
+        """ create a model with these hyperparameters: size of input layer, hidden layers, output layer, dropout rate, activation function for hidden layers, and batch normalization """
         super(ConflictModel, self).__init__()
         torch.manual_seed(42)
         layers = []
@@ -72,34 +76,6 @@ class ConflictModel(nn.Module):
         return self.network(x)
     
 
-def findBestThreshold(y_true, y_pred_prob):
-    """
-    Find the best classification threshold by maximizing the F1-score on the
-    precision-recall curve. For multi-label problems, this function considers
-    all predictions (micro-average).
-
-    Args:
-        y_true (np.array): Ground truth labels.
-        y_pred_prob (np.array): Predicted probabilities.
-
-    Returns:
-        float: The optimal threshold.
-    """
-    # Generate precision-recall curve for all predictions
-    precision, recall, thresholds = precision_recall_curve(y_true.ravel(), y_pred_prob.ravel())
-
-    # Calculate F1 score for each threshold, adding a small epsilon to avoid division by zero
-    f1_scores = (2 * precision * recall) / (precision + recall + 1e-6)
-
-    # The 'thresholds' array is one element shorter than 'f1_scores'.
-    # We find the threshold that corresponds to the maximum F1 score.
-    best_f1_idx = np.argmax(f1_scores[:-1])
-    best_threshold = thresholds[best_f1_idx]
-    
-    print(f"Best threshold found: {best_threshold:.4f} with F1 score: {f1_scores[best_f1_idx]:.4f}")
-    
-    return best_threshold
-
 class ModelManager:
     def __init__(self, config, X_train, X_test, y_train, y_test):
         self.model_ = ConflictModel(
@@ -115,8 +91,7 @@ class ModelManager:
         # Prepare data loaders
         batch_size = config['batch_size']
         assert batch_size > 0, "Batch size must be greater than 0"
-        self.train_loader_, self.test_loader_, self.train_size_, self.test_size_, pos_weight = \
-                Utils.prepareData(X_train, X_test, y_train, y_test, batch_size)
+        self.train_loader_, self.test_loader_, pos_weight = Utils.prepareData(X_train, X_test, y_train, y_test, batch_size)
         
         # Define loss function based on config
         if config['loss_func'] == 'bcewithlogitloss':
@@ -126,7 +101,7 @@ class ModelManager:
         else:
             assert False, f"Unknown loss function: {config['loss_func']}"
         
-        # Define optimizer based on config
+        # Define optimizer, its learing rate and weight decay (L2 regularization) based on config
         optimizer_name = config.get('optimizer').lower()
         lr = config.get('learning_rate')
         weight_decay = config.get('weight_decay')  # L2 regularization
@@ -140,6 +115,7 @@ class ModelManager:
         else:
             assert False, f"Unknown optimizer: {optimizer_name}"
 
+        # Define learning rate scheduler
         self.scheduler_ = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_, mode='min', patience=10)
 
         # Epochs
@@ -147,32 +123,38 @@ class ModelManager:
         self.patience_ = config.get('patience')
 
     def getValidationLoss(self):
-        """Calculate validation/test loss for early stopping"""
+        """Calculate loss on the validation set. This is used during training to monitor performance."""
         self.model_.eval()
         total_loss = 0.0
-        num_batches = 0
+        num_samples = 0
         
         with torch.no_grad():
             for inputs, labels in self.test_loader_:
                 outputs = self.model_(inputs)
                 loss = self.loss_func_(outputs, labels)
-                total_loss += loss.item()
-                num_batches += 1
-        
-        return total_loss / num_batches if num_batches > 0 else float('inf')
+                batch_size = inputs.size(0)
+                total_loss += loss.item() * batch_size  # Multiply by batch size to get total loss of this batch
+                num_samples += batch_size
+        assert num_samples > 0, "No samples in validation set. Check your data loaders."
+
+        return total_loss / num_samples
 
     def trainModel(self):
-        best_val_loss = float('inf')
-        patience_counter = 0
-        num_train_batches  = len(self.train_loader_)
-        best_model_state = None     # to restore the best model parameters if early stopping is used
+        """ Train model with training data and validate it with validation data. 
+        Learning rate scheduler is used to adjust the learning rate based on validation loss.
+        Early stopping by using 'patience' is possible, if set in config."""
+        # Variables for early stopping
+        best_val_loss = float('inf')    # to track the best validation loss
+        patience_counter = 0        # after this many epochs without improvement, training will stop
+        best_model_state = None     # to restore the best model parameters
 
-        # Training loop
+        # Training loop, each loop goes through one epoch, i.e one pass through the whole training data
+        num_train_batches  = len(self.train_loader_)
         for epoch in range(self.num_epochs_):
-            # Training phase
-            self.model_.train()
-            epoch_train_loss = 0.0
+            self.model_.train()         # Set model to training mode
+            epoch_train_loss = 0.0      # track the total loss for this epoch
             
+            # Loop through each batch of 1 epoch
             for inputs, labels in self.train_loader_:
                 # Zero the parameter gradients
                 self.optimizer_.zero_grad()
@@ -187,8 +169,7 @@ class ModelManager:
 
                 epoch_train_loss += loss.item()
             
-            # Calculate loss for training and validation
-            avg_train_loss = epoch_train_loss / num_train_batches
+            # Calculate loss validation
             val_loss = self.getValidationLoss()
 
             # Update learning rate scheduler based on validation loss
@@ -204,6 +185,7 @@ class ModelManager:
                 else:
                     patience_counter += 1
                 
+                # Stop training if no improvement for 'patience_' epochs
                 if patience_counter >= self.patience_:
                     # print(f"Early stopping at epoch {epoch + 1}")
                     break
@@ -215,12 +197,12 @@ class ModelManager:
             # print(f"Trained for full {self.num_epochs_} epochs.")
 
     def evaluateModel(self):
-        """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
-        # Evaluation phase
-        self.model_.eval()
+        """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, ROC AUC, and combined score."""
+
+        # Get raw output (logits) from the model using the test data loader.
+        self.model_.eval()      # Evaluation Mode
         y_pred_logits_list = []
         y_test_list = []
-        
         with torch.no_grad():
             for inputs, labels in self.test_loader_:
                 outputs = self.model_(inputs)
@@ -231,11 +213,11 @@ class ModelManager:
         y_pred_logits = torch.cat(y_pred_logits_list, dim=0)
         y_test = torch.cat(y_test_list, dim=0).numpy()
 
-        # get the final prediction of model (in probability)
+        # get the final (activated) prediction of model (in probability)
         y_pred_prob = torch.sigmoid(y_pred_logits).numpy()
 
         # Convert probabilities to binary predictions using the best threshold
-        best_threshold = findBestThreshold(y_test, y_pred_prob)
+        best_threshold = Utils.findBestThreshold(y_test, y_pred_prob)
         y_pred_binary = (y_pred_prob > best_threshold).astype(int)
 
         # Exact matches
