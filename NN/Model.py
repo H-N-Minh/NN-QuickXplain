@@ -115,19 +115,34 @@ class ModelManager:
         # Epochs
         self.num_epochs_ = 200
         self.patience_ = config.get('patience')
-    
+
+    def evaluateValidationLoss(self):
+        """Calculate validation/test loss for early stopping"""
+        self.model_.eval()
+        total_loss = 0.0
+        num_batches = 0
+        
+        with torch.no_grad():
+            for inputs, labels in self.test_loader_:
+                outputs = self.model_(inputs)
+                loss = self.loss_func_(outputs, labels)
+                total_loss += loss.item()
+                num_batches += 1
+        
+        return total_loss / num_batches if num_batches > 0 else float('inf')
 
     def trainModel(self):
         Utils.set_seed(42)
-        best_loss = float('inf')
+        best_val_loss = float('inf')
         patience_counter = 0
-        num_batches = len(self.train_loader_)
+        num_train_batches  = len(self.train_loader_)
+        best_model_state = None     # to restore the best model parameters if early stopping is used
 
         # Training loop
         for epoch in range(self.num_epochs_):
             # Training phase
             self.model_.train()
-            epoch_loss = 0.0
+            epoch_train_loss = 0.0
             
             for inputs, labels in self.train_loader_:
                 # Zero the parameter gradients
@@ -141,22 +156,32 @@ class ModelManager:
                 loss.backward()
                 self.optimizer_.step()
 
-                epoch_loss += loss.item()
+                epoch_train_loss += loss.item()
             
-            # Update learning rate after each epoch
-            avg_epoch_loss = epoch_loss / num_batches
-            self.scheduler_.step(avg_epoch_loss)
+            # Calculate loss for training and validation
+            avg_train_loss = epoch_train_loss / num_train_batches
+            val_loss = self._evaluate_validation_loss()
 
-            # Early stopping logic, only if patience is specified
+            # Update learning rate scheduler based on validation loss
+            self.scheduler_.step(val_loss)
+
+            # Early stopping logic based on validation loss
             if self.patience_ is not None:
-                if avg_epoch_loss < best_loss:
-                    best_loss = avg_epoch_loss
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
                     patience_counter = 0
+                    # Save the best model state
+                    best_model_state = np.copy.deepcopy(self.model_.state_dict())
                 else:
                     patience_counter += 1
                 
                 if patience_counter >= self.patience_:
+                    print(f"Early stopping at epoch {epoch + 1}")
                     break
+        
+        # Restore best model if early stopping was used
+        if self.patience_ is not None and best_model_state is not None:
+            self.model_.load_state_dict(best_model_state)
 
     def evaluateModel(self):
         """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
