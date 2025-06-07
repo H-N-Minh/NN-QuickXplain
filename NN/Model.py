@@ -1,4 +1,5 @@
 import os
+import random
 import uuid
 import matplotlib
 import numpy as np
@@ -43,6 +44,7 @@ class ConflictModel(nn.Module):
 
     def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5, hidden_activation_func='relu', batch_norm=True):
         super(ConflictModel, self).__init__()
+        torch.manual_seed(42)
         layers = []
         current_size = input_size
         for hidden_size in hidden_layers:
@@ -116,6 +118,7 @@ class ModelManager:
     
 
     def trainModel(self):
+        Utils.set_seed(42)
         best_loss = float('inf')
         patience_counter = 0
         num_batches = len(self.train_loader_)

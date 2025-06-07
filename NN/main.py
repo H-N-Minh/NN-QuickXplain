@@ -4,6 +4,9 @@ import Utils as Utils
 
 
 def main():
+    # Set the global seed to have deterministic results
+    Utils.set_seed(42)
+
     print("\n==================== NEURAL NETWORK ===========================")
     settings = Utils.loadSettings()
 

@@ -6,6 +6,7 @@ import glob
 import json
 import multiprocessing
 import os
+import random
 import re
 import shutil
 
@@ -206,8 +207,8 @@ def splitData(input_data, output_data):
     chunk_size = int(0.1 * total_data)  # 10% of the total data
 
     # Randomly select the start index for the chunk
-    np.random.seed(420)  # For reproducibility
-    start_index = np.random.randint(0, total_data - chunk_size)
+    rng = np.random.RandomState(42)  
+    start_index = rng.randint(0, total_data - chunk_size)
     end_index = start_index + chunk_size
 
     # Remove the validation chunk from the original data
@@ -265,6 +266,45 @@ def printTrainingSummary(best_models, saved_models_dir):
 
 ################################## For Model.py ########################################
 
+def set_seed(seed_value=42):
+    """
+    Set seed for reproducibility in random, numpy, and torch.
+    """
+    import os
+    
+    random.seed(seed_value)
+    np.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = str(seed_value)
+    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed_value)
+        torch.cuda.manual_seed_all(seed_value)
+        # For full reproducibility with CUDA
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # Additional CUDA environment variables
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+    
+    # Set torch to use deterministic algorithms where possible
+    try:
+        torch.use_deterministic_algorithms(True)
+    except Exception as e:
+        print(f"Warning: Could not set deterministic algorithms: {e}")
+    
+
+def seed_worker(worker_id):
+    """
+    Seeding for DataLoader workers to ensure reproducibility.
+    """
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
 def prepareData(X_train, X_test, y_train, y_test, batch_size):
     """Prepare the data for training."""
     # Convert numpy arrays to PyTorch tensors
@@ -281,9 +321,13 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     train_size = len(train_dataset)
     test_size = len(test_dataset)
     
+    # Create a generator for reproducible shuffling
+    g = torch.Generator()
+    g.manual_seed(42)
+
     # Use Dataloader for easier batch processing later
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, worker_init_fn=seed_worker, generator=g)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Calculate pos_weight for BCEWithLogitsLoss loss func (messure the imbalance of class 0 and 1)
     num_positive_train = train_labels_tensor.sum(dim=0)
