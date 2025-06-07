@@ -91,12 +91,12 @@ METRIC_TOTAL_SAMPLES = 'total_samples'
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
-    print(f"convert_input: {config['convert_input']}, hidden_layers: {config['hidden_layers']}, dropout_rate: {config['dropout_rate']}, "
-          f"hidden_activation_func: {config['hidden_activation_func']}, batch_size: {config['batch_size']}, batch_norm: {config['batch_norm']}\n"
-          f"patience: {config['patience']}, loss_func: {config['loss_func']}, optimizer: {config['optimizer']}, learning_rate: {config['learning_rate']}, "
+    print(f"  convert_input: {config['convert_input']}, hidden_layers: {config['hidden_layers']}, dropout_rate: {config['dropout_rate']}, "
+          f"hidden_activation_func: {config['hidden_activation_func']}, batch_size: {config['batch_size']}, batch_norm: {config['batch_norm']}"
+          f"\n  patience: {config['patience']}, loss_func: {config['loss_func']}, optimizer: {config['optimizer']}, learning_rate: {config['learning_rate']}, "
           f"weight_decay: {config['weight_decay']}, use_pca: {config['use_pca']}, pca_components: {config['pca_components']}")
     print(
-        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+        f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
         f"F1 = {metrics[METRIC_F1]:.4f}, "
         f"MCC = {metrics[METRIC_MCC]:.4f}, "
         f"MAP = {metrics[METRIC_MAP]:.4f}, "
@@ -305,20 +305,13 @@ def printTrainingSummary(best_models, saved_models_dir):
 
     # Print the best models of this training session
     for name, best_model in best_models.items():
+        if best_model is None:
+            print(f"\nNo best model was found for metric: {name}")
+            continue
+        
         config = best_model['config']
         metrics = best_model['training_result']
-        print(f"\nBest '{name}' Model:")
-        print(f"  Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, "
-            f"PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
-            f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
-        print(
-            f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
-            f"F1 = {metrics[METRIC_F1]:.4f}, "
-            f"MCC = {metrics[METRIC_MCC]:.4f}, "
-            f"MAP = {metrics[METRIC_MAP]:.4f}, "
-            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
-            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
-        )
+        printOneModelTrainResult(config, metrics)
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
 

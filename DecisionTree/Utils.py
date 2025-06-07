@@ -516,10 +516,10 @@ METRIC_TOTAL_SAMPLES = 'total_samples'
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
-    print(f"Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
+    print(f"  Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
           f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
     print(
-        f"Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+        f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
         f"F1 = {metrics[METRIC_F1]:.4f}, "
         f"MCC = {metrics[METRIC_MCC]:.4f}, "
         f"MAP = {metrics[METRIC_MAP]:.4f}, "
@@ -730,18 +730,8 @@ def printTrainingSummary(best_models, saved_models_dir):
         config = best_model['config']
         metrics = best_model['training_result']
         print(f"\nBest '{name}' Model:")
-        print(f"  Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, "
-            f"PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
-            f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
-        print(
-            f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
-            f"F1 = {metrics[METRIC_F1]:.4f}, "
-            f"MCC = {metrics[METRIC_MCC]:.4f}, "
-            f"MAP = {metrics[METRIC_MAP]:.4f}, "
-            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
-            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
-        )
-
+        printOneModelTrainResult(config, metrics)
+        
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
 
 
