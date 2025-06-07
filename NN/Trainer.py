@@ -87,15 +87,74 @@ def trainOneModel(input_data, output_data, config):
     
     return metrics, model_manager, pca, removed_features, removed_labels
 
-def trainAllModels(input_data, output_data , configs, settings):
+
+def objective(trial, input_data, output_data, validation_indexes, configs_settings, error_list, n_trials, best_models):
+    """Helper for trainAllModels. Used by Optuna to suggest hyperparameters and train a model.
+    This creates a model based on the suggested hyperparameters, trains it, evaluates it, and returns a score.
+    Optiuna will use this score to determine the best hyperparameters.
+    Each trial is tracked for the best model with best metrics, which will be saved in best_models param
+    """
+    try:
+        # Convert choices to serializable types for Optuna
+        hidden_layer_choices = [json.dumps(l) for l in configs_settings['hidden_layers']]
+        patience_choices = [str(p) for p in configs_settings['patience']]
+
+        config = {
+            'convert_input': trial.suggest_categorical('convert_input', configs_settings['convert_input']),
+            'hidden_layers': json.loads(trial.suggest_categorical('hidden_layers', hidden_layer_choices)),
+            'dropout_rate': trial.suggest_float('dropout_rate', min(configs_settings['dropout_rates']), max(configs_settings['dropout_rates'])),
+            'hidden_activation_func': trial.suggest_categorical('hidden_activation_func', configs_settings['hidden_activation_funcs']),
+            'batch_size': trial.suggest_categorical('batch_size', configs_settings['batch_sizes']),
+            'batch_norm': trial.suggest_categorical('batch_norm', configs_settings['batch_norm']),
+            'patience': trial.suggest_categorical('patience', patience_choices),
+            'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
+            'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
+            'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates'])),
+            'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays'])),
+            'use_pca': trial.suggest_categorical('use_pca', configs_settings['use_pca_options']),
+            'pca_components': 0.95
+        }
+        # Convert patience back to int or None
+        config['patience'] = None if config['patience'].lower() == 'none' or config['patience'].lower() == 'null' else int(config['patience'])
+
+        print(f"\nTrial {trial.number+1}/{n_trials}")
+
+        # Use a copy of data for each trial to prevent in-place modification issues
+        input_data_copy = np.copy(input_data)
+        output_data_copy = np.copy(output_data)
+
+        model_info = {}
+        metrics, model_manager, pca, removed_features, removed_labels = trainOneModel(input_data_copy, output_data_copy, config)
+        model_info['training_result'] = metrics
+        model_info['validation_indexes'] = validation_indexes
+        model_info['config'] = config
+        model_info['model_manager'] = model_manager
+        model_info['pca'] = pca
+        model_info['removed_features'] = removed_features
+        model_info['removed_labels'] = removed_labels
+
+        Utils.updateBestModel(model_info, best_models)
+        
+        combined_score = metrics.get(Utils.METRIC_COMBINED, 0.0)
+        return combined_score if not np.isnan(combined_score) else -1.0
+
+    except Exception as e:
+        print(f"!!!!!!!!!Error with trial {trial.number+1}: {e}!!!!!!!!!!!")
+        traceback.print_exc()
+        error_list.append((config, e))  # Store the config and error in the shared list
+        return -1.0
+
+def trainAllModels(input_data, output_data, settings):
     """Train all models with different configurations."""
+
+    configs_settings = settings['WORKFLOW']['TRAIN']['configurations']
 
     # split a section of the data out for validation after the training
     input_data, output_data, validation_indexes = Utils.splitData(input_data, output_data)
 
     # Train all models and save the best ones
-    configs_count = len(configs)
-    print(f"\nTraining {configs_count} configurations...")
+    n_trials = 100
+    print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials...")
     
     # these metrics will be used to track the best models
     best_models = {
@@ -106,49 +165,30 @@ def trainAllModels(input_data, output_data , configs, settings):
         Utils.METRIC_HAMMING_LOSS: None,
         Utils.METRIC_COMBINED: None
     }
+        
+    # Start the Optuna study, this try n_trials models with different configurations and find the best configuration.
+    # For reproducibility, use a fixed seed in the sampler
+    error_list = []
+    sampler = optuna.samplers.TPESampler(seed=42)
+    study = optuna.create_study(direction="maximize", sampler=sampler)
+    study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
+                                           error_list, n_trials, best_models), n_trials=n_trials)
     
-    error_count = 0
-    for i, config in enumerate(configs):
-        try:
-            print(f"\nConfiguration {i+1}/{configs_count}")
+    print(f"\n\n...Training completed with {len(error_list)} error(s).")
 
-            model_info = {}
-            metrics, model_manager, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
-            model_info['training_result'] = metrics
-            model_info['validation_indexes'] = validation_indexes
-            model_info['config'] = config
-            model_info['model_manager'] = model_manager
-            model_info['pca'] = pca
-            model_info['removed_features'] = removed_features
-            model_info['removed_labels'] = removed_labels
-
-            # If the model is the best so far, save it
-            Utils.updateBestModel(model_info, best_models)
-                
-        except Exception as e:
-            print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
-            traceback.print_exc()  # print the full traceback of the error
-            error_count += 1
-            continue
-    
-    print(f"\n\n...Training completed with {error_count} error(s).")
-
-    # Save only the best models
+    # Save only the best models into the Models folder
     saved_models_dir = Utils.saveModel(best_models, settings)
 
     # Training summary
     Utils.printTrainingSummary(best_models, saved_models_dir)
 
-    return error_count
+    return error_list
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
     # Import data
     input_data, output_data = Utils.importTrainingData(settings)
 
-    # Import configurations
-    configs = Utils.getModelConfigs(settings)
-
     # Train all models with different configurations. The best ones will be saved.
-    return trainAllModels(input_data, output_data, configs, settings)
+    return trainAllModels(input_data, output_data, settings)
 

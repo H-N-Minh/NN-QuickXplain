@@ -53,7 +53,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
 
       # number of neurons in hidden layers, can be more than one layer, e.g. [2, 3] means 2 hidden layers with 2 and 3 neurons respectively
       hidden_layers: [[32], [64], [128], [32, 32], [64, 32], [64, 64], [128, 64], [128, 128], [256, 128, 64] ]
-      dropout_rates: [0.0, 0.1, 0.2, 0.3, 0.4]  # dropout rate for the hidden layers (to prevent overfitting)
+      dropout_rates: [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
       hidden_activation_funcs: ['relu', 'leaky relu']  # activation function for the hidden layers
 
       batch_sizes: [32, 64, 128, 256, 512, 1024]   # test size for train/test split
@@ -63,8 +63,8 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
 
       loss_funcs: ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
       optimizers: ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
-      learning_rates: [0.001, 0.01, 0.1]  # learning rate for the optimizer
-      weight_decays: [0.0001, 0.001, 0.01]  # weight decay for the optimizer
+      learning_rates: [0.001, 0.1]  # Min Max values only,  learning rate for the optimizer
+      weight_decays: [0.0001, 0.01]  # Min Max values only, weight decay for the optimizer
 
       use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
       

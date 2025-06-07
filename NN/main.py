@@ -6,7 +6,6 @@ import Utils as Utils
 def main():
     print("\n==================== NEURAL NETWORK ===========================")
     settings = Utils.loadSettings()
-    error_count = 0
 
     print("\n\n################## CLEANING PHASE ##########################")
     if not settings['CLEAR']['SKIP']:
@@ -14,12 +13,15 @@ def main():
             
     print("\n\n################## TRAINING PHASE ##########################")
     if not settings['WORKFLOW']['TRAIN']['SKIP']:
-        error_count = startTraining(settings)
+        error_list = startTraining(settings)
     else:
         print("\n\n<Training phase skipped (as per settings.yaml file)>")
 
-    if error_count > 0:
-        print(f"Process completed with {error_count} error(s). Please check the logs above for details.")
+    if error_list:
+        print(f"\n===Process completed with {len(error_list)} error(s)===\n")
+        for config, error in error_list:
+            print(f"Error with config: {config}\n==> Error: {error}")
+        print("Check the logs above for details.")
     else:
         print("\n===Process completed successfully!===\n")
 
