@@ -18,10 +18,10 @@ def main():
         print("\n\n<Training phase skipped (as per settings.yaml file)>")
 
     if error_list:
-        print(f"\n===Process completed with {len(error_list)} error(s)===\n")
+        print(f"\n✖✖✖ Process got {len(error_list)} error(s) ✖✖✖\n")
         for config, error in error_list:
-            print(f"Error with config: {config}\n==> Error: {error}")
-        print("Check the logs above for details.")
+            print(f"✖ Trial number {config} has error message: '{error}'")
+        print("\nCheck the logs above for details.")
     else:
         print("\n===Process completed successfully!===\n")
 

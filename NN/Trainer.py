@@ -135,13 +135,16 @@ def objective(trial, input_data, output_data, validation_indexes, configs_settin
 
         Utils.updateBestModel(model_info, best_models)
         
+        # debugminh
+        if trial.number == 0:  # Only for the first trial, to avoid too much output
+            assert False, "This line is for debugging purposes. Remove it to run the code normally."
         combined_score = metrics.get(Utils.METRIC_COMBINED, 0.0)
         return combined_score if not np.isnan(combined_score) else -1.0
 
     except Exception as e:
         print(f"!!!!!!!!!Error with trial {trial.number+1}: {e}!!!!!!!!!!!")
         traceback.print_exc()
-        error_list.append((config, e))  # Store the config and error in the shared list
+        error_list.append((trial.number+1, e))  # Store the config and error in the shared list
         return -1.0
 
 def trainAllModels(input_data, output_data, settings):
@@ -153,7 +156,9 @@ def trainAllModels(input_data, output_data, settings):
     input_data, output_data, validation_indexes = Utils.splitData(input_data, output_data)
 
     # Train all models and save the best ones
-    n_trials = 100
+    n_trials = settings['WORKFLOW']['TRAIN']['optuna_trials']
+    assert n_trials > 0, "Number of trials must be greater than 0"
+
     print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials...")
     
     # these metrics will be used to track the best models
@@ -170,6 +175,7 @@ def trainAllModels(input_data, output_data, settings):
     # For reproducibility, use a fixed seed in the sampler
     error_list = []
     sampler = optuna.samplers.TPESampler(seed=42)
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
     study = optuna.create_study(direction="maximize", sampler=sampler)
     study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
                                            error_list, n_trials, best_models), n_trials=n_trials)

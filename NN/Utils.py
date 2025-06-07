@@ -15,8 +15,7 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.base import accuracy_score
-from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score
+from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score, accuracy_score
 import torch
 from tqdm import tqdm
 import yaml
@@ -91,16 +90,16 @@ METRIC_TOTAL_SAMPLES = 'total_samples'
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
-    print(f"  convert_input: {config['convert_input']}, hidden_layers: {config['hidden_layers']}, dropout_rate: {config['dropout_rate']}, "
-          f"hidden_activation_func: {config['hidden_activation_func']}, batch_size: {config['batch_size']}, batch_norm: {config['batch_norm']}"
-          f"\n  patience: {config['patience']}, loss_func: {config['loss_func']}, optimizer: {config['optimizer']}, learning_rate: {config['learning_rate']}, "
-          f"weight_decay: {config['weight_decay']}, use_pca: {config['use_pca']}, pca_components: {config['pca_components']}")
+    print(f"  convert_input: {config['convert_input']} || hidden_layers: {config['hidden_layers']} || dropout_rate: {config['dropout_rate']:.2f} || "
+          f"hidden_activation_func: {config['hidden_activation_func']} || batch_size: {config['batch_size']} || batch_norm: {config['batch_norm']}"
+          f"\n  patience: {config['patience']} || loss_func: {config['loss_func']} || optimizer: {config['optimizer']} || learning_rate: {config['learning_rate']:.2f} || "
+          f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']} || pca_components: {config['pca_components']}")
     print(
-        f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
-        f"F1 = {metrics[METRIC_F1]:.4f}, "
-        f"MCC = {metrics[METRIC_MCC]:.4f}, "
-        f"MAP = {metrics[METRIC_MAP]:.4f}, "
-        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+        f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
+        f"F1 = {metrics[METRIC_F1]:.4f} || "
+        f"MCC = {metrics[METRIC_MCC]:.4f} || "
+        f"MAP = {metrics[METRIC_MAP]:.4f} || "
+        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f} || "
         f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
     )
 
@@ -184,13 +183,13 @@ def saveModel(best_models, settings):
         
         # Save model and PCA
         model_filename = os.path.join(model_folder_path, f"Best_{name}.pt")
-        model = best_model['model'].model_
+        model = best_model['model_manager'].model_
         torch.save(model.state_dict(), model_filename)
         pca_filename = os.path.join(model_folder_path, f"Best_{name}_pca.joblib")
         joblib.dump(best_model['pca'], pca_filename)
 
         # Save metrics
-        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model', 'pca']}
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca']}
         with open(metrics_filename, 'w') as f:
             json.dump(metrics_serializable, f, indent=2)
                     
@@ -257,6 +256,8 @@ def printTrainingSummary(best_models, saved_models_dir):
         
         config = best_model['config']
         metrics = best_model['training_result']
+        
+        print(f"\nBest '{name}' Model:")
         printOneModelTrainResult(config, metrics)
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
@@ -340,7 +341,7 @@ def calculateMapAndROC(y_pred_probs, y_test):
         
         # Skip labels that have no positive samples (all zeros)
         if np.sum(y_true_label) == 0:
-            print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
+            # print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
             map_scores.append(np.nan)
             roc_scores.append(np.nan)
             continue
