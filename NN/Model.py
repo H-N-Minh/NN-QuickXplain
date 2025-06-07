@@ -4,7 +4,7 @@ import copy
 import uuid
 import matplotlib
 import numpy as np
-from sklearn.metrics import accuracy_score, f1_score, hamming_loss, precision_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, hamming_loss, precision_score, recall_score, precision_recall_curve
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
@@ -71,6 +71,35 @@ class ConflictModel(nn.Module):
     def forward(self, x):
         return self.network(x)
     
+
+def findBestThreshold(y_true, y_pred_prob):
+    """
+    Find the best classification threshold by maximizing the F1-score on the
+    precision-recall curve. For multi-label problems, this function considers
+    all predictions (micro-average).
+
+    Args:
+        y_true (np.array): Ground truth labels.
+        y_pred_prob (np.array): Predicted probabilities.
+
+    Returns:
+        float: The optimal threshold.
+    """
+    # Generate precision-recall curve for all predictions
+    precision, recall, thresholds = precision_recall_curve(y_true.ravel(), y_pred_prob.ravel())
+
+    # Calculate F1 score for each threshold, adding a small epsilon to avoid division by zero
+    f1_scores = (2 * precision * recall) / (precision + recall + 1e-6)
+
+    # The 'thresholds' array is one element shorter than 'f1_scores'.
+    # We find the threshold that corresponds to the maximum F1 score.
+    best_f1_idx = np.argmax(f1_scores[:-1])
+    best_threshold = thresholds[best_f1_idx]
+    
+    print(f"Best threshold found: {best_threshold:.4f} with F1 score: {f1_scores[best_f1_idx]:.4f}")
+    
+    return best_threshold
+
 class ModelManager:
     def __init__(self, config, X_train, X_test, y_train, y_test):
         self.model_ = ConflictModel(
@@ -203,9 +232,12 @@ class ModelManager:
         y_pred_logits = torch.cat(y_pred_logits_list, dim=0)
         y_test = torch.cat(y_test_list, dim=0).numpy()
 
-        # calculate metrics
+        # get the final prediction of model (in probability)
         y_pred_prob = torch.sigmoid(y_pred_logits).numpy()
-        y_pred_binary = (y_pred_prob > 0.5).astype(int)
+
+        # Convert probabilities to binary predictions using the best threshold
+        best_threshold = findBestThreshold(y_test, y_pred_prob)
+        y_pred_binary = (y_pred_prob > best_threshold).astype(int)
 
         # Exact matches
         exact_match_pct = np.all(y_pred_binary == y_test, axis=1).mean() * 100
