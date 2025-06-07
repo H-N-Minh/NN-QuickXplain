@@ -125,60 +125,6 @@ def importTrainingData(settings):
 
     return input_data.values , output_data.values
 
-def getModelConfigs(settings):
-    """ Generate all configurations for training models based on settings.yaml file. """
-    configs = []    # list of dictionary
-
-    # Generate all combinations from YAML settings
-    config_settings = settings['WORKFLOW']['TRAIN']['configurations']
-    
-    # Get all possible values for each configuration parameter
-    convert_inputs = config_settings.get('convert_input', [False])
-    hidden_layers_list = config_settings.get('hidden_layers', [[64]])
-    dropout_rates = config_settings.get('dropout_rates', [0.0])
-    hidden_activation_funcs = config_settings.get('hidden_activation_funcs', ['relu'])
-    batch_sizes = config_settings.get('batch_sizes', [32])
-    batch_norms = config_settings.get('batch_norm', [False])
-    patience_values = config_settings.get('patience', [None])
-    loss_funcs = config_settings.get('loss_funcs', ['bcewithlogitloss'])
-    optimizers = config_settings.get('optimizers', ['Adam'])
-    learning_rates = config_settings.get('learning_rates', [0.001])
-    weight_decays = config_settings.get('weight_decays', [0.0001])
-    use_pca_options = config_settings.get('use_pca_options', [False])
-    
-    # Generate all combinations
-    for convert_input in convert_inputs:
-        for hidden_layers in hidden_layers_list:
-            for dropout_rate in dropout_rates:
-                for hidden_activation_func in hidden_activation_funcs:
-                    for batch_size in batch_sizes:
-                        for batch_norm in batch_norms:
-                            for patience in patience_values:
-                                for loss_func in loss_funcs:
-                                    for optimizer in optimizers:
-                                        for learning_rate in learning_rates:
-                                            for weight_decay in weight_decays:
-                                                for use_pca in use_pca_options:
-                                                    config = {
-                                                        'convert_input': convert_input,
-                                                        'hidden_layers': hidden_layers,
-                                                        'dropout_rate': dropout_rate,
-                                                        'hidden_activation_func': hidden_activation_func,
-                                                        'batch_size': batch_size,
-                                                        'batch_norm': batch_norm,
-                                                        'patience': patience,
-                                                        'loss_func': loss_func,
-                                                        'optimizer': optimizer,
-                                                        'learning_rate': learning_rate,
-                                                        'weight_decay': weight_decay,
-                                                        'use_pca': use_pca,
-                                                        'pca_components': 0.95  # Default PCA components
-                                                    }
-                                                    configs.append(config)
-
-    assert len(configs) > 0, "Can't train model without valid configs. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
-    return configs
-
 
 def saveModel(best_models, settings):
     """Save the model object, pca object and the metrices of the best models."""
