@@ -88,6 +88,43 @@ METRIC_ACCURACY = 'accuracy'
 METRIC_ROC_AUC = 'roc_auc'
 METRIC_TOTAL_SAMPLES = 'total_samples'
 
+def getConfigFromOptuna(trial, configs_settings):
+    """
+    Get the config suggested by Optuna. All of these below are hyperparameters for 1 model configuration.
+    """
+    hidden_layer_choices = [json.dumps(l) for l in configs_settings['hidden_layers']]
+    patience_choices = [str(p) for p in configs_settings['patience']]
+    config = {
+        'convert_input': trial.suggest_categorical('convert_input', configs_settings['convert_input']),
+        'hidden_layers': json.loads(trial.suggest_categorical('hidden_layers', hidden_layer_choices)),
+        'dropout_rate': trial.suggest_float('dropout_rate', min(configs_settings['dropout_rates']), max(configs_settings['dropout_rates'])),
+        'hidden_activation_func': trial.suggest_categorical('hidden_activation_func', configs_settings['hidden_activation_funcs']),
+        'batch_size': trial.suggest_categorical('batch_size', configs_settings['batch_sizes']),
+        'batch_norm': trial.suggest_categorical('batch_norm', configs_settings['batch_norm']),
+        'patience': trial.suggest_categorical('patience', patience_choices),
+        'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
+        'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
+        'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates'])),
+        'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays'])),
+        'use_pca': trial.suggest_categorical('use_pca', configs_settings['use_pca_options']),
+        'pca_components': 0.95
+    }
+    # Correct the value of 'patience'
+    config['patience'] = None if config['patience'].lower() == 'none' or config['patience'].lower() == 'null' else int(config['patience'])
+
+    return config
+
+def getOptunaTargetMetric(settings):
+    """
+    Optuna needs a score to evaluate a set of hyperparameters. During the training phase, it will try to maximize this score.
+    This score is chosen as one of the metrics, which is defined in the settings.yaml file under 'optuna_goal'.
+    """
+    target_metric = settings['WORKFLOW']['TRAIN']['optuna_goal']
+    valid_metrics = [METRIC_EXACT_MATCH, METRIC_F1, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS, METRIC_COMBINED]
+    assert target_metric in valid_metrics, f"Invalid optuna_goal: {target_metric}. Must be one of {valid_metrics}"
+    optimize_direction = "minimize" if target_metric == METRIC_HAMMING_LOSS else "maximize"
+
+    return target_metric, optimize_direction
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""

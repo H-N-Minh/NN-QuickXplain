@@ -162,7 +162,6 @@ class ModelManager:
         return total_loss / num_batches if num_batches > 0 else float('inf')
 
     def trainModel(self):
-        Utils.set_seed(42)
         best_val_loss = float('inf')
         patience_counter = 0
         num_train_batches  = len(self.train_loader_)
