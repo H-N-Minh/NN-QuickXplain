@@ -100,11 +100,11 @@ def objective(trial, input_data, output_data, validation_indexes, configs_settin
     If there is an error during training, it will return -1.0 and store the error in the error_list.
     If this trained model has good results, it will be saved in the best_models dict, else it will be discarded.
     """
+    # Get the config suggested by Optuna.
+    config = Utils.getConfigFromOptuna(trial, configs_settings)
+
     try:
         print(f"\nTrial {trial.number+1}/{n_trials}")
-
-        # Get the config suggested by Optuna.
-        config = Utils.getConfigFromOptunaTrial(trial, configs_settings)
 
         # Use a copy of data for each trial to prevent in-place modification issues
         input_data_copy = np.copy(input_data)
