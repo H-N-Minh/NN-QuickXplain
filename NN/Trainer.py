@@ -8,11 +8,7 @@ import traceback
 from sklearn.feature_selection import VarianceThreshold
 import Utils as Utils
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.multioutput import MultiOutputClassifier, ClassifierChain
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.decomposition import PCA
 from Model import ModelManager
 

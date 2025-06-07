@@ -41,14 +41,22 @@ class FocalLoss(nn.Module):
 
 class ConflictModel(nn.Module):
 
-    def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5):
+    def __init__(self, input_size, hidden_layers, output_size, dropout_rate=0.5, hidden_activation_func='relu', batch_norm=True):
         super(ConflictModel, self).__init__()
         layers = []
         current_size = input_size
         for hidden_size in hidden_layers:
             layers.append(nn.Linear(current_size, hidden_size))
-            layers.append(nn.BatchNorm1d(hidden_size)) # Batch norm often helps
-            layers.append(nn.ReLU())
+            if batch_norm:
+                layers.append(nn.BatchNorm1d(hidden_size))
+            
+            if hidden_activation_func == 'leaky relu':
+                layers.append(nn.LeakyReLU())
+            elif hidden_activation_func == 'relu':
+                layers.append(nn.ReLU())
+            else:
+                assert False, f"Unknown activation function: {hidden_activation_func}. Check typo in settings.yaml"
+                
             layers.append(nn.Dropout(dropout_rate))
             current_size = hidden_size
         
@@ -62,7 +70,14 @@ class ConflictModel(nn.Module):
     
 class ModelManager:
     def __init__(self, config, X_train, X_test, y_train, y_test):
-        self.model_ = ConflictModel(X_train.shape[1], [X_train.shape[1]], X_train.shape[1])
+        self.model_ = ConflictModel(
+            input_size=X_train.shape[1],
+            hidden_layers=config['hidden_layers'],
+            output_size=y_train.shape[1],
+            dropout_rate=config['dropout_rate'],
+            hidden_activation_func=config['hidden_activation_func'],
+            batch_norm=config['batch_norm']
+        )
         self.config_ = config
 
         # Prepare data loaders
@@ -80,15 +95,15 @@ class ModelManager:
             assert False, f"Unknown loss function: {config['loss_func']}"
         
         # Define optimizer based on config
-        optimizer_name = config.get('optimizer', 'Adam')
-        lr = config.get('learning_rate', 0.0005)
-        weight_decay = config.get('weight_decay', 0.0)  # L2 regularization
+        optimizer_name = config.get('optimizer').lower()
+        lr = config.get('learning_rate')
+        weight_decay = config.get('weight_decay')  # L2 regularization
         
-        if optimizer_name == 'Adam':
+        if optimizer_name == 'adam':
             self.optimizer_ = optim.Adam(self.model_.parameters(), lr=lr, weight_decay=weight_decay)
-        elif optimizer_name == 'SGD':
+        elif optimizer_name == 'sgd':
             self.optimizer_ = optim.SGD(self.model_.parameters(), lr=lr, weight_decay=weight_decay)
-        elif optimizer_name == 'AdamW':
+        elif optimizer_name == 'adamw':
             self.optimizer_ = optim.AdamW(self.model_.parameters(), lr=lr, weight_decay=weight_decay)
         else:
             assert False, f"Unknown optimizer: {optimizer_name}"
@@ -96,11 +111,15 @@ class ModelManager:
         self.scheduler_ = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_, mode='min', patience=10)
 
         # Epochs
-        self.num_epochs_ = 100
-        
-
+        self.num_epochs_ = 200
+        self.patience_ = config.get('patience')
+    
 
     def trainModel(self):
+        best_loss = float('inf')
+        patience_counter = 0
+        num_batches = len(self.train_loader_)
+
         # Training loop
         for epoch in range(self.num_epochs_):
             # Training phase
@@ -120,40 +139,54 @@ class ModelManager:
                 self.optimizer_.step()
 
                 epoch_loss += loss.item()
-                self.scheduler_.step(epoch_loss / len(self.train_loader_))
+            
+            # Update learning rate after each epoch
+            avg_epoch_loss = epoch_loss / num_batches
+            self.scheduler_.step(avg_epoch_loss)
+
+            # Early stopping logic, only if patience is specified
+            if self.patience_ is not None:
+                if avg_epoch_loss < best_loss:
+                    best_loss = avg_epoch_loss
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                
+                if patience_counter >= self.patience_:
+                    break
 
     def evaluateModel(self):
         """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
         # Evaluation phase
         self.model_.eval()
-        y_pred = []
-        y_test = []
+        y_pred_logits_list = []
+        y_test_list = []
         
         with torch.no_grad():
             for inputs, labels in self.test_loader_:
                 outputs = self.model_(inputs)
-                y_pred.append(outputs.cpu())
-                y_test.append(labels.cpu())
+                y_pred_logits_list.append(outputs.cpu())
+                y_test_list.append(labels.cpu())
         
-        # Concatenate results
-        y_pred = torch.cat(y_pred, dim=0)
-        y_test = torch.cat(y_test, dim=0)
+        # Concatenate results and convert to numpy
+        y_pred_logits = torch.cat(y_pred_logits_list, dim=0)
+        y_test = torch.cat(y_test_list, dim=0).numpy()
 
         # calculate metrics
-        y_pred_probs = torch.sigmoid(y_pred)
-        y_pred_probs_rounded = (y_pred_probs > 0.5).float().cpu()
+        y_pred_prob = torch.sigmoid(y_pred_logits).numpy()
+        y_pred_binary = (y_pred_prob > 0.5).astype(int)
 
         # Exact matches
-        exact_match_pct = torch.all(y_pred_probs_rounded == y_test, dim=1).float().mean().item() * 100
+        exact_match_pct = np.all(y_pred_binary == y_test, axis=1).mean() * 100
         
         # F1, Accuracy, and MCC for each label
-        avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_test)
+        avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred_binary, y_test)
 
         # Hamming Loss
-        hamming = hamming_loss(y_test, y_pred_probs_rounded)
+        hamming = hamming_loss(y_test, y_pred_binary)
 
         # For ROC-AUC and mAP, we need probability scores
-        mAP, roc_auc = Utils.calculateMapAndROC(y_pred_probs, y_test)
+        mAP, roc_auc = Utils.calculateMapAndROC(y_pred_prob, y_test)
 
         # Calculate combined score
         combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)

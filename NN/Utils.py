@@ -75,108 +75,6 @@ def startClearing(settings):
         print("...Models cleared...")
     print("Clearing completed!")
 
-################################## For Model.py ########################################
-
-
-
-def calculateF1_Mcc_Accuracy(y_pred, y_test):
-    """Calculate F1 and MCC and accuracy scores for each label."""
-    f1_scores = []
-    accuracies = []
-    mcc_scores = []
-    
-    for i in range(y_test.shape[1]):
-        # MCC: If either y_test or y_pred has only one class, MCC result is undefined, so we skip this label
-        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
-                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
-                mcc_scores.append(mcc)
-        
-        # f1 and Accuracy
-        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
-        f1_scores.append(f1)
-        acc = accuracy_score(y_test[:, i], y_pred[:, i])
-        accuracies.append(acc)
-    
-    avg_f1 = np.mean(f1_scores) if len(f1_scores) > 0 else np.nan
-    avg_mcc = np.mean(mcc_scores) if len(mcc_scores) > 0 else np.nan
-    avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
-
-    return avg_f1, avg_mcc, avg_accuracy
-
-
-def calculateMapAndROC(y_pred_probs, y_test):
-    """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
-    for multi-label classification.
-    """    
-    # Validate input shapes
-    if y_pred_probs.shape != y_test.shape:
-        raise ValueError(f"Shape mismatch: y_pred_probs {y_pred_probs.shape} != y_test {y_test.shape}")
-    
-    n_samples, n_labels = y_test.shape
-    
-    # Initialize lists to store per-label scores
-    map_scores = []
-    roc_scores = []
-    
-    # Calculate scores for each label
-    for i in range(n_labels):
-        y_true_label = y_test[:, i]
-        y_prob_label = y_pred_probs[:, i]
-        
-        # Skip labels that have no positive samples (all zeros)
-        if np.sum(y_true_label) == 0:
-            print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
-            map_scores.append(np.nan)
-            roc_scores.append(np.nan)
-            continue
-            
-        # Skip labels that have no negative samples (all ones)
-        if np.sum(y_true_label) == len(y_true_label):
-            print(f"Warning: Label {i} has no negative samples. Skipping for individual metrics.")
-            map_scores.append(np.nan)
-            roc_scores.append(np.nan)
-            continue
-        
-        # Calculate Average Precision (AP) for this label
-        ap_score = average_precision_score(y_true_label, y_prob_label)
-        map_scores.append(ap_score)
-        
-        # Calculate ROC AUC for this label
-        roc_score = roc_auc_score(y_true_label, y_prob_label)
-        roc_scores.append(roc_score)
-    
-    # Convert to numpy arrays for easier handling
-    map_scores = np.array(map_scores)
-    roc_scores = np.array(roc_scores)
-    
-    # Calculate macro averages (ignoring NaN values)
-    map_macro = np.nanmean(map_scores)
-    roc_macro = np.nanmean(roc_scores)
-    
-    return map_macro, roc_macro
-
-
-def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
-    # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
-    norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
-    norm_f1 = f1_scores  if f1_scores is not np.nan else None  # F1 is [0,1], so no normalization needed
-    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not np.nan else None  # MCC is [-1,1], normalize to [0,1]
-    norm_map = mAP if mAP is not np.nan else None  # already in [0,1]
-    norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
-
-    # Combine metrics with equal weights
-    norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
-    
-    # Filter out None values
-    valid_metrics = [m for m in norm_metrics if m is not None]
-    
-    if valid_metrics:
-        combined_score = np.mean(valid_metrics) * 100  # convert back to percentage
-    else:
-        combined_score = 0.0
-       
-    return combined_score
-
 ################################## FOR Trainer.py ########################################
 
 # names for all the metrics used in the evaluation.
@@ -454,3 +352,103 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     pos_weight = pos_weight.to('cpu')
 
     return train_loader, test_loader, train_size, test_size, pos_weight
+
+
+
+def calculateF1_Mcc_Accuracy(y_pred, y_test):
+    """Calculate F1 and MCC and accuracy scores for each label."""
+    f1_scores = []
+    accuracies = []
+    mcc_scores = []
+    
+    for i in range(y_test.shape[1]):
+        # MCC: If either y_test or y_pred has only one class, MCC result is undefined, so we skip this label
+        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
+                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+                mcc_scores.append(mcc)
+        
+        # f1 and Accuracy
+        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
+        f1_scores.append(f1)
+        acc = accuracy_score(y_test[:, i], y_pred[:, i])
+        accuracies.append(acc)
+    
+    avg_f1 = np.mean(f1_scores) if len(f1_scores) > 0 else np.nan
+    avg_mcc = np.mean(mcc_scores) if len(mcc_scores) > 0 else np.nan
+    avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
+
+    return avg_f1, avg_mcc, avg_accuracy
+
+
+def calculateMapAndROC(y_pred_probs, y_test):
+    """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
+    for multi-label classification.
+    """    
+    # Validate input shapes
+    if y_pred_probs.shape != y_test.shape:
+        raise ValueError(f"Shape mismatch: y_pred_probs {y_pred_probs.shape} != y_test {y_test.shape}")
+    
+    n_samples, n_labels = y_test.shape
+    
+    # Initialize lists to store per-label scores
+    map_scores = []
+    roc_scores = []
+    
+    # Calculate scores for each label
+    for i in range(n_labels):
+        y_true_label = y_test[:, i]
+        y_prob_label = y_pred_probs[:, i]
+        
+        # Skip labels that have no positive samples (all zeros)
+        if np.sum(y_true_label) == 0:
+            print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+            
+        # Skip labels that have no negative samples (all ones)
+        if np.sum(y_true_label) == len(y_true_label):
+            print(f"Warning: Label {i} has no negative samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+        
+        # Calculate Average Precision (AP) for this label
+        ap_score = average_precision_score(y_true_label, y_prob_label)
+        map_scores.append(ap_score)
+        
+        # Calculate ROC AUC for this label
+        roc_score = roc_auc_score(y_true_label, y_prob_label)
+        roc_scores.append(roc_score)
+    
+    # Convert to numpy arrays for easier handling
+    map_scores = np.array(map_scores)
+    roc_scores = np.array(roc_scores)
+    
+    # Calculate macro averages (ignoring NaN values)
+    map_macro = np.nanmean(map_scores)
+    roc_macro = np.nanmean(roc_scores)
+    
+    return map_macro, roc_macro
+
+
+def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
+    # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
+    norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
+    norm_f1 = f1_scores  if f1_scores is not np.nan else None  # F1 is [0,1], so no normalization needed
+    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not np.nan else None  # MCC is [-1,1], normalize to [0,1]
+    norm_map = mAP if mAP is not np.nan else None  # already in [0,1]
+    norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
+
+    # Combine metrics with equal weights
+    norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
+    
+    # Filter out None values
+    valid_metrics = [m for m in norm_metrics if m is not None]
+    
+    if valid_metrics:
+        combined_score = np.mean(valid_metrics) * 100  # convert back to percentage
+    else:
+        combined_score = 0.0
+       
+    return combined_score
