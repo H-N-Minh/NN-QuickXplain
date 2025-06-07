@@ -6,6 +6,7 @@ import glob
 import json
 import multiprocessing
 import os
+import random
 import re
 import shutil
 
@@ -15,6 +16,7 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score, accuracy_score
 import torch
 from tqdm import tqdm
 import yaml
@@ -24,6 +26,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
+
 
 ############################################ for main.py ########################################
 
@@ -72,403 +75,35 @@ def startClearing(settings):
         print("...Models cleared...")
     print("Clearing completed!")
 
-
-############################################# for Tester.py ########################################
-
-
-def importModel(settings, model_name):
-    """
-    Import a trained model from the specified path.
-    
-    Parameters:
-    settings (dict): Settings dictionary containing paths and configurations
-    model_name (str): Name of the model to import
-    
-    Returns:
-    model: the model object loaded from the file
-    pca: PCA object if used, otherwise None
-    model_metadata: the metrics of model, including F1, Exact Match, ... and the model's configuration
-    """
-    # check that the model is valid
-    assert model_name in ["F1", "ExactMatch", "Both"] , f"Model '{model_name}' is unknown, check typo in model_to_test in settings.yaml."
-    model_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}.pkl")
-    assert os.path.exists(model_file_name), f"Model ({model_file_name}) does not exist. Check path, and make sure the model was trained before testing."
-    model_metrics_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
-    assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist. Check path, and make sure the model was trained before testing."
-
-    print(f"...Importing model {model_name}...")
-
-    # import the model and pca
-    model_data = joblib.load(model_file_name)
-    model = model_data['model']
-    pca = model_data['pca']
-
-    # Import the metrics of the model
-    with open(model_metrics_file_name, 'r') as json_file:
-        model_metadata = yaml.safe_load(json_file)
-    
-    return model, pca, model_metadata
-
-
-def importValidationData(settings, model_metadata, pca):
-    """
-    Import validation data. Only the section specified in the model metadata is used.
-    This data is then applied to pca if pca was also used during training.
-    
-    Parameters:
-    settings (dict): Settings dictionary containing paths and configurations
-    model_metadata (dict): Metadata of the model
-    pca: PCA object if used, otherwise None
-    
-    Returns:
-    X_validate: Validation features (numpy)
-    y_validate: Validation labels (numpy)
-    input_data: Original input data without PCA transformation, needed for later with QuickXplain test.
-    """
-    input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
-    output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
-    if not os.path.exists(input_file) or not os.path.exists(output_file):
-        print(f"Error: Cant find file at {input_file} or {output_file}.")
-        raise FileNotFoundError("TrainingData file not found. Please check the file paths in settings.yaml .")
-
-    # import only the section of the data that is relevant for validation
-    print("...Importing validation data...")
-    (start_index, end_index) = model_metadata['validation_indexes']
-    input_data = pd.read_csv(input_file).iloc[start_index:end_index, 1:]
-    output_data = pd.read_csv(output_file).iloc[start_index:end_index, 1:]
-
-    assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
-    assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
-    assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
-    assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
-    assert input_data.shape[0] == (end_index - start_index), "Input data row count does not match the specified validation indexes."
-    assert output_data.shape[0] == (end_index - start_index), "Output data row count does not match the specified validation indexes."
-
-    # Apply PCA if it was used during training
-    if pca is not None:
-        assert model_metadata['config']['use_pca'] == True, "PCA was not used during training, but PCA object is provided."
-        input_data_transformed = pca.transform(input_data)
-    else:
-        input_data_transformed = input_data.copy()  # No transformation, just convert to numpy array
-
-    return input_data_transformed.values , output_data.values, input_data.values
-
-
-
-def processOutputFile(directory_path):
-    """
-    Process all output files of QuickXplain in the given directory. Use multiprocessing for faster processing.
-    
-    Args:
-        directory_path (str): Path to the directory containing QuickXplain output files.
-    
-    Returns:
-        tuple: (average runtime, average CC) of all processed files.
-    """
-    
-    # Get all conf*_output.txt files
-    pattern = os.path.join(directory_path, "conf*_output.txt")
-    all_files = glob.glob(pattern)
-    
-    num_samples = len(all_files)
-    assert num_samples > 0, f"Error:processOutputFile:: No output files found in {directory_path}. Check if Solver ran successfully."
-    
-    # Some settings for multiprocessing
-    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
-    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
-    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
-             for i in range(0, num_samples, chunk_size)]
-    
-    print(f"...Reading {num_samples} output files from QuickXplain...")
-    
-    # Use ProcessPoolExecutor for true parallelism
-    runtime_sum = 0.0
-    cc_sum = 0
-    total_processed = 0
-    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:           
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = []
-            # Submit tasks to the executor for each chunk
-            for chunk_data in chunks:
-                future = executor.submit(
-                    extractDataFromFile,
-                    chunk_data=chunk_data,
-                    all_files=all_files
-                )
-                futures.append(future)
-
-            # save status of each chunk as it is completed
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    result = future.result()
-                    total_processed += result[0]
-                    runtime_sum += result[1]
-                    cc_sum += result[2]
-                    pbar.update(1)
-                except Exception as e:
-                    print(f"...Error processing chunk: {e}")
-                    print(traceback.format_exc())
-
-
-    # make sure all files were processed
-    assert total_processed == num_samples, f"Error:processOutputFile:: Not all files were processed. {num_samples - total_processed} files failed."
-
-    # Calculate averages
-    avg_runtime = runtime_sum / total_processed
-    avg_cc = cc_sum / total_processed
-    
-    return avg_runtime, avg_cc
-
-
-def extractDataFromFile(chunk_data, all_files):
-    """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
-    try:
-        start_idx, end_idx = chunk_data
-        processed_count = 0
-        runtime_sum = 0.0
-        cc_sum = 0
-
-        # process only the specified chunk of samples
-        for idx in range(start_idx, end_idx):
-            with open(all_files[idx], 'r') as f:
-                # Skip the first 3 lines
-                for _ in range(3):
-                    next(f)
-                
-                # Get runtime from 4th line
-                runtime_line = next(f)
-                runtime = float(re.search(r'Runtime: (\d+\.\d+)', runtime_line).group(1))
-                
-                # Get CC from 5th line
-                cc_line = next(f)
-                cc = int(re.search(r'CC: (\d+)', cc_line).group(1))
-
-                # store the results
-                runtime_sum += runtime
-                cc_sum += cc
-                processed_count += 1
-                
-        return [processed_count, runtime_sum, cc_sum]
-    except Exception as e:
-        print(traceback.format_exc())
-        return 0
-
-
-
-def getConstraintNameList(settings):
-    """
-    Get the list of constraint names (list of strings)
-    
-    Parameters:
-    settings (dict): Settings dictionary containing paths and configurations
-    
-    Returns:
-    list: List of constraint names
-    """
-    name_file = settings['PATHS']['TRAINDATA_CONSTRAINTS_NAME_PATH']
-    if not os.path.exists(name_file):
-        raise FileNotFoundError(f"importTrainingData:: Name file not found (file with names of all constraints): {name_file}")
-
-    column_names_list = []
-    with open(name_file, 'r') as f:
-        for line in f:
-            name = line.strip()
-            if name:
-                column_names_list.append(name)
-    return column_names_list
-
-
-def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
-    """
-    Generate text files that will be used as input for QuickXplain.
-    If test_pred is given, the constraints will be sorted by their predicted probabilities (highest first), else default ordering
-    Text files are generated using multiprocessing for faster processing.
-    
-    Args:
-        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
-        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints. "None" for no sorting.
-        output_dir (string): directory for the text files that will be generated.
-        constraint_name_list (list): List of constraint names
-    """
-    # Error handling
-    assert test_input is not None and isinstance(test_input, np.ndarray) and test_input.ndim == 2 and test_input.size > 0, \
-        "Error:createSolverInput:: test_input must be a non-empty 2D numpy array."
-    assert constraint_name_list is not None and isinstance(constraint_name_list, list) and len(constraint_name_list) > 0, \
-        "Error:createSolverInput:: constraint_name_list must be a non-empty list."
-    if test_pred is not None:
-        assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
-            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
-    assert len(constraint_name_list) == test_input.shape[1], \
-        "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
-
-    # Ensure output directory exists and is empty
-    if os.path.exists(output_dir) and os.listdir(output_dir):
-        shutil.rmtree(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Get the number of samples aka number of text files to be generated
-    num_samples = test_input.shape[0]
-
-    # Some settings for multiprocessing
-    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
-    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
-    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
-             for i in range(0, num_samples, chunk_size)]
-    
-    print(f"...Creating {num_samples} text files as input for QuickXplain", end=' ')
-    print("(constraints sorted by predicted probabilities)..." if test_pred is not None else "(default constraints ordering)...")
-
-    # Use ProcessPoolExecutor for true parallelism
-    total_processed = 0
-    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = []
-            # Submit tasks to the executor for each chunk
-            for chunk_data in chunks:
-                future = executor.submit(
-                    processChunk,
-                    chunk_data=chunk_data,
-                    features_array=test_input,
-                    test_pred=test_pred,
-                    constraint_name_list=constraint_name_list,
-                    output_dir=output_dir
-                )
-                futures.append(future)
-
-            # save status of each chunk as it is completed
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    total_processed += future.result()
-                    pbar.update(1)
-                except Exception as e:
-                    print(f"...Error processing chunk: {e}")
-                    print(traceback.format_exc())
-    
-    # Verify all samples were processed
-    assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
-    
-
-# Func for parallel processing in createSolverInput()
-def processChunk(chunk_data, features_array, test_pred, constraint_name_list, output_dir):
-    """Process a chunk of samples concurrently"""
-    try:
-        start_idx, end_idx = chunk_data
-        processed_count = 0
-        
-        # process only the specified chunk of samples
-        for idx in range(start_idx, end_idx):
-            # Get data for this sample
-            feature_values = features_array[idx]
-            probabilities = test_pred[idx] if test_pred is not None else None
-            
-            # Create list for sorting (tuple of (name, boolean_str, probability))
-            constraints_data = []
-            for i in range(len(constraint_name_list)):
-                name = constraint_name_list[i]
-                boolean_str = "true" if feature_values[i] == 1 else "false"
-                prob = probabilities[i] if probabilities is not None else 0.0
-                constraints_data.append((name, boolean_str, prob))
-            
-            # Sort by probability (descending) (only if test_pred is not None)
-            if test_pred is not None:
-                constraints_data.sort(key=lambda x: x[2], reverse=True)
-            
-            # Write name and boolean string to text file
-            output_file = os.path.join(output_dir, f"conf{idx}.txt")
-            with open(output_file, 'w') as f:
-                for name, boolean_str, _ in constraints_data:
-                    f.write(f"{name} {boolean_str}\n")
-            
-            processed_count += 1
-
-        return processed_count
-        
-    except Exception as e:
-        print(traceback.format_exc())
-        return 0
-
-
-def saveTestResults(settings, model_name, metrics, result):
-    """
-    Add the test results to the JSON file of the model.
-    
-    Parameters:
-    settings (dict): Settings dictionary containing paths and configurations
-    model_name (str): Name of the model
-    metrics (dict): Metrics to save, e.g., F1, Exact Match, accuracy, etc.
-    result (list): Result of the QuickXplain test, containing [faster_performance, ordered_runtime, unordered_runtime]
-    """
-    print(f"...Saving validation results for model {model_name}...")
-
-    # Check if the output file exists
-    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
-    assert os.path.exists(output_file), f"Json file ({output_file}) does not exist. Check path"
-
-    with open(output_file, 'r') as f:
-        data = json.load(f)
-    
-    # make sure the key 'validation_result' does not already exist
-    assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
-    assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
-
-    # Add the new key with the metrics dictionary
-    ordered_runtime = result[0]
-    ordered_cc = result[1]
-    unordered_runtime = result[2]
-    unordered_cc = result[3]
-    performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
-    CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
-    data["validation_result"] = metrics
-    data["validation_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
-    data["validation_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
-    data["validation_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
-    data["validation_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
-    data["validation_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
-    data["validation_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
-    
-    # Write the updated data back to file
-    with open(output_file, 'w') as f:
-        json.dump(data, f, indent=2)
-
-
-def printTestingSummary(settings):
-    """Print a summary of the validation results stored in Model folder."""
-    print(f"\n\n{'='*60}")
-    print("TESTING SUMMARY")
-    print(f"{'='*60}")
-    saved_models_dir = settings['PATHS']['MODEL_PATH']
-
-    # Go through each json file and print the result of the validation
-    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
-        model_file_name = os.path.join(saved_models_dir, f"Best{model_name}_metrics.json")
-        assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
-        
-        with open(model_file_name, 'r') as json_file:
-            model_metrics = json.load(json_file)
-
-        # extract the validation result and model's configuration
-        model_config = model_metrics['config']
-        validation_result = model_metrics['validation_result']
-        ordered_runtime = validation_result['ordered_runtime']
-        unordered_runtime = validation_result['unordered_runtime']
-        less_time_percentage = (unordered_runtime - ordered_runtime) / unordered_runtime * 100 if unordered_runtime > 0 else 0.0
-
-        # print result out
-        print(f"\nModel '{model_name}':")
-
-        print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
-            f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
-            f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
-        print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
-        print(f"  F1: {validation_result['AVG_F1']:.4f}")
-        print(f"  Speed improvement: {validation_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
-              f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
-
-    print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
-
-
-
 ################################## FOR Trainer.py ########################################
+
+# names for all the metrics used in the evaluation.
+METRIC_EXACT_MATCH = 'EXACT_MATCH'
+METRIC_F1 = 'F1'
+METRIC_MCC = 'MCC'
+METRIC_MAP = 'MAP'
+METRIC_HAMMING_LOSS = 'HAMMING_LOSS'
+METRIC_COMBINED = 'COMBINED'
+METRIC_ACCURACY = 'accuracy'
+METRIC_ROC_AUC = 'roc_auc'
+METRIC_TOTAL_SAMPLES = 'total_samples'
+
+
+def printOneModelTrainResult(config, metrics):
+    """Print the training result of one model configuration."""
+    print(f"  convert_input: {config['convert_input']} || hidden_layers: {config['hidden_layers']} || dropout_rate: {config['dropout_rate']:.2f} || "
+          f"hidden_activation_func: {config['hidden_activation_func']} || batch_size: {config['batch_size']} || batch_norm: {config['batch_norm']}"
+          f"\n  patience: {config['patience']} || loss_func: {config['loss_func']} || optimizer: {config['optimizer']} || learning_rate: {config['learning_rate']:.2f} || "
+          f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']} || pca_components: {config['pca_components']}")
+    if metrics is not None:
+        print(
+            f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
+            f"F1 = {metrics[METRIC_F1]:.4f} || "
+            f"MCC = {metrics[METRIC_MCC]:.4f} || "
+            f"MAP = {metrics[METRIC_MAP]:.4f} || "
+            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f} || "
+            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        )
 
 def importTrainingData(settings):
     """Import training data from CSV files. return type is tuple of numpy arrays (input_data, output_data)."""
@@ -481,37 +116,18 @@ def importTrainingData(settings):
     print("Importing data...")
     input_data = pd.read_csv(input_file).iloc[:, 1:]
     output_data = pd.read_csv(output_file).iloc[:, 1:]
-    output_data = output_data.replace(-1, 1)
 
     assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
     assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
     assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
-    assert set(output_data.values.flatten()).issubset({1, 0}), "Output data values should only be 1 or 0."
+    assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
+
+    print(f"...Imported {input_data.shape[0]} samples with {input_data.shape[1]} features and {output_data.shape[1]} labels.")
 
     return input_data.values , output_data.values
 
-def getModelConfigs(settings):
-    """ Generate all configurations for training models based on settings.yaml file. """
-    configs = []    # list of dictionary
 
-    # Generate all combinations from YAML settings
-    config_settings = settings['WORKFLOW']['TRAIN']['configurations']
-    for batch_size in config_settings['batch_sizes']:
-        for max_depth in config_settings['max_depths']:
-            for use_pca in config_settings['use_pca_options']:
-                config = {
-                    'batch_size': batch_size,
-                    'max_depth': max_depth,
-                    'use_pca': use_pca,
-                    'pca_components': 0.95
-                }
-                configs.append(config)
-
-    assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
-    return configs
-
-
-def saveModel(best_model, model_name, settings):
+def saveModel(best_models, settings):
     """Save the model object, pca object and the metrices of the best models."""
 
     # get an appropriate name for the folder to save these models
@@ -520,35 +136,8 @@ def saveModel(best_model, model_name, settings):
     model_folder_path = os.path.join(current_folder, "Models", model_folder_name)
     if not os.path.exists(model_folder_path):
         os.makedirs(model_folder_path)
-    metrics_filename = os.path.join(model_folder_path, f"{model_name}_metrics.json")
 
-    # Dont save this model if it is not better than the one already stored in this folder (if any exists)
-    if os.path.exists(metrics_filename):
-        with open(metrics_filename, 'r') as f:
-            old_model = json.load(f)
-            old_exact_match = old_model['EXACT_MATCH']
-            new_exact_match = best_model['metrics']['EXACT_MATCH']
-            old_f1 = old_model['AVG_F1']
-            new_f1 = best_model['metrics']['AVG_F1']
-            old_both = old_exact_match + old_f1 * 100
-            new_both = new_exact_match + new_f1 * 100
-
-            # Check if the new model is better than the old one
-            if (model_name == "BestExactMatch" and old_exact_match >= new_exact_match) or \
-               (model_name == "BestF1" and old_f1 >= new_f1) or \
-               (model_name == "BestBoth" and old_both >= new_both):
-                print(f"Skipping saving '{model_name}' model as it is not better than the existing one.")
-                return model_folder_path
-
-    # If code reaches here, it means we need to save the new model
-    # Save model and PCA
-    model_filename = os.path.join(model_folder_path, f"{model_name}.pt")
-    model = best_model['model'].model_
-    torch.save(model.state_dict(), model_filename)
-    pca_filename = os.path.join(model_folder_path, f"{model_name}_pca.joblib")
-    joblib.dump(best_model['pca'], pca_filename)
-    
-    # Convert metrics to JSON-serializable types
+    # Helper func to Convert metrics to JSON-serializable types later
     def convert_to_serializable(obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -556,14 +145,56 @@ def saveModel(best_model, model_name, settings):
             return float(obj)
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, dict):
+            # Recursively process dictionary values
+            return {k: convert_to_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            # Recursively process list elements
+            return [convert_to_serializable(item) for item in obj]
         else:
             return obj
-
-    # Save metrics
-    metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model['metrics'].items()}
-    with open(metrics_filename, 'w') as f:
-        json.dump(metrics_serializable, f, indent=2)
     
+    # Save the best models if they are better than the existing ones
+    for name, best_model in best_models.items():
+        if best_model is None:      # this should never happen, but just in case
+            print(f"No best model found for {name}. Skipping saving.")
+            continue
+        
+        metrics_filename = os.path.join(model_folder_path, f"Best_{name}_metrics.json")
+
+        if os.path.exists(metrics_filename):
+            with open(metrics_filename, 'r') as f:
+                old_model = json.load(f)
+                old_score = old_model['training_result'][name]
+                new_score = best_model['training_result'][name]
+
+                # Dont save this model if it is not better than the one already stored in this folder
+                # If the new score is NaN, we skip saving this model
+                if np.isnan(new_score):
+                    print(f"❌ Skipping '{name}' model as it is worse than existing one.")
+                    continue
+                # If the old score is not NaN and has better score than the new score, we skip saving this model
+                if not np.isnan(old_score):
+                    if (name != METRIC_HAMMING_LOSS and new_score <= old_score) or \
+                       (name == METRIC_HAMMING_LOSS and new_score >= old_score): 
+                        print(f"❌ Skipping '{name}' model as it is worse than existing one.")
+                        continue
+                
+        # If code reaches here, it means we need to save the new model
+        print(f"✅ Saving '{name}' model as it is better than the existing one.")
+        
+        # Save model and PCA
+        model_filename = os.path.join(model_folder_path, f"Best_{name}.pt")
+        model = best_model['model_manager'].model_
+        torch.save(model.state_dict(), model_filename)
+        pca_filename = os.path.join(model_folder_path, f"Best_{name}_pca.joblib")
+        joblib.dump(best_model['pca'], pca_filename)
+
+        # Save metrics
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca']}
+        with open(metrics_filename, 'w') as f:
+            json.dump(metrics_serializable, f, indent=2)
+                    
     return model_folder_path
 
 
@@ -577,7 +208,8 @@ def splitData(input_data, output_data):
     chunk_size = int(0.1 * total_data)  # 10% of the total data
 
     # Randomly select the start index for the chunk
-    start_index = np.random.randint(0, total_data - chunk_size)
+    rng = np.random.RandomState(42)  
+    start_index = rng.randint(0, total_data - chunk_size)
     end_index = start_index + chunk_size
 
     # Remove the validation chunk from the original data
@@ -587,77 +219,92 @@ def splitData(input_data, output_data):
     return input_data, output_data, (start_index, end_index)
 
 
-def updateBestModel(model, pca, metrics, best_exact_match, best_f1, best_both):
+def updateBestModel(model_info, best_models):
     """
     Update the best model if the current model is better than the previous best.
     """
-    # Check if the model is the best so far
-    current_exact_match = metrics['EXACT_MATCH']
-    current_f1 = metrics['AVG_F1']
-    current_both = current_exact_match + current_f1 * 100
+    # go through the dictionary of best models, and update the best model if the current model is better
+    for name, best_model in best_models.items():
+        # if this is the first model, initialize the best model
+        if best_model is None:
+            best_models[name] = model_info.copy()
+            continue
+        
+        # Else, check if the current model is better than the best model
+        current = model_info['training_result'][name]
+        best = best_model['training_result'][name]
+        if not np.isnan(current):
+            if np.isnan(best):
+                # If the best model is not defined, set the current model as the best
+                best_models[name] = model_info.copy()
+            else:
+                # If best model is defined, only save the current model if it is better
+                if (name == METRIC_HAMMING_LOSS and current < best) or \
+                   (name != METRIC_HAMMING_LOSS and current > best):
+                    best_models[name] = model_info.copy()
 
-    # Check if this is the best exact match model
-    if current_exact_match > best_exact_match['EXACT_MATCH']:
-        best_exact_match = {
-            'EXACT_MATCH': current_exact_match,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    # Check if this is the best F1 model
-    if current_f1 > best_f1['AVG_F1']:
-        best_f1 = {
-            'AVG_F1': current_f1,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    # Check if this is the best model of both metrics above
-    if current_both > best_both['f1_and_exact_match']:
-        best_both = {
-            'f1_and_exact_match': current_both,
-            'model': model,
-            'pca': pca,
-            'metrics': metrics
-        }
-
-    return best_exact_match, best_f1, best_both
-
-
-def printTrainingSummary(best_exact_match, best_f1, best_both, saved_models_dir):
+def printTrainingSummary(best_models, saved_models_dir):
     """Print a summary of the training results."""
-    exact_match_config = best_exact_match['metrics']['config']
-    f1_config = best_f1['metrics']['config']   
-    both_config = best_both['metrics']['config']
 
     print(f"\n\n{'='*60}")
-    print("TRAINING SUMMARY")
+    print("TRAINING SUMMARY: best models of this training session:")
     print(f"{'='*60}")
-    print(f"\nBest Exact Match Model:")
 
-    print(f"Batch size: {exact_match_config['batch_size']}, "
-          f"PCA: {exact_match_config['use_pca']}, Max Depth: {exact_match_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_exact_match['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_exact_match['metrics']['AVG_F1']:.4f}")
-
-    print(f"\nBest F1 Model:")
-    print(f"Batch size: {f1_config['batch_size']}, "
-          f"PCA: {f1_config['use_pca']}, Max Depth: {f1_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_f1['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_f1['metrics']['AVG_F1']:.4f}")
-
-    print(f"\nBest Both Model:")
-    print(f"Batch size: {both_config['batch_size']}, "
-          f"PCA: {both_config['use_pca']}, Max Depth: {both_config.get('max_depth', 'None')}")
-    print(f"  Exact Match: {best_both['metrics']['EXACT_MATCH']:.2f}%")
-    print(f"  F1: {best_both['metrics']['AVG_F1']:.4f}")
+    # Print the best models of this training session
+    for name, best_model in best_models.items():
+        if best_model is None:
+            print(f"\nNo best model was found for metric: {name}")
+            continue
+        
+        config = best_model['config']
+        metrics = best_model['training_result']
+        
+        print(f"\nBest '{name}' Model:")
+        printOneModelTrainResult(config, metrics)
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
 
 
 ################################## For Model.py ########################################
+
+def set_seed(seed_value=42):
+    """
+    Set seed for reproducibility in random, numpy, and torch.
+    """
+    import os
+    
+    random.seed(seed_value)
+    np.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = str(seed_value)
+    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed_value)
+        torch.cuda.manual_seed_all(seed_value)
+        # For full reproducibility with CUDA
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # Additional CUDA environment variables
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+    
+    # Set torch to use deterministic algorithms where possible
+    try:
+        torch.use_deterministic_algorithms(True)
+    except Exception as e:
+        print(f"Warning: Could not set deterministic algorithms: {e}")
+    
+
+def seed_worker(worker_id):
+    """
+    Seeding for DataLoader workers to ensure reproducibility.
+    """
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
 
 def prepareData(X_train, X_test, y_train, y_test, batch_size):
     """Prepare the data for training."""
@@ -675,9 +322,13 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     train_size = len(train_dataset)
     test_size = len(test_dataset)
     
+    # Create a generator for reproducible shuffling
+    g = torch.Generator()
+    g.manual_seed(42)
+
     # Use Dataloader for easier batch processing later
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, worker_init_fn=seed_worker, generator=g)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Calculate pos_weight for BCEWithLogitsLoss loss func (messure the imbalance of class 0 and 1)
     num_positive_train = train_labels_tensor.sum(dim=0)
@@ -686,3 +337,103 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     pos_weight = pos_weight.to('cpu')
 
     return train_loader, test_loader, train_size, test_size, pos_weight
+
+
+
+def calculateF1_Mcc_Accuracy(y_pred, y_test):
+    """Calculate F1 and MCC and accuracy scores for each label."""
+    f1_scores = []
+    accuracies = []
+    mcc_scores = []
+    
+    for i in range(y_test.shape[1]):
+        # MCC: If either y_test or y_pred has only one class, MCC result is undefined, so we skip this label
+        if len(np.unique(y_test[:, i])) > 1 and len(np.unique(y_pred[:, i])) > 1:
+                mcc = matthews_corrcoef(y_test[:, i], y_pred[:, i])
+                mcc_scores.append(mcc)
+        
+        # f1 and Accuracy
+        f1 = f1_score(y_test[:, i], y_pred[:, i], average='macro')
+        f1_scores.append(f1)
+        acc = accuracy_score(y_test[:, i], y_pred[:, i])
+        accuracies.append(acc)
+    
+    avg_f1 = np.mean(f1_scores) if len(f1_scores) > 0 else np.nan
+    avg_mcc = np.mean(mcc_scores) if len(mcc_scores) > 0 else np.nan
+    avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
+
+    return avg_f1, avg_mcc, avg_accuracy
+
+
+def calculateMapAndROC(y_pred_probs, y_test):
+    """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
+    for multi-label classification.
+    """    
+    # Validate input shapes
+    if y_pred_probs.shape != y_test.shape:
+        raise ValueError(f"Shape mismatch: y_pred_probs {y_pred_probs.shape} != y_test {y_test.shape}")
+    
+    n_samples, n_labels = y_test.shape
+    
+    # Initialize lists to store per-label scores
+    map_scores = []
+    roc_scores = []
+    
+    # Calculate scores for each label
+    for i in range(n_labels):
+        y_true_label = y_test[:, i]
+        y_prob_label = y_pred_probs[:, i]
+        
+        # Skip labels that have no positive samples (all zeros)
+        if np.sum(y_true_label) == 0:
+            # print(f"Warning: Label {i} has no positive samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+            
+        # Skip labels that have no negative samples (all ones)
+        if np.sum(y_true_label) == len(y_true_label):
+            print(f"Warning: Label {i} has no negative samples. Skipping for individual metrics.")
+            map_scores.append(np.nan)
+            roc_scores.append(np.nan)
+            continue
+        
+        # Calculate Average Precision (AP) for this label
+        ap_score = average_precision_score(y_true_label, y_prob_label)
+        map_scores.append(ap_score)
+        
+        # Calculate ROC AUC for this label
+        roc_score = roc_auc_score(y_true_label, y_prob_label)
+        roc_scores.append(roc_score)
+    
+    # Convert to numpy arrays for easier handling
+    map_scores = np.array(map_scores)
+    roc_scores = np.array(roc_scores)
+    
+    # Calculate macro averages (ignoring NaN values)
+    map_macro = np.nanmean(map_scores)
+    roc_macro = np.nanmean(roc_scores)
+    
+    return map_macro, roc_macro
+
+
+def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
+    # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
+    norm_exact_match = exact_match_pct / 100.0  # convert percentage to [0,1]
+    norm_f1 = f1_scores  if f1_scores is not np.nan else None  # F1 is [0,1], so no normalization needed
+    norm_mcc = (avg_mcc + 1) / 2 if avg_mcc is not np.nan else None  # MCC is [-1,1], normalize to [0,1]
+    norm_map = mAP if mAP is not np.nan else None  # already in [0,1]
+    norm_hamming = 1 - hamming_loss  # hamming_loss in [0,1], lower is better, so invert
+
+    # Combine metrics with equal weights
+    norm_metrics = [norm_exact_match, norm_f1, norm_mcc, norm_map, norm_hamming]
+    
+    # Filter out None values
+    valid_metrics = [m for m in norm_metrics if m is not None]
+    
+    if valid_metrics:
+        combined_score = np.mean(valid_metrics) * 100  # convert back to percentage
+    else:
+        combined_score = 0.0
+       
+    return combined_score

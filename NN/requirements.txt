@@ -11,3 +11,4 @@ matplotlib
 natsort
 tqdm
 pyyaml
+optuna
