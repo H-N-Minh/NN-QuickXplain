@@ -95,14 +95,15 @@ def printOneModelTrainResult(config, metrics):
           f"hidden_activation_func: {config['hidden_activation_func']} || batch_size: {config['batch_size']} || batch_norm: {config['batch_norm']}"
           f"\n  patience: {config['patience']} || loss_func: {config['loss_func']} || optimizer: {config['optimizer']} || learning_rate: {config['learning_rate']:.2f} || "
           f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']} || pca_components: {config['pca_components']}")
-    print(
-        f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
-        f"F1 = {metrics[METRIC_F1]:.4f} || "
-        f"MCC = {metrics[METRIC_MCC]:.4f} || "
-        f"MAP = {metrics[METRIC_MAP]:.4f} || "
-        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f} || "
-        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
-    )
+    if metrics is not None:
+        print(
+            f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
+            f"F1 = {metrics[METRIC_F1]:.4f} || "
+            f"MCC = {metrics[METRIC_MCC]:.4f} || "
+            f"MAP = {metrics[METRIC_MAP]:.4f} || "
+            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f} || "
+            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        )
 
 def importTrainingData(settings):
     """Import training data from CSV files. return type is tuple of numpy arrays (input_data, output_data)."""

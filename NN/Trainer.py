@@ -89,7 +89,7 @@ def trainOneModel(input_data, output_data, config):
     return metrics, model_manager, pca, removed_features, removed_labels
 
 
-def objective(trial, input_data, output_data, validation_indexes, configs_settings, error_list, n_trials, best_models):
+def objective(trial, input_data, output_data, validation_indexes, configs_settings, error_list, n_trials, best_models, target_metric=Utils.METRIC_COMBINED):
     """Helper for trainAllModels. Used by Optuna to suggest hyperparameters and train a model.
     This creates a model based on the suggested hyperparameters, trains it, evaluates it, and returns a score.
     Optiuna will use this score to determine the best hyperparameters.
@@ -136,11 +136,12 @@ def objective(trial, input_data, output_data, validation_indexes, configs_settin
 
         Utils.updateBestModel(model_info, best_models)
         
-        combined_score = metrics.get(Utils.METRIC_COMBINED, 0.0)
-        return combined_score if not np.isnan(combined_score) else -1.0
+        score = metrics.get(target_metric, 0.0)
+        return score if not np.isnan(score) else -1.0
 
     except Exception as e:
         print(f"!!!!!!!!!Error with trial {trial.number+1}: {e}!!!!!!!!!!!")
+        Utils.printOneModelTrainResult(config, None)
         traceback.print_exc()
         error_list.append((trial.number+1, e))  # Store the config and error in the shared list
         return -1.0
@@ -158,7 +159,6 @@ def trainAllModels(input_data, output_data, settings):
     n_trials = settings['WORKFLOW']['TRAIN']['optuna_trials']
     assert n_trials > 0, "Number of trials must be greater than 0"
 
-    print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials...")
     
     # these metrics will be used to track the best models
     best_models = {
@@ -169,15 +169,23 @@ def trainAllModels(input_data, output_data, settings):
         Utils.METRIC_HAMMING_LOSS: None,
         Utils.METRIC_COMBINED: None
     }
-        
+
+    # get the target metric for Optuna optimization
+    target_metric = settings['WORKFLOW']['TRAIN']['optuna_goal']
+    valid_metrics = [Utils.METRIC_EXACT_MATCH, Utils.METRIC_F1, Utils.METRIC_MCC, Utils.METRIC_MAP, Utils.METRIC_HAMMING_LOSS, Utils.METRIC_COMBINED]
+    assert target_metric in valid_metrics, f"Invalid optuna_goal: {target_metric}. Must be one of {valid_metrics}"
+    optimize_direction = "minimize" if target_metric == Utils.METRIC_HAMMING_LOSS else "maximize"
+
+    print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials with target metric '{target_metric}'...")
+
     # Start the Optuna study, this try n_trials models with different configurations and find the best configuration.
     # For reproducibility, use a fixed seed in the sampler
     error_list = []
     sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10, n_ei_candidates=24)
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    study = optuna.create_study(direction="maximize", sampler=sampler)
+    study = optuna.create_study(direction=optimize_direction, sampler=sampler)
     study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
-                                           error_list, n_trials, best_models), n_trials=n_trials)
+                                           error_list, n_trials, best_models, target_metric), n_trials=n_trials)
     
     print(f"\n\n...Training completed with {len(error_list)} error(s).")
 

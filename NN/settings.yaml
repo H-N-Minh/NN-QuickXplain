@@ -48,7 +48,8 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     SKIP: false # skip training if the model already exists and stored in the model folder
     
     optuna_trials: 2  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
-    
+    optuna_goal: "COMBINED" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
+
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 

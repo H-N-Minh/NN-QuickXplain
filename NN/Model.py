@@ -1,5 +1,6 @@
 import os
 import random
+import copy
 import uuid
 import matplotlib
 import numpy as np
@@ -116,7 +117,7 @@ class ModelManager:
         self.num_epochs_ = 200
         self.patience_ = config.get('patience')
 
-    def evaluateValidationLoss(self):
+    def getValidationLoss(self):
         """Calculate validation/test loss for early stopping"""
         self.model_.eval()
         total_loss = 0.0
@@ -160,7 +161,7 @@ class ModelManager:
             
             # Calculate loss for training and validation
             avg_train_loss = epoch_train_loss / num_train_batches
-            val_loss = self._evaluate_validation_loss()
+            val_loss = self.getValidationLoss()
 
             # Update learning rate scheduler based on validation loss
             self.scheduler_.step(val_loss)
@@ -171,17 +172,19 @@ class ModelManager:
                     best_val_loss = val_loss
                     patience_counter = 0
                     # Save the best model state
-                    best_model_state = np.copy.deepcopy(self.model_.state_dict())
+                    best_model_state = copy.deepcopy(self.model_.state_dict())
                 else:
                     patience_counter += 1
                 
                 if patience_counter >= self.patience_:
-                    print(f"Early stopping at epoch {epoch + 1}")
+                    # print(f"Early stopping at epoch {epoch + 1}")
                     break
         
         # Restore best model if early stopping was used
         if self.patience_ is not None and best_model_state is not None:
             self.model_.load_state_dict(best_model_state)
+        # else:
+            # print(f"Trained for full {self.num_epochs_} epochs.")
 
     def evaluateModel(self):
         """Evaluate model and return metrics. This includes F1, accuracy, exact matches"""
