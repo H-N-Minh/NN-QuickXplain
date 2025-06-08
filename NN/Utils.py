@@ -365,7 +365,7 @@ def findBestThreshold(y_true, y_pred_prob):
     best_f1_idx = np.argmax(f1_scores[:-1])
     best_threshold = thresholds[best_f1_idx]
     
-    print(f"Best threshold found: {best_threshold:.4f} with F1 score: {f1_scores[best_f1_idx]:.4f}")
+    # print(f"Best threshold found: {best_threshold:.4f} with F1 score: {f1_scores[best_f1_idx]:.4f}")
     
     return best_threshold
 
