@@ -4,6 +4,8 @@
 # Only important funcs are here, the rest is in Utils.py
 
 import traceback
+
+import optuna
 import Utils as Utils
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -43,7 +45,7 @@ def createMultiOutputModel(base_estimator, config):
     else:
         # Direct RandomForest for multi-output
         return RandomForestClassifier(
-            n_estimators=config.get('n_estimators', 100),
+            n_estimators=config.get('n_estimator', 100),
             max_depth=config.get('max_depth', None),
             random_state=42,
             class_weight=config.get('class_weight', None),
@@ -89,7 +91,7 @@ def evaluateModel(model, X_test, y_test):
    
     return metrics
 
-def preprocessTrainingData(X_transformed, output_data):
+def preprocessTrainingData(input_data, output_data, config):
     """Preprocess training data by removing features with variance lower than threshold and labels with constant values.
         in other words, remove features in X_transformed and labels in output_data that has constant values or low variance (almost constant)
         Features are removed because low variance features do not contribute to the model's learning.
@@ -99,7 +101,15 @@ def preprocessTrainingData(X_transformed, output_data):
         The indexes of the removed features are stored so later during evaluation and testing, we also remove the same features before making predictions.
         The removed labels are stored so we can add them later to the model's predictions to get a final output with all labels.
     """
-    
+      
+    # Apply PCA if specified
+    if config['use_pca']:
+        pca = PCA(n_components=config['pca_components'])
+        X_transformed = pca.fit_transform(input_data)
+    else:
+        X_transformed = input_data
+        pca = None
+
     # Remove features with low variance, mark their indexes
     selector = VarianceThreshold(threshold=0.01)
     X_transformed = selector.fit_transform(X_transformed)
@@ -115,7 +125,8 @@ def preprocessTrainingData(X_transformed, output_data):
             removed_label_info[i] = constant_value
     new_output_data = output_data[:, ~constant_label_mask]
     
-    return X_transformed, new_output_data, removed_features, removed_label_info
+    return X_transformed, new_output_data, removed_features, removed_label_info, pca
+
 
 def trainOneModel(input_data, output_data, config):
     """Train and evaluate a single model configuration.
@@ -127,16 +138,8 @@ def trainOneModel(input_data, output_data, config):
     - removed_labels: Dictionary of removed labels with their constant values
     """
     
-    # Apply PCA if specified
-    if config['use_pca']:
-        pca = PCA(n_components=config['pca_components'])
-        X_transformed = pca.fit_transform(input_data)
-    else:
-        X_transformed = input_data
-        pca = None
-    
     # preprocess training data
-    X_transformed, output_data, removed_features, removed_labels = preprocessTrainingData(X_transformed, output_data)
+    X_transformed, output_data, removed_features, removed_labels, pca = preprocessTrainingData(input_data, output_data, config)
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=config['test_size'], random_state=42)
@@ -158,7 +161,53 @@ def trainOneModel(input_data, output_data, config):
     
     return metrics, model, pca, removed_features, removed_labels
 
-def trainAllModels(input_data, output_data , configs, settings):
+                
+
+def objective(trial, input_data, output_data, validation_indexes, configs_settings, error_list, n_trials, best_models, target_metric=Utils.METRIC_COMBINED):
+    """Helper for trainAllModels. Used by Optuna to suggest hyperparameters and train a model.
+    This creates exactly 1 model based on the suggested hyperparameters, trains it, evaluates it, and returns a score. (Optiuna will use this score to determine the best hyperparameters.)
+    If there is an error during training, it will return -1.0 and store the error in the error_list.
+    If this trained model has good results, it will be saved in the best_models dict, else it will be discarded.
+    """
+    # Get the config suggested by Optuna.
+    config = Utils.getConfigFromOptuna(trial, configs_settings)
+
+    try:
+        print(f"\nTrial {trial.number+1}/{n_trials}")
+
+        # Use a copy of data for each trial to prevent in-place modification issues
+        input_data_copy = np.copy(input_data)
+        output_data_copy = np.copy(output_data)
+
+        # Start training this model
+        metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data_copy, output_data_copy, config)
+
+        # Store the training result and all infor about this model in a dict
+        model_info = {}
+        model_info['training_result'] = metrics
+        model_info['validation_indexes'] = validation_indexes
+        model_info['config'] = config
+        model_info['model'] = model
+        model_info['pca'] = pca
+        model_info['removed_features'] = removed_features
+        model_info['removed_labels'] = removed_labels
+
+        # Compare this model with all the best models so far (saved in best_models dict)
+        Utils.updateBestModel(model_info, best_models)
+        
+        # Return a score for Optuna to evaluate how good this model is.
+        score = metrics.get(target_metric, None)
+        assert score is not None, f"Target metric '{target_metric}' is invalid. Valid metrics: {Utils.VALID_METRIC_LIST}"
+        return score if not np.isnan(score) else -1.0
+
+    except Exception as e:
+        print(f"!!!!!!!!!Error with trial {trial.number+1}: {e}!!!!!!!!!!!")
+        Utils.printOneModelTrainResult(config, None)
+        traceback.print_exc()
+        error_list.append((trial.number+1, e))  # Store the config and error in the shared list
+        return -1.0
+
+def trainAllModels(input_data, output_data, settings):
     """Train all models with different configurations.
     Each model will be evaluated on test set and the best models will be saved.
     After all models are trained and best ones are saved, the best ones will be compared with the models stored in the Models folder.
@@ -169,62 +218,47 @@ def trainAllModels(input_data, output_data , configs, settings):
     # split a section of the data out for validation after the training
     input_data, output_data, validation_indexes = Utils.splitData(input_data, output_data)
 
-    # Train all models and save the best ones
-    configs_count = len(configs)
-    print(f"\nTraining {configs_count} configurations...")
-    
-    # these metrics will be used to track the best models
-    best_models = {
-        Utils.METRIC_EXACT_MATCH: None,
-        Utils.METRIC_F1: None,
-        Utils.METRIC_MCC: None,
-        Utils.METRIC_MAP: None,
-        Utils.METRIC_HAMMING_LOSS: None,
-        Utils.METRIC_COMBINED: None
-    }
-    
-    error_count = 0
-    for i, config in enumerate(configs):
-        try:
-            print(f"\nConfiguration {i+1}/{configs_count}")
 
-            model_info = {}
-            metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data, output_data, config)
-            model_info['training_result'] = metrics
-            model_info['validation_indexes'] = validation_indexes
-            model_info['config'] = config
-            model_info['model'] = model
-            model_info['pca'] = pca
-            model_info['removed_features'] = removed_features
-            model_info['removed_labels'] = removed_labels
+    # 2. Prepare variables for Optuna
+        # 2.1 these metrics will be used to track the best models
+    best_models = {Utils.METRIC_EXACT_MATCH: None, Utils.METRIC_F1: None, Utils.METRIC_MCC: None, Utils.METRIC_MAP: None,
+                   Utils.METRIC_HAMMING_LOSS: None, Utils.METRIC_COMBINED: None}
 
-            # If the model is the best so far, save it
-            Utils.updateBestModel(model_info, best_models)
-                
-        except Exception as e:
-            print(f"!!!!!!!!!Error with configuration {i+1}: {e}!!!!!!!!!!!")
-            traceback.print_exc()  # print the full traceback of the error
-            error_count += 1
-            continue
+        # 2.2 get the target metric for Optuna optimization
+    target_metric, optimize_direction = Utils.getOptunaTargetMetric(settings)
+
+        # 2.3 The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
+    n_trials = settings['WORKFLOW']['TRAIN']['optuna_trials']
+    assert n_trials > 0, "Number of trials must be greater than 0"
     
-    print(f"\n\n...Training completed with {error_count} error(s).")
+        # 2.4 Some more variables
+    configs_settings = settings['WORKFLOW']['TRAIN']['configurations']      # Includes all hyperparameters to try
+    error_list = []                                                         # Store errors during training                                
+    sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10, n_ei_candidates=24)     # Fixed seed for reproducibility     
+    
+    # 3. Start the Optuna study process    
+    print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials with target metric '{target_metric}'...")
+    optuna.logging.set_verbosity(optuna.logging.WARNING)            # Keep the logs minimal, only show warnings and errors
+    study = optuna.create_study(direction=optimize_direction, sampler=sampler)
+    study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
+                                           error_list, n_trials, best_models, target_metric), n_trials=n_trials)
+    
+    print(f"\n\n...Training completed with {len(error_list)} error(s).")
 
-    # Save only the best models
+    # 4. Save only the best models into the Models folder
     saved_models_dir = Utils.saveModel(best_models, settings)
 
-    # Training summary
+    # 5. Training summary
     Utils.printTrainingSummary(best_models, saved_models_dir)
 
-    return error_count
+    return error_list
+
     
 def startTraining(settings):
     """Main training and evaluation pipeline."""
     # Import data
     input_data, output_data = Utils.importTrainingData(settings)
 
-    # Import configurations
-    configs = Utils.getModelConfigs(settings)
-
     # Train all models with different configurations. The best ones will be saved.
-    return trainAllModels(input_data, output_data, configs, settings)
+    return trainAllModels(input_data, output_data, settings)
 

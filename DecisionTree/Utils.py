@@ -518,22 +518,102 @@ METRIC_ACCURACY = 'accuracy'
 METRIC_ROC_AUC = 'roc_auc'
 METRIC_TOTAL_SAMPLES = 'total_samples'
 
+VALID_METRIC_LIST = [METRIC_EXACT_MATCH, METRIC_F1, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS, METRIC_COMBINED]
+
+
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
-    print(f"  Estimator: {config['estimator_type']}, MultiOutput: {config['multi_output_type']}, PCA: {config['use_pca']}, Class Weight: {config['class_weight']}, "
-          f"Test Size: {config['test_size']}, Max Depth: {config.get('max_depth', 'None')}")
-    print(
-        f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
-        f"F1 = {metrics[METRIC_F1]:.4f}, "
-        f"MCC = {metrics[METRIC_MCC]:.4f}, "
-        f"MAP = {metrics[METRIC_MAP]:.4f}, "
-        f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
-        f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
-    )
+    # Print all keys and values in config, split into two lines, separated by '||'
+    config_items = list(config.items())
+    # middle index
+    middle_idx = len(config_items) // 2
 
+    first_line = "  " + " || ".join(
+        f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" for k, v in config_items[:middle_idx]
+    )
+    second_line = "  " + " || ".join(
+        f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" for k, v in config_items[middle_idx:]
+    )
+    print(first_line)
+    print(second_line)
+
+    if metrics is not None:
+        print(
+            f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
+            f"F1 = {metrics[METRIC_F1]:.4f}, "
+            f"MCC = {metrics[METRIC_MCC]:.4f}, "
+            f"MAP = {metrics[METRIC_MAP]:.4f}, "
+            f"Hamming Loss = {metrics[METRIC_HAMMING_LOSS]:.4f}, "
+            f"Combined Score = {metrics[METRIC_COMBINED]:.2f}%"
+        )
+
+
+def getConfigFromOptuna(trial, configs_settings):
+    """
+    Generate a single model configuration suggested by Optuna.
+    This function takes an Optuna trial object and a dictionary of
+    configuration settings (typically from a YAML file) and suggests
+    a set of hyperparameters for one model configuration.
+    """
+    config = {}
+
+    # Suggest test_size from the available options
+    config['test_size'] = trial.suggest_float('test_size', min(configs_settings['test_size']), max(configs_settings['test_size']), step=0.1)
+
+    # Suggest max_depth from the available options
+    # Note: Optuna handles None values in categorical choices correctly.
+    config['max_depth'] = trial.suggest_categorical('max_depth', configs_settings['max_depth'])
+
+    # Suggest estimator_type first, as it influences multi_output_type and n_estimators
+    estimator_type = trial.suggest_categorical('estimator_type', configs_settings['estimator_type'])
+    config['estimator_type'] = estimator_type
+
+    # Conditionally suggest multi_output_type based on the chosen estimator_type
+    # The 'Direct' multi-output type is only compatible with 'RandomForest'.
+    valid_multi_output_types = configs_settings['multi_output_type']
+    if estimator_type != 'RandomForest':
+        # If the estimator is NOT RandomForest, filter out 'Direct' from the options
+        valid_multi_output_types = [
+            m_type for m_type in configs_settings['multi_output_type']
+            if m_type.lower() != 'direct'
+        ]
+        config['multi_output_type'] = trial.suggest_categorical('multi_output_type_direct', valid_multi_output_types)
+    else:
+        # If the estimator is RandomForest, allow all multi-output types
+        config['multi_output_type'] = trial.suggest_categorical('multi_output_type', valid_multi_output_types)
+
+
+    # Suggest whether to use PCA
+    config['use_pca'] = trial.suggest_categorical('use_pca', configs_settings['use_pca'])
+    # PCA components is fixed at 0.95, as per your original function
+    config['pca_components'] = 0.95
+
+    # Suggest class_weight
+    config['class_weight'] = trial.suggest_categorical('class_weight', configs_settings['class_weight'])
+
+    # Set n_estimators conditionally: only for RandomForest
+    if estimator_type == 'RandomForest':
+        config['n_estimator'] = trial.suggest_int('n_estimator', min(configs_settings['n_estimator']), max(configs_settings['n_estimator']), step=1)
+    else:
+        config['n_estimators'] = None # Explicitly set to None if not RandomForest
+
+    return config
+
+def getOptunaTargetMetric(settings):
+    """
+    Optuna needs a score to evaluate a set of hyperparameters. During the training phase, it will try to maximize this score.
+    This score is chosen as one of the metrics, which is defined in the settings.yaml file under 'optuna_goal'.
+    """
+    target_metric = settings['WORKFLOW']['TRAIN']['optuna_goal']
+    assert target_metric in VALID_METRIC_LIST, f"Invalid optuna_goal: {target_metric}. Must be one of {VALID_METRIC_LIST}"
+    optimize_direction = "minimize" if target_metric == METRIC_HAMMING_LOSS else "maximize"
+
+    return target_metric, optimize_direction
 
 def importTrainingData(settings):
-    """Import training data from CSV files."""
+    """Import training data from CSV files. 
+    Returns:
+        numpy arrays: input_data, output_data. Original."""
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
@@ -561,51 +641,6 @@ def importTrainingData(settings):
     print(f"...Imported {input_data.shape[0]} samples with {input_data.shape[1]} features and {output_data.shape[1]} labels.")
 
     return input_data.values , output_data.values
-
-def getModelConfigs(settings):
-    """ Generate all configurations for training models based on settings.yaml file. """
-    configs = []    # list of dictionary
-
-    # Generate all combinations from YAML settings
-    config_settings = settings['WORKFLOW']['TRAIN']['configurations']
-    for test_size in config_settings['test_sizes']:
-        for max_depth in config_settings['max_depths']:
-            for estimator_type in config_settings['estimator_types']:
-                for multi_output_type in config_settings['multi_output_types']:
-                    for use_pca in config_settings['use_pca_options']:
-                        for class_weight in config_settings['class_weight_options']:
-                            config = {
-                                'test_size': test_size,
-                                'max_depth': max_depth,
-                                'estimator_type': estimator_type,
-                                'multi_output_type': multi_output_type,
-                                'use_pca': use_pca,
-                                'pca_components': 0.95,
-                                'class_weight': class_weight,
-                                'n_estimators': 100 if estimator_type == 'RandomForest' else None
-                            }
-                            configs.append(config)
-
-    # Add direct multi-output RandomForest configurations
-    if not config_settings['random_forest_direct']['skip']:
-        for test_size in config_settings['test_sizes']:
-            for max_depth in config_settings['max_depths']:
-                for use_pca in config_settings['use_pca_options']:
-                    for class_weight in config_settings['class_weight_options']:
-                        config = {
-                            'test_size': test_size,
-                            'max_depth': max_depth,
-                            'estimator_type': 'RandomForest',
-                            'multi_output_type': 'Direct',
-                            'use_pca': use_pca,
-                            'pca_components': 0.95,
-                            'class_weight': class_weight,
-                            'n_estimators': 100
-                        }
-                        configs.append(config)
-
-    assert len(configs) > 0, "Cant train model without valid configs of the model. Please check the [WORKFLOW][TRAIN][configurations] in settings.yaml file."
-    return configs
 
 
 def saveModel(best_models, settings):
@@ -638,8 +673,7 @@ def saveModel(best_models, settings):
     # Save the best models if they are better than the existing ones
     for name, best_model in best_models.items():
         if best_model is None:      # this should never happen, but just in case
-            print(f"No best model found for {name}. Skipping saving.")
-            continue
+            assert False, f"Error:saveModel:: Best model for '{name}' is None. This should not happen."
         
         metrics_filename = os.path.join(model_folder_path, f"Best_{name}_metrics.json")
 
@@ -891,3 +925,4 @@ def calculateMapAndROC(model, X_test, y_test):
         roc_auc_mean = np.nanmean(all_roc_aucs)
 
     return mAP, roc_auc_mean
+
