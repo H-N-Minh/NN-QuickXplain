@@ -1,0 +1,1549 @@
+################## TRAINING PHASE ##########################
+Importing data...
+...Imported 48751 samples with 47 features and 47 labels.
+
+Starting Optuna hyperparameter tuning for 300 trials with target metric 'MAP'...
+
+Trial 1/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.02 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.02% || F1 = 0.5706 || MCC = 0.4833 || MAP = 0.2599 || Hamming Loss = 0.0369 || Combined Score = 50.71%
+
+Trial 2/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.62% || F1 = 0.6596 || MCC = 0.3784 || MAP = 0.4558 || Hamming Loss = 0.0362 || Combined Score = 55.49%
+
+Trial 3/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.09 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.25% || F1 = 0.5005 || MCC = 0.1353 || MAP = 0.1519 || Hamming Loss = 0.0372 || Combined Score = 43.71%
+
+Trial 4/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.31 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.02% || F1 = 0.6064 || MCC = 0.6174 || MAP = 0.3964 || Hamming Loss = 0.0366 || Combined Score = 55.50%
+
+Trial 5/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.08% || F1 = 0.6813 || MCC = 0.4102 || MAP = 0.4863 || Hamming Loss = 0.0358 || Combined Score = 56.95%
+
+Trial 6/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.25 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.09 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0542 || Hamming Loss = 0.0369 || Combined Score = 37.69%
+
+Trial 7/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.21 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0503 || Hamming Loss = 0.0369 || Combined Score = 37.59%
+
+Trial 8/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.09 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0849 || Hamming Loss = 0.0369 || Combined Score = 38.46%
+
+Trial 9/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.33 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.1029 || Hamming Loss = 0.0369 || Combined Score = 38.91%
+
+Trial 10/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.06% || F1 = 0.6177 || MCC = 0.5184 || MAP = 0.3877 || Hamming Loss = 0.0366 || Combined Score = 54.57%
+
+Trial 11/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.07 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.75% || F1 = 0.6612 || MCC = 0.4077 || MAP = 0.4752 || Hamming Loss = 0.0360 || Combined Score = 56.24%
+
+Trial 12/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.07 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6750 || MCC = 0.4182 || MAP = 0.4948 || Hamming Loss = 0.0359 || Combined Score = 57.07%
+
+Trial 13/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.07 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.06% || F1 = 0.6128 || MCC = 0.4240 || MAP = 0.4230 || Hamming Loss = 0.0364 || Combined Score = 54.24%
+
+Trial 14/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.01 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.51% || F1 = 0.6283 || MCC = 0.3593 || MAP = 0.4000 || Hamming Loss = 0.0369 || Combined Score = 53.52%
+
+Trial 15/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.39 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.10 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.01% || F1 = 0.5952 || MCC = 0.5727 || MAP = 0.3994 || Hamming Loss = 0.0366 || Combined Score = 54.89%
+
+Trial 16/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.13% || F1 = 0.6479 || MCC = 0.5219 || MAP = 0.4294 || Hamming Loss = 0.0364 || Combined Score = 56.06%
+
+Trial 17/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.23 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.46% || F1 = 0.6700 || MCC = 0.4465 || MAP = 0.4884 || Hamming Loss = 0.0360 || Combined Score = 57.01%
+
+Trial 18/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.24 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5266 || MCC = 0.3136 || MAP = 0.3082 || Hamming Loss = 0.0367 || Combined Score = 49.10%
+
+Trial 19/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.27 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.02% || F1 = 0.6062 || MCC = 0.4538 || MAP = 0.3938 || Hamming Loss = 0.0366 || Combined Score = 53.81%
+
+Trial 20/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.08% || F1 = 0.6396 || MCC = 0.5632 || MAP = 0.4414 || Hamming Loss = 0.0364 || Combined Score = 56.54%
+
+Trial 21/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.16% || F1 = 0.6813 || MCC = 0.4279 || MAP = 0.4928 || Hamming Loss = 0.0360 || Combined Score = 57.27%
+
+Trial 22/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.19% || F1 = 0.6771 || MCC = 0.3980 || MAP = 0.4909 || Hamming Loss = 0.0360 || Combined Score = 56.86%
+
+Trial 23/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.96% || F1 = 0.6791 || MCC = 0.4227 || MAP = 0.4878 || Hamming Loss = 0.0360 || Combined Score = 57.04%
+
+Trial 24/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.16% || F1 = 0.6826 || MCC = 0.4107 || MAP = 0.4987 || Hamming Loss = 0.0359 || Combined Score = 57.25%
+
+Trial 25/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.92% || F1 = 0.6694 || MCC = 0.3924 || MAP = 0.4700 || Hamming Loss = 0.0363 || Combined Score = 56.17%
+
+Trial 26/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6743 || MCC = 0.4631 || MAP = 0.4825 || Hamming Loss = 0.0361 || Combined Score = 57.28%
+
+Trial 27/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.51% || F1 = 0.6474 || MCC = 0.3756 || MAP = 0.4343 || Hamming Loss = 0.0365 || Combined Score = 54.76%
+
+Trial 28/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.18% || F1 = 0.6395 || MCC = 0.4627 || MAP = 0.4308 || Hamming Loss = 0.0365 || Combined Score = 55.34%
+
+Trial 29/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.01% || F1 = 0.5978 || MCC = 0.3770 || MAP = 0.3899 || Hamming Loss = 0.0366 || Combined Score = 52.80%
+
+Trial 30/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.03 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.01% || F1 = 0.6649 || MCC = 0.3761 || MAP = 0.4565 || Hamming Loss = 0.0364 || Combined Score = 55.67%
+
+Trial 31/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.21 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.01% || F1 = 0.6140 || MCC = 0.5830 || MAP = 0.3988 || Hamming Loss = 0.0366 || Combined Score = 55.36%
+
+Trial 32/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.98% || F1 = 0.6765 || MCC = 0.4057 || MAP = 0.4720 || Hamming Loss = 0.0361 || Combined Score = 56.50%
+
+Trial 33/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.36% || F1 = 0.6746 || MCC = 0.3975 || MAP = 0.4858 || Hamming Loss = 0.0358 || Combined Score = 56.74%
+
+Trial 34/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.80% || F1 = 0.6587 || MCC = 0.3728 || MAP = 0.4524 || Hamming Loss = 0.0363 || Combined Score = 55.38%
+
+Trial 35/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.40% || F1 = 0.6616 || MCC = 0.4297 || MAP = 0.4471 || Hamming Loss = 0.0364 || Combined Score = 55.82%
+
+Trial 36/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.04 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.31% || F1 = 0.6849 || MCC = 0.4241 || MAP = 0.4882 || Hamming Loss = 0.0362 || Combined Score = 57.24%
+
+Trial 37/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.00 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.09% || F1 = 0.6451 || MCC = 0.5896 || MAP = 0.4312 || Hamming Loss = 0.0363 || Combined Score = 56.71%
+
+Trial 38/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.24% || F1 = 0.6545 || MCC = 0.5049 || MAP = 0.4280 || Hamming Loss = 0.0364 || Combined Score = 56.02%
+
+Trial 39/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.14% || F1 = 0.6853 || MCC = 0.4179 || MAP = 0.5030 || Hamming Loss = 0.0359 || Combined Score = 57.45%
+
+Trial 40/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.58% || F1 = 0.6737 || MCC = 0.4015 || MAP = 0.4771 || Hamming Loss = 0.0359 || Combined Score = 56.43%
+
+Trial 41/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0939 || Hamming Loss = 0.0369 || Combined Score = 38.68%
+
+Trial 42/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6767 || MCC = 0.4084 || MAP = 0.4880 || Hamming Loss = 0.0359 || Combined Score = 56.84%
+
+Trial 43/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.32% || F1 = 0.6842 || MCC = 0.4153 || MAP = 0.4917 || Hamming Loss = 0.0360 || Combined Score = 57.22%
+
+Trial 44/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.07 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.36% || F1 = 0.6859 || MCC = 0.4179 || MAP = 0.4935 || Hamming Loss = 0.0359 || Combined Score = 57.32%
+
+Trial 45/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.04 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.46% || F1 = 0.6613 || MCC = 0.3979 || MAP = 0.4534 || Hamming Loss = 0.0363 || Combined Score = 55.64%
+
+Trial 46/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.07 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4941 || MCC = 0.4470 || MAP = 0.1363 || Hamming Loss = 0.0369 || Combined Score = 46.34%
+
+Trial 47/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.01 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.66% || F1 = 0.6736 || MCC = 0.4062 || MAP = 0.4505 || Hamming Loss = 0.0360 || Combined Score = 56.16%
+
+Trial 48/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.49% || F1 = 0.6683 || MCC = 0.4465 || MAP = 0.4710 || Hamming Loss = 0.0359 || Combined Score = 56.63%
+
+Trial 49/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.07 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0577 || Hamming Loss = 0.0369 || Combined Score = 37.78%
+
+Trial 50/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.22 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.05% || F1 = 0.6070 || MCC = 0.4697 || MAP = 0.4142 || Hamming Loss = 0.0365 || Combined Score = 54.40%
+
+Trial 51/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.05 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.23% || F1 = 0.6783 || MCC = 0.4042 || MAP = 0.4685 || Hamming Loss = 0.0359 || Combined Score = 56.51%
+
+Trial 52/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.40% || F1 = 0.6811 || MCC = 0.4102 || MAP = 0.4956 || Hamming Loss = 0.0359 || Combined Score = 57.20%
+
+Trial 53/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.33% || F1 = 0.6873 || MCC = 0.4224 || MAP = 0.5051 || Hamming Loss = 0.0357 || Combined Score = 57.62%
+
+Trial 54/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.23% || F1 = 0.6876 || MCC = 0.4315 || MAP = 0.4902 || Hamming Loss = 0.0358 || Combined Score = 57.40%
+
+Trial 55/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.13% || F1 = 0.6775 || MCC = 0.4101 || MAP = 0.4961 || Hamming Loss = 0.0360 || Combined Score = 57.08%
+
+Trial 56/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6753 || MCC = 0.3939 || MAP = 0.4868 || Hamming Loss = 0.0360 || Combined Score = 56.64%
+
+Trial 57/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.28% || F1 = 0.6553 || MCC = 0.5279 || MAP = 0.4406 || Hamming Loss = 0.0362 || Combined Score = 56.53%
+
+Trial 58/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.10 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5316 || MCC = 0.4544 || MAP = 0.2975 || Hamming Loss = 0.0368 || Combined Score = 50.39%
+
+Trial 59/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.39% || F1 = 0.6837 || MCC = 0.4159 || MAP = 0.4950 || Hamming Loss = 0.0359 || Combined Score = 57.29%
+
+Trial 60/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.05 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.37% || F1 = 0.6778 || MCC = 0.4116 || MAP = 0.4910 || Hamming Loss = 0.0360 || Combined Score = 57.05%
+
+Trial 61/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.39 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0496 || Hamming Loss = 0.0369 || Combined Score = 37.58%
+
+Trial 62/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.31% || F1 = 0.6850 || MCC = 0.4184 || MAP = 0.4926 || Hamming Loss = 0.0359 || Combined Score = 57.28%
+
+Trial 63/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.81% || F1 = 0.6757 || MCC = 0.4174 || MAP = 0.4924 || Hamming Loss = 0.0359 || Combined Score = 56.98%
+
+Trial 64/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.93% || F1 = 0.6746 || MCC = 0.4131 || MAP = 0.4849 || Hamming Loss = 0.0360 || Combined Score = 56.79%
+
+Trial 65/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.36 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5705 || MCC = 0.5042 || MAP = 0.4033 || Hamming Loss = 0.0367 || Combined Score = 53.78%
+
+Trial 66/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.31% || F1 = 0.6825 || MCC = 0.4059 || MAP = 0.4777 || Hamming Loss = 0.0363 || Combined Score = 56.80%
+
+Trial 67/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.07 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.85% || F1 = 0.6803 || MCC = 0.4115 || MAP = 0.4859 || Hamming Loss = 0.0358 || Combined Score = 56.89%
+
+Trial 68/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.04% || F1 = 0.6773 || MCC = 0.4120 || MAP = 0.4998 || Hamming Loss = 0.0359 || Combined Score = 57.15%
+
+Trial 69/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.04 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.65% || F1 = 0.6832 || MCC = 0.4131 || MAP = 0.4885 || Hamming Loss = 0.0360 || Combined Score = 57.18%
+
+Trial 70/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.07 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.63% || F1 = 0.6801 || MCC = 0.4338 || MAP = 0.4793 || Hamming Loss = 0.0360 || Combined Score = 56.93%
+
+Trial 71/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.6659 || MCC = 0.3823 || MAP = 0.4795 || Hamming Loss = 0.0359 || Combined Score = 56.21%
+
+Trial 72/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.79% || F1 = 0.6780 || MCC = 0.4003 || MAP = 0.4908 || Hamming Loss = 0.0359 || Combined Score = 56.82%
+
+Trial 73/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.05% || F1 = 0.6771 || MCC = 0.4038 || MAP = 0.4916 || Hamming Loss = 0.0360 || Combined Score = 56.90%
+
+Trial 74/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.29 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.48% || F1 = 0.6656 || MCC = 0.4392 || MAP = 0.4891 || Hamming Loss = 0.0359 || Combined Score = 56.86%
+
+Trial 75/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.68% || F1 = 0.6675 || MCC = 0.3992 || MAP = 0.4713 || Hamming Loss = 0.0362 || Combined Score = 56.18%
+
+Trial 76/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6814 || MCC = 0.4123 || MAP = 0.4939 || Hamming Loss = 0.0359 || Combined Score = 57.16%
+
+Trial 77/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.25% || F1 = 0.6578 || MCC = 0.5516 || MAP = 0.4628 || Hamming Loss = 0.0361 || Combined Score = 57.26%
+
+Trial 78/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.33% || F1 = 0.6827 || MCC = 0.4120 || MAP = 0.4905 || Hamming Loss = 0.0359 || Combined Score = 57.13%
+
+Trial 79/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.14% || F1 = 0.6536 || MCC = 0.5537 || MAP = 0.4522 || Hamming Loss = 0.0363 || Combined Score = 56.95%
+
+Trial 80/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.68% || F1 = 0.6598 || MCC = 0.3772 || MAP = 0.4696 || Hamming Loss = 0.0361 || Combined Score = 55.78%
+
+Trial 81/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4906 || MCC = 0.0627 || MAP = 0.1238 || Hamming Loss = 0.0369 || Combined Score = 42.18%
+
+Trial 82/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6797 || MCC = 0.4085 || MAP = 0.4944 || Hamming Loss = 0.0359 || Combined Score = 57.08%
+
+Trial 83/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6766 || MCC = 0.3977 || MAP = 0.4967 || Hamming Loss = 0.0360 || Combined Score = 56.90%
+
+Trial 84/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6807 || MCC = 0.4173 || MAP = 0.5017 || Hamming Loss = 0.0358 || Combined Score = 57.31%
+
+Trial 85/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.68% || F1 = 0.6757 || MCC = 0.3949 || MAP = 0.4896 || Hamming Loss = 0.0359 || Combined Score = 56.67%
+
+Trial 86/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.79% || F1 = 0.6744 || MCC = 0.4240 || MAP = 0.4921 || Hamming Loss = 0.0359 || Combined Score = 57.01%
+
+Trial 87/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.81% || F1 = 0.6776 || MCC = 0.3984 || MAP = 0.4885 || Hamming Loss = 0.0360 || Combined Score = 56.75%
+
+Trial 88/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.02% || F1 = 0.6112 || MCC = 0.5129 || MAP = 0.4003 || Hamming Loss = 0.0366 || Combined Score = 54.63%
+
+Trial 89/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.84% || F1 = 0.6783 || MCC = 0.4021 || MAP = 0.4880 || Hamming Loss = 0.0360 || Combined Score = 56.80%
+
+Trial 90/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.76% || F1 = 0.6750 || MCC = 0.3975 || MAP = 0.4839 || Hamming Loss = 0.0359 || Combined Score = 56.59%
+
+Trial 91/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.64% || F1 = 0.6735 || MCC = 0.3929 || MAP = 0.4838 || Hamming Loss = 0.0360 || Combined Score = 56.48%
+
+Trial 92/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.83% || F1 = 0.6699 || MCC = 0.3877 || MAP = 0.4875 || Hamming Loss = 0.0359 || Combined Score = 56.47%
+
+Trial 93/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.71% || F1 = 0.6746 || MCC = 0.4032 || MAP = 0.4900 || Hamming Loss = 0.0359 || Combined Score = 56.75%
+
+Trial 94/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.88% || F1 = 0.6747 || MCC = 0.4058 || MAP = 0.4779 || Hamming Loss = 0.0362 || Combined Score = 56.56%
+
+Trial 95/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.41% || F1 = 0.6615 || MCC = 0.4702 || MAP = 0.4691 || Hamming Loss = 0.0361 || Combined Score = 56.67%
+
+Trial 96/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.82% || F1 = 0.6744 || MCC = 0.4060 || MAP = 0.4840 || Hamming Loss = 0.0358 || Combined Score = 56.68%
+
+Trial 97/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.40% || F1 = 0.6860 || MCC = 0.4206 || MAP = 0.4957 || Hamming Loss = 0.0358 || Combined Score = 57.40%
+
+Trial 98/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.05 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.34% || F1 = 0.6783 || MCC = 0.4145 || MAP = 0.4829 || Hamming Loss = 0.0359 || Combined Score = 56.92%
+
+Trial 99/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.01% || F1 = 0.5953 || MCC = 0.4833 || MAP = 0.3652 || Hamming Loss = 0.0367 || Combined Score = 53.31%
+
+Trial 100/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.50% || F1 = 0.6867 || MCC = 0.4194 || MAP = 0.4923 || Hamming Loss = 0.0358 || Combined Score = 57.36%
+
+Trial 101/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.02 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.79% || F1 = 0.6745 || MCC = 0.3909 || MAP = 0.4772 || Hamming Loss = 0.0362 || Combined Score = 56.38%
+
+Trial 102/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.36% || F1 = 0.6800 || MCC = 0.4080 || MAP = 0.4946 || Hamming Loss = 0.0359 || Combined Score = 57.12%
+
+Trial 103/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.36% || F1 = 0.6779 || MCC = 0.4022 || MAP = 0.4897 || Hamming Loss = 0.0360 || Combined Score = 56.92%
+
+Trial 104/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.09% || F1 = 0.6802 || MCC = 0.4110 || MAP = 0.4909 || Hamming Loss = 0.0359 || Combined Score = 57.03%
+
+Trial 105/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.37% || F1 = 0.6807 || MCC = 0.4350 || MAP = 0.4809 || Hamming Loss = 0.0363 || Combined Score = 57.13%
+
+Trial 106/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.05% || F1 = 0.6048 || MCC = 0.4803 || MAP = 0.3697 || Hamming Loss = 0.0365 || Combined Score = 53.57%
+
+Trial 107/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.03 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.24% || F1 = 0.6801 || MCC = 0.4078 || MAP = 0.4793 || Hamming Loss = 0.0359 || Combined Score = 56.80%
+
+Trial 108/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.09 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.05% || F1 = 0.6018 || MCC = 0.4217 || MAP = 0.3901 || Hamming Loss = 0.0365 || Combined Score = 53.33%
+
+Trial 109/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.07 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.68% || F1 = 0.6687 || MCC = 0.3870 || MAP = 0.4790 || Hamming Loss = 0.0359 || Combined Score = 56.24%
+
+Trial 110/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.76% || F1 = 0.6800 || MCC = 0.4161 || MAP = 0.4932 || Hamming Loss = 0.0359 || Combined Score = 57.06%
+
+Trial 111/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.88% || F1 = 0.6689 || MCC = 0.3872 || MAP = 0.4814 || Hamming Loss = 0.0359 || Combined Score = 56.33%
+
+Trial 112/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.16% || F1 = 0.6802 || MCC = 0.4179 || MAP = 0.4898 || Hamming Loss = 0.0359 || Combined Score = 57.10%
+
+Trial 113/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.99% || F1 = 0.6793 || MCC = 0.4042 || MAP = 0.4787 || Hamming Loss = 0.0360 || Combined Score = 56.68%
+
+Trial 114/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.05 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.29% || F1 = 0.6829 || MCC = 0.4309 || MAP = 0.4864 || Hamming Loss = 0.0359 || Combined Score = 57.23%
+
+Trial 115/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6802 || MCC = 0.4099 || MAP = 0.4946 || Hamming Loss = 0.0359 || Combined Score = 57.11%
+
+Trial 116/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 20 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.28% || F1 = 0.6807 || MCC = 0.4095 || MAP = 0.4956 || Hamming Loss = 0.0360 || Combined Score = 57.16%
+
+Trial 117/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.25 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.48% || F1 = 0.6681 || MCC = 0.4158 || MAP = 0.4650 || Hamming Loss = 0.0363 || Combined Score = 56.19%
+
+Trial 118/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.21% || F1 = 0.6806 || MCC = 0.4170 || MAP = 0.5008 || Hamming Loss = 0.0359 || Combined Score = 57.32%
+
+Trial 119/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5296 || MCC = 0.6208 || MAP = 0.2124 || Hamming Loss = 0.0368 || Combined Score = 50.31%
+
+Trial 120/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.39% || F1 = 0.6719 || MCC = 0.4934 || MAP = 0.4807 || Hamming Loss = 0.0360 || Combined Score = 57.34%
+
+Trial 121/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.11% || F1 = 0.6816 || MCC = 0.4103 || MAP = 0.4975 || Hamming Loss = 0.0358 || Combined Score = 57.19%
+
+Trial 122/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.14% || F1 = 0.6842 || MCC = 0.4148 || MAP = 0.5058 || Hamming Loss = 0.0359 || Combined Score = 57.46%
+
+Trial 123/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.98% || F1 = 0.6814 || MCC = 0.4098 || MAP = 0.4998 || Hamming Loss = 0.0358 || Combined Score = 57.20%
+
+Trial 124/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.00% || F1 = 0.6781 || MCC = 0.4042 || MAP = 0.4946 || Hamming Loss = 0.0358 || Combined Score = 56.98%
+
+Trial 125/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.66% || F1 = 0.6739 || MCC = 0.3923 || MAP = 0.4806 || Hamming Loss = 0.0360 || Combined Score = 56.43%
+
+Trial 126/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.06 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.36% || F1 = 0.6858 || MCC = 0.4175 || MAP = 0.4908 || Hamming Loss = 0.0359 || Combined Score = 57.26%
+
+Trial 127/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6729 || MCC = 0.4013 || MAP = 0.4896 || Hamming Loss = 0.0359 || Combined Score = 56.73%
+
+Trial 128/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.6779 || MCC = 0.4187 || MAP = 0.4856 || Hamming Loss = 0.0359 || Combined Score = 56.93%
+
+Trial 129/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.23% || F1 = 0.6718 || MCC = 0.5372 || MAP = 0.4714 || Hamming Loss = 0.0362 || Combined Score = 57.56%
+
+Trial 130/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6843 || MCC = 0.4267 || MAP = 0.4987 || Hamming Loss = 0.0358 || Combined Score = 57.42%
+
+Trial 131/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.06% || F1 = 0.6783 || MCC = 0.4079 || MAP = 0.4981 || Hamming Loss = 0.0358 || Combined Score = 57.10%
+
+Trial 132/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.68% || F1 = 0.6765 || MCC = 0.4273 || MAP = 0.4955 || Hamming Loss = 0.0359 || Combined Score = 57.13%
+
+Trial 133/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.11% || F1 = 0.6803 || MCC = 0.4081 || MAP = 0.4942 || Hamming Loss = 0.0359 || Combined Score = 57.07%
+
+Trial 134/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.80% || F1 = 0.6712 || MCC = 0.3993 || MAP = 0.4917 || Hamming Loss = 0.0358 || Combined Score = 56.69%
+
+Trial 135/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.82% || F1 = 0.6758 || MCC = 0.3992 || MAP = 0.4878 || Hamming Loss = 0.0359 || Combined Score = 56.71%
+
+Trial 136/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.87% || F1 = 0.6792 || MCC = 0.4255 || MAP = 0.4984 || Hamming Loss = 0.0358 || Combined Score = 57.27%
+
+Trial 137/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.01% || F1 = 0.5998 || MCC = 0.5855 || MAP = 0.3818 || Hamming Loss = 0.0365 || Combined Score = 54.76%
+
+Trial 138/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.32% || F1 = 0.6620 || MCC = 0.4403 || MAP = 0.4726 || Hamming Loss = 0.0359 || Combined Score = 56.44%
+
+Trial 139/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.20 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.55% || F1 = 0.6738 || MCC = 0.4107 || MAP = 0.4861 || Hamming Loss = 0.0359 || Combined Score = 56.70%
+
+Trial 140/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.21 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5822 || MCC = 0.4367 || MAP = 0.3832 || Hamming Loss = 0.0366 || Combined Score = 52.94%
+
+Trial 141/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.44% || F1 = 0.6715 || MCC = 0.4153 || MAP = 0.4893 || Hamming Loss = 0.0359 || Combined Score = 56.74%
+
+Trial 142/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.92% || F1 = 0.6746 || MCC = 0.4140 || MAP = 0.4847 || Hamming Loss = 0.0359 || Combined Score = 56.79%
+
+Trial 143/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.59% || F1 = 0.6734 || MCC = 0.4129 || MAP = 0.4842 || Hamming Loss = 0.0358 || Combined Score = 56.68%
+
+Trial 144/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.72% || F1 = 0.6737 || MCC = 0.4059 || MAP = 0.4919 || Hamming Loss = 0.0358 || Combined Score = 56.80%
+
+Trial 145/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.87% || F1 = 0.6791 || MCC = 0.4042 || MAP = 0.4938 || Hamming Loss = 0.0358 || Combined Score = 56.96%
+
+Trial 146/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.09% || F1 = 0.6876 || MCC = 0.4318 || MAP = 0.4978 || Hamming Loss = 0.0358 || Combined Score = 57.53%
+
+Trial 147/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.00% || F1 = 0.6779 || MCC = 0.4144 || MAP = 0.5007 || Hamming Loss = 0.0359 || Combined Score = 57.20%
+
+Trial 148/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.1316 || Hamming Loss = 0.0369 || Combined Score = 39.63%
+
+Trial 149/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.95% || F1 = 0.6794 || MCC = 0.4057 || MAP = 0.5050 || Hamming Loss = 0.0359 || Combined Score = 57.22%
+
+Trial 150/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.04% || F1 = 0.6810 || MCC = 0.4191 || MAP = 0.5000 || Hamming Loss = 0.0359 || Combined Score = 57.30%
+
+Trial 151/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.12% || F1 = 0.6811 || MCC = 0.4108 || MAP = 0.4973 || Hamming Loss = 0.0358 || Combined Score = 57.18%
+
+Trial 152/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.92% || F1 = 0.6787 || MCC = 0.4018 || MAP = 0.4869 || Hamming Loss = 0.0359 || Combined Score = 56.79%
+
+Trial 153/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.06% || F1 = 0.6779 || MCC = 0.4035 || MAP = 0.4877 || Hamming Loss = 0.0359 || Combined Score = 56.84%
+
+Trial 154/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.87% || F1 = 0.6773 || MCC = 0.4207 || MAP = 0.4880 || Hamming Loss = 0.0358 || Combined Score = 56.97%
+
+Trial 155/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.05% || F1 = 0.6793 || MCC = 0.4074 || MAP = 0.4952 || Hamming Loss = 0.0358 || Combined Score = 57.06%
+
+Trial 156/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.00% || F1 = 0.6817 || MCC = 0.4101 || MAP = 0.5002 || Hamming Loss = 0.0358 || Combined Score = 57.22%
+
+Trial 157/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.33% || F1 = 0.6624 || MCC = 0.4815 || MAP = 0.4604 || Hamming Loss = 0.0360 || Combined Score = 56.62%
+
+Trial 158/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.38% || F1 = 0.6596 || MCC = 0.4172 || MAP = 0.4723 || Hamming Loss = 0.0360 || Combined Score = 56.16%
+
+Trial 159/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.93% || F1 = 0.6797 || MCC = 0.4053 || MAP = 0.5034 || Hamming Loss = 0.0360 || Combined Score = 57.18%
+
+Trial 160/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.76% || F1 = 0.6649 || MCC = 0.3952 || MAP = 0.4638 || Hamming Loss = 0.0362 || Combined Score = 55.95%
+
+Trial 161/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.04% || F1 = 0.6752 || MCC = 0.4088 || MAP = 0.4903 || Hamming Loss = 0.0359 || Combined Score = 56.89%
+
+Trial 162/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6890 || MCC = 0.4274 || MAP = 0.5000 || Hamming Loss = 0.0359 || Combined Score = 57.58%
+
+Trial 163/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.87% || F1 = 0.6719 || MCC = 0.3941 || MAP = 0.4818 || Hamming Loss = 0.0358 || Combined Score = 56.47%
+
+Trial 164/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.74% || F1 = 0.6746 || MCC = 0.4246 || MAP = 0.4893 || Hamming Loss = 0.0359 || Combined Score = 56.95%
+
+Trial 165/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.99% || F1 = 0.6783 || MCC = 0.4026 || MAP = 0.4961 || Hamming Loss = 0.0360 || Combined Score = 56.99%
+
+Trial 166/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.16% || F1 = 0.6616 || MCC = 0.5225 || MAP = 0.4591 || Hamming Loss = 0.0364 || Combined Score = 56.94%
+
+Trial 167/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6784 || MCC = 0.4150 || MAP = 0.4880 || Hamming Loss = 0.0359 || Combined Score = 56.99%
+
+Trial 168/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6811 || MCC = 0.4208 || MAP = 0.5064 || Hamming Loss = 0.0358 || Combined Score = 57.49%
+
+Trial 169/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6766 || MCC = 0.4020 || MAP = 0.4917 || Hamming Loss = 0.0359 || Combined Score = 56.85%
+
+Trial 170/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.96% || F1 = 0.6757 || MCC = 0.3991 || MAP = 0.4914 || Hamming Loss = 0.0359 || Combined Score = 56.81%
+
+Trial 171/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.48% || F1 = 0.6694 || MCC = 0.4035 || MAP = 0.4821 || Hamming Loss = 0.0359 || Combined Score = 56.44%
+
+Trial 172/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.04% || F1 = 0.6803 || MCC = 0.4094 || MAP = 0.4961 || Hamming Loss = 0.0359 || Combined Score = 57.11%
+
+Trial 173/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.06% || F1 = 0.6823 || MCC = 0.4263 || MAP = 0.4992 || Hamming Loss = 0.0358 || Combined Score = 57.39%
+
+Trial 174/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.96% || F1 = 0.6734 || MCC = 0.3951 || MAP = 0.4834 || Hamming Loss = 0.0360 || Combined Score = 56.56%
+
+Trial 175/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.14% || F1 = 0.6139 || MCC = 0.5026 || MAP = 0.3834 || Hamming Loss = 0.0366 || Combined Score = 54.27%
+
+Trial 176/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.95% || F1 = 0.6777 || MCC = 0.4025 || MAP = 0.4937 || Hamming Loss = 0.0360 || Combined Score = 56.92%
+
+Trial 177/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.40 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.14% || F1 = 0.6569 || MCC = 0.4634 || MAP = 0.4813 || Hamming Loss = 0.0360 || Combined Score = 56.70%
+
+Trial 178/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.18% || F1 = 0.6375 || MCC = 0.4464 || MAP = 0.4293 || Hamming Loss = 0.0364 || Combined Score = 55.11%
+
+Trial 179/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.80% || F1 = 0.6714 || MCC = 0.4011 || MAP = 0.4786 || Hamming Loss = 0.0359 || Combined Score = 56.45%
+
+Trial 180/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.1448 || Hamming Loss = 0.0369 || Combined Score = 39.96%
+
+Trial 181/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.81% || F1 = 0.6754 || MCC = 0.3949 || MAP = 0.5030 || Hamming Loss = 0.0360 || Combined Score = 56.96%
+
+Trial 182/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.64% || F1 = 0.6750 || MCC = 0.4138 || MAP = 0.4933 || Hamming Loss = 0.0358 || Combined Score = 56.92%
+
+Trial 183/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.20 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.48% || F1 = 0.6735 || MCC = 0.4145 || MAP = 0.4979 || Hamming Loss = 0.0358 || Combined Score = 56.95%
+
+Trial 184/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.60% || F1 = 0.6747 || MCC = 0.4159 || MAP = 0.4918 || Hamming Loss = 0.0358 || Combined Score = 56.89%
+
+Trial 185/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.17 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.62% || F1 = 0.6769 || MCC = 0.4096 || MAP = 0.4915 || Hamming Loss = 0.0359 || Combined Score = 56.87%
+
+Trial 186/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.91% || F1 = 0.6763 || MCC = 0.4286 || MAP = 0.4916 || Hamming Loss = 0.0359 || Combined Score = 57.11%
+
+Trial 187/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.21 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.46% || F1 = 0.6706 || MCC = 0.4257 || MAP = 0.4877 || Hamming Loss = 0.0360 || Combined Score = 56.80%
+
+Trial 188/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.91% || F1 = 0.6796 || MCC = 0.4033 || MAP = 0.4875 || Hamming Loss = 0.0360 || Combined Score = 56.84%
+
+Trial 189/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.95% || F1 = 0.6760 || MCC = 0.4010 || MAP = 0.4897 || Hamming Loss = 0.0359 || Combined Score = 56.79%
+
+Trial 190/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.46% || F1 = 0.6701 || MCC = 0.4229 || MAP = 0.4850 || Hamming Loss = 0.0360 || Combined Score = 56.70%
+
+Trial 191/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.44% || F1 = 0.6719 || MCC = 0.4656 || MAP = 0.4845 || Hamming Loss = 0.0360 || Combined Score = 57.15%
+
+Trial 192/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6795 || MCC = 0.4183 || MAP = 0.4980 || Hamming Loss = 0.0358 || Combined Score = 57.20%
+
+Trial 193/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.83% || F1 = 0.6798 || MCC = 0.4251 || MAP = 0.5027 || Hamming Loss = 0.0358 || Combined Score = 57.35%
+
+Trial 194/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.67% || F1 = 0.6749 || MCC = 0.4158 || MAP = 0.4938 || Hamming Loss = 0.0358 || Combined Score = 56.95%
+
+Trial 195/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.20 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.40% || F1 = 0.6663 || MCC = 0.4360 || MAP = 0.4866 || Hamming Loss = 0.0359 || Combined Score = 56.78%
+
+Trial 196/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.18 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.65% || F1 = 0.6739 || MCC = 0.4146 || MAP = 0.4905 || Hamming Loss = 0.0359 || Combined Score = 56.85%
+
+Trial 197/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.72% || F1 = 0.6758 || MCC = 0.4259 || MAP = 0.4870 || Hamming Loss = 0.0358 || Combined Score = 56.94%
+
+Trial 198/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.11% || F1 = 0.6787 || MCC = 0.4046 || MAP = 0.4909 || Hamming Loss = 0.0359 || Combined Score = 56.94%
+
+Trial 199/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.6853 || MCC = 0.4168 || MAP = 0.4987 || Hamming Loss = 0.0359 || Combined Score = 57.32%
+
+Trial 200/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.28% || F1 = 0.6830 || MCC = 0.4231 || MAP = 0.5031 || Hamming Loss = 0.0358 || Combined Score = 57.49%
+
+Trial 201/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6768 || MCC = 0.4012 || MAP = 0.4908 || Hamming Loss = 0.0359 || Combined Score = 56.83%
+
+Trial 202/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6853 || MCC = 0.4193 || MAP = 0.5062 || Hamming Loss = 0.0358 || Combined Score = 57.54%
+
+Trial 203/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6755 || MCC = 0.4069 || MAP = 0.4902 || Hamming Loss = 0.0360 || Combined Score = 56.84%
+
+Trial 204/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.6778 || MCC = 0.4030 || MAP = 0.4869 || Hamming Loss = 0.0358 || Combined Score = 56.80%
+
+Trial 205/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.73% || F1 = 0.6687 || MCC = 0.3937 || MAP = 0.4807 || Hamming Loss = 0.0360 || Combined Score = 56.35%
+
+Trial 206/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.13% || F1 = 0.6836 || MCC = 0.4324 || MAP = 0.4880 || Hamming Loss = 0.0358 || Combined Score = 57.27%
+
+Trial 207/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.17% || F1 = 0.6607 || MCC = 0.5666 || MAP = 0.4546 || Hamming Loss = 0.0363 || Combined Score = 57.28%
+
+Trial 208/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.92% || F1 = 0.6779 || MCC = 0.4040 || MAP = 0.4839 || Hamming Loss = 0.0358 || Combined Score = 56.74%
+
+Trial 209/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.75% || F1 = 0.6711 || MCC = 0.4092 || MAP = 0.4782 || Hamming Loss = 0.0359 || Combined Score = 56.51%
+
+Trial 210/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6761 || MCC = 0.4173 || MAP = 0.4924 || Hamming Loss = 0.0359 || Combined Score = 57.00%
+
+Trial 211/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.11% || F1 = 0.6805 || MCC = 0.4077 || MAP = 0.5035 || Hamming Loss = 0.0359 || Combined Score = 57.26%
+
+Trial 212/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.31% || F1 = 0.6806 || MCC = 0.4200 || MAP = 0.4935 || Hamming Loss = 0.0359 || Combined Score = 57.23%
+
+Trial 213/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.82% || F1 = 0.6750 || MCC = 0.4073 || MAP = 0.4936 || Hamming Loss = 0.0358 || Combined Score = 56.89%
+
+Trial 214/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.22 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.43% || F1 = 0.6714 || MCC = 0.4381 || MAP = 0.4864 || Hamming Loss = 0.0359 || Combined Score = 56.90%
+
+Trial 215/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6774 || MCC = 0.4117 || MAP = 0.4861 || Hamming Loss = 0.0358 || Combined Score = 56.88%
+
+Trial 216/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.05% || F1 = 0.6778 || MCC = 0.4038 || MAP = 0.4967 || Hamming Loss = 0.0359 || Combined Score = 57.02%
+
+Trial 217/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.18% || F1 = 0.6536 || MCC = 0.3956 || MAP = 0.4601 || Hamming Loss = 0.0361 || Combined Score = 55.54%
+
+Trial 218/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.1054 || Hamming Loss = 0.0369 || Combined Score = 38.97%
+
+Trial 219/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.6780 || MCC = 0.4027 || MAP = 0.4928 || Hamming Loss = 0.0359 || Combined Score = 56.92%
+
+Trial 220/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.93% || F1 = 0.6769 || MCC = 0.4019 || MAP = 0.4849 || Hamming Loss = 0.0359 || Combined Score = 56.72%
+
+Trial 221/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.10% || F1 = 0.6308 || MCC = 0.4584 || MAP = 0.4235 || Hamming Loss = 0.0365 || Combined Score = 54.96%
+
+Trial 222/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.35 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.23% || F1 = 0.6632 || MCC = 0.4782 || MAP = 0.4829 || Hamming Loss = 0.0359 || Combined Score = 57.03%
+
+Trial 223/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.16% || F1 = 0.6799 || MCC = 0.4075 || MAP = 0.4886 || Hamming Loss = 0.0359 || Combined Score = 56.96%
+
+Trial 224/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.29% || F1 = 0.6829 || MCC = 0.4117 || MAP = 0.5003 || Hamming Loss = 0.0359 || Combined Score = 57.32%
+
+Trial 225/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.38% || F1 = 0.6684 || MCC = 0.3813 || MAP = 0.4678 || Hamming Loss = 0.0362 || Combined Score = 56.09%
+
+Trial 226/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.26% || F1 = 0.6768 || MCC = 0.4062 || MAP = 0.4816 || Hamming Loss = 0.0361 || Combined Score = 56.76%
+
+Trial 227/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.98% || F1 = 0.6788 || MCC = 0.4093 || MAP = 0.4645 || Hamming Loss = 0.0362 || Combined Score = 56.43%
+
+Trial 228/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6816 || MCC = 0.4063 || MAP = 0.4698 || Hamming Loss = 0.0361 || Combined Score = 56.58%
+
+Trial 229/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6680 || MCC = 0.3977 || MAP = 0.4691 || Hamming Loss = 0.0364 || Combined Score = 56.20%
+
+Trial 230/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.00% || F1 = 0.6847 || MCC = 0.4180 || MAP = 0.5016 || Hamming Loss = 0.0358 || Combined Score = 57.39%
+
+Trial 231/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.36% || F1 = 0.6636 || MCC = 0.3969 || MAP = 0.4645 || Hamming Loss = 0.0362 || Combined Score = 55.88%
+
+Trial 232/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.93% || F1 = 0.6753 || MCC = 0.3974 || MAP = 0.4855 || Hamming Loss = 0.0360 || Combined Score = 56.66%
+
+Trial 233/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.11% || F1 = 0.6805 || MCC = 0.4078 || MAP = 0.4920 || Hamming Loss = 0.0358 || Combined Score = 57.03%
+
+Trial 234/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.05% || F1 = 0.6841 || MCC = 0.4153 || MAP = 0.4882 || Hamming Loss = 0.0359 || Combined Score = 57.09%
+
+Trial 235/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.40% || F1 = 0.6813 || MCC = 0.4093 || MAP = 0.4951 || Hamming Loss = 0.0358 || Combined Score = 57.18%
+
+Trial 236/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.01% || F1 = 0.6797 || MCC = 0.4064 || MAP = 0.4984 || Hamming Loss = 0.0359 || Combined Score = 57.11%
+
+Trial 237/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.04% || F1 = 0.6783 || MCC = 0.4028 || MAP = 0.4942 || Hamming Loss = 0.0359 || Combined Score = 56.97%
+
+Trial 238/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.24% || F1 = 0.6843 || MCC = 0.4154 || MAP = 0.4958 || Hamming Loss = 0.0360 || Combined Score = 57.29%
+
+Trial 239/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.31% || F1 = 0.6665 || MCC = 0.4300 || MAP = 0.4583 || Hamming Loss = 0.0361 || Combined Score = 56.14%
+
+Trial 240/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.91% || F1 = 0.6751 || MCC = 0.3983 || MAP = 0.4892 || Hamming Loss = 0.0358 || Combined Score = 56.73%
+
+Trial 241/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.17% || F1 = 0.6801 || MCC = 0.4182 || MAP = 0.4968 || Hamming Loss = 0.0359 || Combined Score = 57.24%
+
+Trial 242/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.49% || F1 = 0.6591 || MCC = 0.4034 || MAP = 0.4695 || Hamming Loss = 0.0360 || Combined Score = 55.98%
+
+Trial 243/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.98% || F1 = 0.6809 || MCC = 0.4213 || MAP = 0.4884 || Hamming Loss = 0.0358 || Combined Score = 57.08%
+
+Trial 244/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.13% || F1 = 0.6855 || MCC = 0.4285 || MAP = 0.5024 || Hamming Loss = 0.0358 || Combined Score = 57.55%
+
+Trial 245/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.15% || F1 = 0.6804 || MCC = 0.4173 || MAP = 0.4949 || Hamming Loss = 0.0359 || Combined Score = 57.19%
+
+Trial 246/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.09% || F1 = 0.6790 || MCC = 0.4051 || MAP = 0.4931 || Hamming Loss = 0.0358 || Combined Score = 56.99%
+
+Trial 247/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.08% || F1 = 0.6812 || MCC = 0.4110 || MAP = 0.4934 || Hamming Loss = 0.0359 || Combined Score = 57.10%
+
+Trial 248/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6762 || MCC = 0.4087 || MAP = 0.4897 || Hamming Loss = 0.0359 || Combined Score = 56.87%
+
+Trial 249/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.19% || F1 = 0.6838 || MCC = 0.4269 || MAP = 0.5030 || Hamming Loss = 0.0358 || Combined Score = 57.53%
+
+Trial 250/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.92% || F1 = 0.6735 || MCC = 0.4147 || MAP = 0.4902 || Hamming Loss = 0.0358 || Combined Score = 56.89%
+
+Trial 251/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.15% || F1 = 0.6491 || MCC = 0.5041 || MAP = 0.4454 || Hamming Loss = 0.0365 || Combined Score = 56.23%
+
+Trial 252/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.17% || F1 = 0.6801 || MCC = 0.4079 || MAP = 0.4888 || Hamming Loss = 0.0358 || Combined Score = 56.97%
+
+Trial 253/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6835 || MCC = 0.4140 || MAP = 0.5012 || Hamming Loss = 0.0359 || Combined Score = 57.32%
+
+Trial 254/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4965 || MCC = 0.3036 || MAP = 0.1294 || Hamming Loss = 0.0369 || Combined Score = 44.82%
+
+Trial 255/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.40% || F1 = 0.6837 || MCC = 0.4168 || MAP = 0.5055 || Hamming Loss = 0.0358 || Combined Score = 57.52%
+
+Trial 256/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.31% || F1 = 0.6775 || MCC = 0.4054 || MAP = 0.4889 || Hamming Loss = 0.0358 || Combined Score = 56.93%
+
+Trial 257/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.21% || F1 = 0.6402 || MCC = 0.4801 || MAP = 0.4255 || Hamming Loss = 0.0364 || Combined Score = 55.43%
+
+Trial 258/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6818 || MCC = 0.4104 || MAP = 0.4923 || Hamming Loss = 0.0359 || Combined Score = 57.11%
+
+Trial 259/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.33% || F1 = 0.6539 || MCC = 0.3802 || MAP = 0.4614 || Hamming Loss = 0.0361 || Combined Score = 55.45%
+
+Trial 260/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.08 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.07% || F1 = 0.6786 || MCC = 0.4035 || MAP = 0.4927 || Hamming Loss = 0.0359 || Combined Score = 56.96%
+
+Trial 261/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.87% || F1 = 0.6733 || MCC = 0.3939 || MAP = 0.4880 || Hamming Loss = 0.0360 || Combined Score = 56.62%
+
+Trial 262/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.12% || F1 = 0.6818 || MCC = 0.4117 || MAP = 0.4908 || Hamming Loss = 0.0358 || Combined Score = 57.08%
+
+Trial 263/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.10% || F1 = 0.6424 || MCC = 0.5875 || MAP = 0.4296 || Hamming Loss = 0.0364 || Combined Score = 56.61%
+
+Trial 264/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.13% || F1 = 0.6824 || MCC = 0.4109 || MAP = 0.5046 || Hamming Loss = 0.0358 || Combined Score = 57.36%
+
+Trial 265/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.24 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.57% || F1 = 0.6716 || MCC = 0.4594 || MAP = 0.4915 || Hamming Loss = 0.0359 || Combined Score = 57.25%
+
+Trial 266/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6800 || MCC = 0.4080 || MAP = 0.4980 || Hamming Loss = 0.0359 || Combined Score = 57.17%
+
+Trial 267/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.17% || F1 = 0.6854 || MCC = 0.4211 || MAP = 0.4846 || Hamming Loss = 0.0362 || Combined Score = 57.12%
+
+Trial 268/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.91% || F1 = 0.6751 || MCC = 0.4004 || MAP = 0.4859 || Hamming Loss = 0.0358 || Combined Score = 56.69%
+
+Trial 269/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.80% || F1 = 0.6757 || MCC = 0.4066 || MAP = 0.4882 || Hamming Loss = 0.0359 || Combined Score = 56.79%
+
+Trial 270/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.89% || F1 = 0.6757 || MCC = 0.4073 || MAP = 0.4882 || Hamming Loss = 0.0359 || Combined Score = 56.81%
+
+Trial 271/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.65% || F1 = 0.6747 || MCC = 0.3962 || MAP = 0.4827 || Hamming Loss = 0.0358 || Combined Score = 56.52%
+
+Trial 272/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.23% || F1 = 0.6736 || MCC = 0.3956 || MAP = 0.4892 || Hamming Loss = 0.0359 || Combined Score = 56.74%
+
+Trial 273/300
+  convert_input: True || hidden_layers: [64, 64] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.58% || F1 = 0.6733 || MCC = 0.4480 || MAP = 0.4794 || Hamming Loss = 0.0360 || Combined Score = 56.93%
+
+Trial 274/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.96% || F1 = 0.6769 || MCC = 0.4004 || MAP = 0.4836 || Hamming Loss = 0.0359 || Combined Score = 56.69%
+
+Trial 275/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.32% || F1 = 0.6843 || MCC = 0.4152 || MAP = 0.4975 || Hamming Loss = 0.0360 || Combined Score = 57.33%
+
+Trial 276/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.12% || F1 = 0.6833 || MCC = 0.4326 || MAP = 0.4940 || Hamming Loss = 0.0359 || Combined Score = 57.38%
+
+Trial 277/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.30 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.34% || F1 = 0.6610 || MCC = 0.4381 || MAP = 0.4866 || Hamming Loss = 0.0360 || Combined Score = 56.68%
+
+Trial 278/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4912 || MCC = 0.0683 || MAP = 0.1868 || Hamming Loss = 0.0369 || Combined Score = 43.50%
+
+Trial 279/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.95% || F1 = 0.6773 || MCC = 0.4024 || MAP = 0.4865 || Hamming Loss = 0.0359 || Combined Score = 56.77%
+
+Trial 280/300
+  convert_input: True || hidden_layers: [64, 32] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.15% || F1 = 0.6416 || MCC = 0.4852 || MAP = 0.4358 || Hamming Loss = 0.0366 || Combined Score = 55.70%
+
+Trial 281/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.98% || F1 = 0.6757 || MCC = 0.4058 || MAP = 0.4891 || Hamming Loss = 0.0358 || Combined Score = 56.83%
+
+Trial 282/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.16% || F1 = 0.6840 || MCC = 0.4248 || MAP = 0.5021 || Hamming Loss = 0.0359 || Combined Score = 57.48%
+
+Trial 283/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.90% || F1 = 0.6816 || MCC = 0.4173 || MAP = 0.4950 || Hamming Loss = 0.0358 || Combined Score = 57.17%
+
+Trial 284/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.70% || F1 = 0.6756 || MCC = 0.4077 || MAP = 0.4832 || Hamming Loss = 0.0359 || Combined Score = 56.67%
+
+Trial 285/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.82% || F1 = 0.6753 || MCC = 0.4075 || MAP = 0.4918 || Hamming Loss = 0.0358 || Combined Score = 56.87%
+
+Trial 286/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 256 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.36% || F1 = 0.6627 || MCC = 0.4293 || MAP = 0.4622 || Hamming Loss = 0.0362 || Combined Score = 56.14%
+
+Trial 287/300
+  convert_input: True || hidden_layers: [32, 32] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.19% || F1 = 0.6270 || MCC = 0.5037 || MAP = 0.4157 || Hamming Loss = 0.0364 || Combined Score = 55.20%
+
+Trial 288/300
+  convert_input: True || hidden_layers: [64] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.56% || F1 = 0.6719 || MCC = 0.4100 || MAP = 0.4934 || Hamming Loss = 0.0359 || Combined Score = 56.80%
+
+Trial 289/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.16 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.77% || F1 = 0.6780 || MCC = 0.4123 || MAP = 0.4942 || Hamming Loss = 0.0359 || Combined Score = 57.00%
+
+Trial 290/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.06 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.96% || F1 = 0.6819 || MCC = 0.4173 || MAP = 0.4986 || Hamming Loss = 0.0359 || Combined Score = 57.26%
+
+Trial 291/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.09% || F1 = 0.6807 || MCC = 0.4116 || MAP = 0.4935 || Hamming Loss = 0.0357 || Combined Score = 57.10%
+
+Trial 292/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 10 || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.06% || F1 = 0.6795 || MCC = 0.4133 || MAP = 0.4909 || Hamming Loss = 0.0361 || Combined Score = 57.03%
+
+Trial 293/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.15 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.56% || F1 = 0.6683 || MCC = 0.3989 || MAP = 0.4886 || Hamming Loss = 0.0360 || Combined Score = 56.52%
+
+Trial 294/300
+  convert_input: True || hidden_layers: [32] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.07% || F1 = 0.6285 || MCC = 0.4879 || MAP = 0.4335 || Hamming Loss = 0.0364 || Combined Score = 55.40%
+
+Trial 295/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.14 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.03% || F1 = 0.6785 || MCC = 0.4022 || MAP = 0.4918 || Hamming Loss = 0.0359 || Combined Score = 56.92%
+
+Trial 296/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.70% || F1 = 0.6679 || MCC = 0.3942 || MAP = 0.4703 || Hamming Loss = 0.0360 || Combined Score = 56.13%
+
+Trial 297/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.10 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.13% || F1 = 0.6806 || MCC = 0.4084 || MAP = 0.4906 || Hamming Loss = 0.0359 || Combined Score = 57.02%
+
+Trial 298/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.39% || F1 = 0.6857 || MCC = 0.4216 || MAP = 0.5037 || Hamming Loss = 0.0357 || Combined Score = 57.57%
+
+Trial 299/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.19 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.57% || F1 = 0.6734 || MCC = 0.4019 || MAP = 0.4972 || Hamming Loss = 0.0359 || Combined Score = 56.83%
+
+Trial 300/300
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.09 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.4903 || MCC = nan || MAP = 0.0713 || Hamming Loss = 0.0369 || Combined Score = 38.12%
+
+
+...Training completed with 0 error(s).
+✅ Saving 'EXACT_MATCH' model as it is better than the existing one.
+✅ Saving 'F1' model as it is better than the existing one.
+✅ Saving 'MCC' model as it is better than the existing one.
+✅ Saving 'MAP' model as it is better than the existing one.
+✅ Saving 'HAMMING_LOSS' model as it is better than the existing one.
+✅ Saving 'COMBINED' model as it is better than the existing one.
+
+
+============================================================
+TRAINING SUMMARY: best models of this training session:
+============================================================
+
+Best 'EXACT_MATCH' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.01 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.08 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.66% || F1 = 0.6736 || MCC = 0.4062 || MAP = 0.4505 || Hamming Loss = 0.0360 || Combined Score = 56.16%
+
+Best 'F1' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.13 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6890 || MCC = 0.4274 || MAP = 0.5000 || Hamming Loss = 0.0359 || Combined Score = 57.58%
+
+Best 'MCC' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.12 || hidden_activation_func: relu || batch_size: 32 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.00% || F1 = 0.5296 || MCC = 0.6208 || MAP = 0.2124 || Hamming Loss = 0.0368 || Combined Score = 50.31%
+
+Best 'MAP' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.22% || F1 = 0.6811 || MCC = 0.4208 || MAP = 0.5064 || Hamming Loss = 0.0358 || Combined Score = 57.49%
+
+Best 'HAMMING_LOSS' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.03 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.39% || F1 = 0.6857 || MCC = 0.4216 || MAP = 0.5037 || Hamming Loss = 0.0357 || Combined Score = 57.57%
+
+Best 'COMBINED' Model:
+  convert_input: True || hidden_layers: [128] || dropout_rate: 0.09 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: None || loss_func: Focal Loss || optimizer: AdamW || learning_rate: 0.04 || weight_decay: 0.00 || use_pca: False || pca_components: 0.95
+==> Exact Match = 1.33% || F1 = 0.6873 || MCC = 0.4224 || MAP = 0.5051 || Hamming Loss = 0.0357 || Combined Score = 57.62%
