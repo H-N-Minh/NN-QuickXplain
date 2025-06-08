@@ -47,10 +47,10 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
   RETRAIN: # retrain all the models in Models folder, using exact configs.
     SKIP: true # if we doing retraining then the training phase below will be skipped.
   TRAIN:
-    SKIP: false # skip training if the model already exists and stored in the model folder
+    SKIP: true # skip training if the model already exists and stored in the model folder
     
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
-    optuna_trials: 500  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
+    optuna_trials: 4  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
     optuna_goal: "EXACT_MATCH" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
     # Note each session should only train 6 hyperparams,  
 
@@ -61,29 +61,29 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
 
       # number of neurons in hidden layers, can be more than one layer, e.g. [2, 3] means 2 hidden layers with 2 and 3 neurons respectively
       # [[32], [64], [128], [32, 32], [64, 32], [64, 64], [128, 64], [128, 128], [256, 128, 64] ]
-      hidden_layers: [[64]] 
-      dropout_rates: [0.0, 0.2] # [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
-      hidden_activation_funcs: ['relu', 'leaky relu'] # ['relu', 'leaky relu']  # activation function for the hidden layers
+      hidden_layers: [[32], [64]] 
+      dropout_rates: [0.0] # [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
+      hidden_activation_funcs: ['relu'] # ['relu', 'leaky relu']  # activation function for the hidden layers
 
-      batch_sizes: [1024, 2048] # [32, 64, 128, 256, 512, 1024]   # test size for train/test split
-      batch_norm: [true] # [false, true]  # use batch normalization or not
+      batch_sizes: [1024] # [32, 64, 128, 256, 512, 1024]   # test size for train/test split
+      batch_norm: [false] # [false, true]  # use batch normalization or not
 
-      max_epochs: [10, 40] # [50, 100]  # MIN MAX values only, maximum number of epochs to train the model
-      patience: [5, 20] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
+      max_epochs: [12] # [50, 100]  # MIN MAX values only, maximum number of epochs to train the model
+      patience: [null] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
 
-      loss_funcs: ['Focal Loss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
-      focal_loss_gamma: [1.0, 3.0] # [null] or [1.0, 2.0, 3.0]  # this is only applied when loss func is focal loss, else keep it null!!
-      focal_loss_alpha: [0.25, 0.5]
-      optimizers: ['AdamW']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
-      learning_rates: [0.001, 0.01] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
-      weight_decays: [ 0.0, 0.01] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer
+      loss_funcs: ['bcewithlogitloss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
+      focal_loss_gamma: [null] # [null] or [1.0, 2.0, 3.0]  # this is only applied when loss func is focal loss, else keep it null!!
+      focal_loss_alpha: [null] # [null] or [0.25, 0.5]
+      optimizers: ['Adam']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
+      learning_rates: [0.0005] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
+      weight_decays: [ 0.0] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer
 
       use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
       
 
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: true # skip validation part completely
+    SKIP: false # skip validation part completely
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
-    models_to_test: ["EXACT_MATCH"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"] specify which models to be tested.
+    models_to_test: ["EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"] specify which models to be tested.
 
 

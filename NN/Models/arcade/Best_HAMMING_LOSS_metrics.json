@@ -1,13 +1,13 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.6608933454876937,
-    "F1": 0.7270155987794804,
-    "MCC": 0.4757349137119118,
-    "MAP": 0.49008545430252504,
-    "HAMMING_LOSS": 0.06069756360321538,
-    "COMBINED": 58.01759759579246,
-    "accuracy": 0.9393024363967847,
-    "roc_auc": 0.8765761099610397,
+    "EXACT_MATCH": 0.9685505925250684,
+    "F1": 0.7281339842547596,
+    "MCC": 0.4772979137394371,
+    "MAP": 0.5027841439891312,
+    "HAMMING_LOSS": 0.05922919946962791,
+    "COMBINED": 58.40046783138464,
+    "accuracy": 0.9407708005303719,
+    "roc_auc": 0.8753175052966952,
     "total_samples": 8776
   },
   "validation_indexes": [
@@ -17,17 +17,21 @@
   "config": {
     "convert_input": true,
     "hidden_layers": [
+      256,
       128
     ],
-    "dropout_rate": 0.056950211686389036,
-    "hidden_activation_func": "relu",
-    "batch_size": 1024,
+    "dropout_rate": 0.21424849420739978,
+    "hidden_activation_func": "leaky relu",
+    "batch_size": 512,
     "batch_norm": true,
-    "patience": null,
+    "max_epochs": 50,
+    "patience": 15,
     "loss_func": "Focal Loss",
+    "focal_loss_gamma": 1.0010673763441464,
+    "focal_loss_alpha": 0.35776210306388373,
     "optimizer": "AdamW",
-    "learning_rate": 0.048550118236846816,
-    "weight_decay": 0.007300665625485039,
+    "learning_rate": 0.015004002617070581,
+    "weight_decay": 0.005613094138679343,
     "use_pca": false,
     "pca_components": 0.95
   },
@@ -39,21 +43,21 @@
   },
   "testing_result": {
     "EXACT_MATCH": 0.0,
-    "F1": 0.7812384151908108,
-    "MCC": 0.17521658689635886,
-    "MAP": 0.14724557042916586,
-    "HAMMING_LOSS": 0.20212121212121212,
-    "COMBINED": 46.27942133893888,
-    "accuracy": 0.797878787878788,
-    "roc_auc": 0.6699357238441193,
+    "F1": 0.7894327107773598,
+    "MCC": 0.1603385920406443,
+    "MAP": 0.14742921978481424,
+    "HAMMING_LOSS": 0.18933799533799534,
+    "COMBINED": 46.55386462489002,
+    "accuracy": 0.8106620046620047,
+    "roc_auc": 0.6703911897417829,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 3.438726678852308,
-    "ordered_cc": 10.705846153846155,
-    "unordered_runtime": 2.0640204223718968,
+    "ordered_runtime": 1.4001951551901546,
+    "ordered_cc": 10.212717948717948,
+    "unordered_runtime": 0.43914422210153864,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": -39.977188793010626,
-    "CC_less_percentage": 4.962123971155945
+    "faster_performance_percentage": -68.63692746873558,
+    "CC_less_percentage": 9.33971884332436
   }
 }

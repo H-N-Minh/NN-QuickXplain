@@ -22,6 +22,7 @@ theres always at least 1 constraint in the minimal conflict set in each sample.
 It is also possible that some constraints might never be in any minimal conflict set in the whole training data (so their output is always 0 in every sample).
 
 
+#####################################################################################
 training sessions for arcade
 1. session: 300 models goal MAP. Huge search space to get some kind of result first
 
@@ -44,6 +45,7 @@ training sessions for arcade
       use_pca_options: [false] 
       
 
+#####################################################################################
 2. session: 350 models goal F1. bigger trials and more focused search space
 
       convert_input: [false] # [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
@@ -65,6 +67,7 @@ training sessions for arcade
       use_pca_options: [false]    
 Beated no existing models
       
+#####################################################################################
 3. session: 500 models with COMBINED. Based on the model that was working in the past
 
       convert_input: [false] # [true, false]  
@@ -87,6 +90,7 @@ Best 'EXACT_MATCH' Model:
 ==> Exact Match = 2.14% || F1 = 0.5695 || MCC = 0.2175 || MAP = 0.2771 || Hamming Loss = 0.0759 || Combined Score = 48.02%
 
 
+#####################################################################################
 4. session: 350 models, MAP, hugeee search space, consulted with gemini
       convert_input: [true] # [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
 
@@ -106,7 +110,21 @@ Best 'EXACT_MATCH' Model:
       weight_decays: [ 0.0, 0.01]
 
       use_pca_options: [false, true] 
+beated MAP and Hamming loss
+Best 'MAP' Model:
+  convert_input: True || hidden_layers: [256, 128] || dropout_rate: 0.17 || hidden_activation_func: leaky relu || batch_size: 512
+  batch_norm: True || max_epochs: 48 || patience: 15 || loss_func: Focal Loss || focal_loss_gamma: 1.05
+  focal_loss_alpha: 0.50 || optimizer: AdamW || learning_rate: 0.01 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.71% || F1 = 0.7228 || MCC = 0.4731 || MAP = 0.5054 || Hamming Loss = 0.0667 || Combined Score = 58.10%
 
+Best 'HAMMING_LOSS' Model:
+  convert_input: True || hidden_layers: [256, 128] || dropout_rate: 0.21 || hidden_activation_func: leaky relu || batch_size: 512
+  batch_norm: True || max_epochs: 50 || patience: 15 || loss_func: Focal Loss || focal_loss_gamma: 1.00
+  focal_loss_alpha: 0.36 || optimizer: AdamW || learning_rate: 0.02 || weight_decay: 0.01 || use_pca: False || pca_components: 0.95
+==> Exact Match = 0.97% || F1 = 0.7281 || MCC = 0.4773 || MAP = 0.5028 || Hamming Loss = 0.0592 || Combined Score = 58.40%
+
+
+#####################################################################################
 5. session: 500 models
       convert_input: [true] # [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
 
