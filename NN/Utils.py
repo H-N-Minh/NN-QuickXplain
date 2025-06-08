@@ -127,7 +127,7 @@ def getConfigFromOptuna(trial, configs_settings):
         'hidden_activation_func': trial.suggest_categorical('hidden_activation_func', configs_settings['hidden_activation_funcs']),
         'batch_size': trial.suggest_categorical('batch_size', configs_settings['batch_sizes']),
         'batch_norm': trial.suggest_categorical('batch_norm', configs_settings['batch_norm']),
-        'max_epochs': trial.suggest_int('max_epochs', configs_settings['max_epochs']),
+        'max_epochs': trial.suggest_int('max_epochs', min(configs_settings['max_epochs']), max(configs_settings['max_epochs'])),
         'patience': trial.suggest_categorical('patience', patience_choices),
         'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
         'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
