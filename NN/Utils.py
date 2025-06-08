@@ -172,7 +172,9 @@ def printOneModelTrainResult(config, metrics):
         )
 
 def importTrainingData(settings):
-    """Import training data from CSV files. return type is tuple of numpy arrays (input_data, output_data)."""
+    """Import training data from CSV files. 
+    Returns:
+        numpy arrays: input_data, output_data. Original."""
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
@@ -492,3 +494,432 @@ def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_los
         combined_score = 0.0
        
     return combined_score
+
+
+
+
+############################################# for Tester.py ########################################
+def importModel(settings, model_name):
+    """
+    Import a trained model from the specified path.
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    model_name (str): Name of the model to import
+    
+    Returns:
+    model: the model object loaded from the file
+    pca: PCA object if used, otherwise None
+    model_metadata: the metrics of model, including F1, Exact Match, ... and the model's configuration
+    """
+    # check that the model is valid
+    known_model_name = [METRIC_F1, METRIC_EXACT_MATCH, METRIC_COMBINED, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS]
+    assert model_name in known_model_name , f"Model '{model_name}' is unknown, check typo in model_to_test in settings.yaml."
+    model_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}.pt")
+    assert os.path.exists(model_file_name), f"File ({model_file_name}) is not found. Check path, and make sure the model was trained before testing."
+    model_metrics_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
+    assert os.path.exists(model_metrics_file_name), f"Model metrics file ({model_metrics_file_name}) does not exist. Check path, and make sure the model was trained before testing."
+    pca_file_name = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_pca.joblib")
+    assert os.path.exists(pca_file_name), f"PCA file ({pca_file_name}) does not exist. Check path, and make sure the model was trained before testing."
+
+    print(f"...Importing model {model_name}...")
+
+    # import the model and pca
+    model = torch.load(model_file_name)
+    model.eval()
+    pca = joblib.load(pca_file_name)
+
+    # Import the metrics of the model
+    with open(model_metrics_file_name, 'r') as json_file:
+        model_metadata = yaml.safe_load(json_file)
+    
+    return model, pca, model_metadata
+
+def importValidationData(settings, model_metadata):
+    """
+    Import validation data. Only the section specified in the model metadata is used.
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    model_metadata (dict): Metadata of the model
+    
+    Returns:
+    input_data: unmodified Validation features (numpy)
+    output_data: unmodified Validation labels (numpy)
+    """
+    input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
+    output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
+    if not os.path.exists(input_file) or not os.path.exists(output_file):
+        print(f"Error: Cant find file at {input_file} or {output_file}.")
+        raise FileNotFoundError("TrainingData file not found. Please check the file paths in settings.yaml .")
+
+    # import only the section of the data that is relevant for validation
+    print("...Importing validation data...")
+    (start_index, end_index) = model_metadata['validation_indexes']
+    assert start_index >= 0 and end_index > start_index, "Invalid validation indexes in model metadata."
+    input_data = pd.read_csv(input_file).iloc[start_index:end_index, 1:]
+    output_data = pd.read_csv(output_file).iloc[start_index:end_index, 1:]
+
+    assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
+    assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
+    assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
+
+    return input_data.values , output_data.values
+
+def preprocessValidationData(input_data, output_data, pca, model_metadata):
+    """
+    Preprocess the validation data by applying same transformation as for training data.
+    This includes: PCA, convert input to binary (if specified), convert output to binary, and remove features/labels that were removed during training.
+    
+    Parameters:
+    input_data (np.ndarray): original validation features
+    output_data (np.ndarray): original Validation labels
+    pca: PCA object if used, otherwise None
+    
+    Returns:
+    Dataloader of the test data, with features and labels preprocessed and ready to be tested
+    """
+    # Apply PCA if specified
+    if pca is not None:
+        X_test = pca.transform(input_data)
+    else:
+        X_test = input_data
+    
+    # Convert input data to binary format if needed
+    if model_metadata['config']['convert_input']:
+        X_test = (X_test > 0).astype(int)
+
+    # Convert output data to binary format
+    output_data[output_data == -1] = 1
+
+    # remove features that were also removed during training due to low variance
+    removed_feature_indexes = model_metadata['removed_features']
+    if removed_feature_indexes:
+        X_test = np.delete(X_test, removed_feature_indexes, axis=1)
+    
+    # remove labels that were also removed during training due to constant values
+    removed_label_info = model_metadata.get("removed_labels", {})
+    if removed_label_info:
+        output_data = np.delete(output_data, [int(k) for k in removed_label_info.keys()], axis=1)   
+
+    # Create DataLoader for the test data
+    batch_size = model_metadata['config']['batch_size']
+    test_x_tensor = torch.tensor(X_test, dtype=torch.float32)
+    test_labels_tensor = torch.tensor(output_data, dtype=torch.float32)
+    test_dataset = TensorDataset(test_x_tensor, test_labels_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False) 
+    
+    return test_loader
+
+
+def processOutputFile(directory_path):
+    """
+    Process all output files of QuickXplain in the given directory. Use multiprocessing for faster processing.
+    
+    Args:
+        directory_path (str): Path to the directory containing QuickXplain output files.
+    
+    Returns:
+        tuple: (average runtime, average CC) of all processed files.
+    """
+    
+    # Get all conf*_output.txt files
+    pattern = os.path.join(directory_path, "conf*_output.txt")
+    all_files = glob.glob(pattern)
+    
+    num_samples = len(all_files)
+    assert num_samples > 0, f"Error:processOutputFile:: No output files found in {directory_path}. Check if Solver ran successfully."
+    
+    # Some settings for multiprocessing
+    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
+    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
+    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
+             for i in range(0, num_samples, chunk_size)]
+    
+    print(f"...Reading {num_samples} output files from QuickXplain...")
+    
+    # Use ProcessPoolExecutor for true parallelism
+    runtime_sum = 0.0
+    cc_sum = 0
+    total_processed = 0
+    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:           
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            # Submit tasks to the executor for each chunk
+            for chunk_data in chunks:
+                future = executor.submit(
+                    extractDataFromFile,
+                    chunk_data=chunk_data,
+                    all_files=all_files
+                )
+                futures.append(future)
+
+            # save status of each chunk as it is completed
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    result = future.result()
+                    total_processed += result[0]
+                    runtime_sum += result[1]
+                    cc_sum += result[2]
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"...Error processing chunk: {e}")
+                    print(traceback.format_exc())
+
+
+    # make sure all files were processed
+    assert total_processed == num_samples, f"Error:processOutputFile:: Not all files were processed. {num_samples - total_processed} files failed."
+
+    # Calculate averages
+    avg_runtime = runtime_sum / total_processed
+    avg_cc = cc_sum / total_processed
+    
+    return avg_runtime, avg_cc
+
+
+def extractDataFromFile(chunk_data, all_files):
+    """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
+    try:
+        start_idx, end_idx = chunk_data
+        processed_count = 0
+        runtime_sum = 0.0
+        cc_sum = 0
+
+        # process only the specified chunk of samples
+        for idx in range(start_idx, end_idx):
+            with open(all_files[idx], 'r') as f:
+                # Skip the first 3 lines
+                for _ in range(3):
+                    next(f)
+                
+                # Get runtime from 4th line
+                runtime_line = next(f)
+                runtime = float(re.search(r'Runtime: (\d+\.\d+)', runtime_line).group(1))
+                
+                # Get CC from 5th line
+                cc_line = next(f)
+                cc = int(re.search(r'CC: (\d+)', cc_line).group(1))
+
+                # store the results
+                runtime_sum += runtime
+                cc_sum += cc
+                processed_count += 1
+                
+        return [processed_count, runtime_sum, cc_sum]
+    except Exception as e:
+        print(traceback.format_exc())
+        return 0
+
+
+
+def getConstraintNameList(settings):
+    """
+    Get the list of constraint names (list of strings)
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    
+    Returns:
+    list: List of constraint names
+    """
+    name_file = settings['PATHS']['TRAINDATA_CONSTRAINTS_NAME_PATH']
+    if not os.path.exists(name_file):
+        raise FileNotFoundError(f"importTrainingData:: Name file not found (file with names of all constraints): {name_file}")
+
+    column_names_list = []
+    with open(name_file, 'r') as f:
+        for line in f:
+            name = line.strip()
+            if name:
+                column_names_list.append(name)
+    return column_names_list
+
+
+def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
+    """
+    Generate text files that will be used as input for QuickXplain.
+    If test_pred is given, the constraints will be sorted by their predicted probabilities (highest first), else default ordering
+    Text files are generated using multiprocessing for faster processing.
+    
+    Args:
+        test_input (pd.ndarray): represents invalid configs, containing constraint values (1 or -1). This will be transformed to input for QuickXplain.
+        test_pred (np.ndarray): Predicted probabilities from the model, used for sorting constraints. "None" for no sorting.
+        output_dir (string): directory for the text files that will be generated.
+        constraint_name_list (list): List of constraint names
+    """
+    # Error handling
+    assert test_input is not None and isinstance(test_input, np.ndarray) and test_input.ndim == 2 and test_input.size > 0, \
+        "Error:createSolverInput:: test_input must be a non-empty 2D numpy array."
+    assert constraint_name_list is not None and isinstance(constraint_name_list, list) and len(constraint_name_list) > 0, \
+        "Error:createSolverInput:: constraint_name_list must be a non-empty list."
+    if test_pred is not None:
+        assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
+            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
+    assert len(constraint_name_list) == test_input.shape[1], \
+        "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
+
+    # Ensure output directory exists and is empty
+    if os.path.exists(output_dir) and os.listdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Get the number of samples aka number of text files to be generated
+    num_samples = test_input.shape[0]
+
+    # Some settings for multiprocessing
+    num_workers = max(1, multiprocessing.cpu_count() - 1)   # Use all available CPUs
+    chunk_size = min(1000, max(1, num_samples // num_workers))  # Adjust chunk size based on sample count. Max 1000 samples per chunk
+    chunks = [(i, min(i + chunk_size, num_samples))         # (start_index, end_index) index of which sample to process
+             for i in range(0, num_samples, chunk_size)]
+    
+    print(f"...Creating {num_samples} text files as input for QuickXplain", end=' ')
+    print("(constraints sorted by predicted probabilities)..." if test_pred is not None else "(default constraints ordering)...")
+
+    # Use ProcessPoolExecutor for true parallelism
+    total_processed = 0
+    with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
+        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+            futures = []
+            # Submit tasks to the executor for each chunk
+            for chunk_data in chunks:
+                future = executor.submit(
+                    processChunk,
+                    chunk_data=chunk_data,
+                    features_array=test_input,
+                    test_pred=test_pred,
+                    constraint_name_list=constraint_name_list,
+                    output_dir=output_dir
+                )
+                futures.append(future)
+
+            # save status of each chunk as it is completed
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    total_processed += future.result()
+                    pbar.update(1)
+                except Exception as e:
+                    print(f"...Error processing chunk: {e}")
+                    print(traceback.format_exc())
+    
+    # Verify all samples were processed
+    assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
+    
+
+# Func for parallel processing in createSolverInput()
+def processChunk(chunk_data, features_array, test_pred, constraint_name_list, output_dir):
+    """Process a chunk of samples concurrently"""
+    try:
+        start_idx, end_idx = chunk_data
+        processed_count = 0
+        
+        # process only the specified chunk of samples
+        for idx in range(start_idx, end_idx):
+            # Get data for this sample
+            feature_values = features_array[idx]
+            probabilities = test_pred[idx] if test_pred is not None else None
+            
+            # Create list for sorting (tuple of (name, boolean_str, probability))
+            constraints_data = []
+            for i in range(len(constraint_name_list)):
+                name = constraint_name_list[i]
+                boolean_str = "true" if feature_values[i] == 1 else "false"
+                prob = probabilities[i] if probabilities is not None else 0.0
+                constraints_data.append((name, boolean_str, prob))
+            
+            # Sort by probability (descending) (only if test_pred is not None)
+            if test_pred is not None:
+                constraints_data.sort(key=lambda x: x[2], reverse=True)
+            
+            # Write name and boolean string to text file
+            output_file = os.path.join(output_dir, f"conf{idx}.txt")
+            with open(output_file, 'w') as f:
+                for name, boolean_str, _ in constraints_data:
+                    f.write(f"{name} {boolean_str}\n")
+            
+            processed_count += 1
+
+        return processed_count
+        
+    except Exception as e:
+        print(traceback.format_exc())
+        return 0
+
+
+def saveTestResults(settings, model_name, metrics, result):
+    """
+    Add the test results to the JSON file of the model.
+    
+    Parameters:
+    settings (dict): Settings dictionary containing paths and configurations
+    model_name (str): Name of the model
+    metrics (dict): Metrics to save, e.g., F1, Exact Match, accuracy, etc.
+    result (list): Result of the QuickXplain test, containing [faster_performance, ordered_runtime, unordered_runtime]
+    """
+    print(f"...Saving validation results for model {model_name}...")
+
+    # Check if the output file exists
+    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
+    assert os.path.exists(output_file), f"Json file ({output_file}) does not exist. Check path"
+
+    with open(output_file, 'r') as f:
+        data = json.load(f)
+    
+    # make sure the key 'validation_result' does not already exist
+    assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
+    assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
+
+    # Add the new key with the metrics dictionary
+    ordered_runtime = result[0]
+    ordered_cc = result[1]
+    unordered_runtime = result[2]
+    unordered_cc = result[3]
+    performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
+    CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
+    data["validation_result"] = metrics
+    data["validation_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
+    data["validation_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
+    data["validation_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
+    data["validation_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
+    data["validation_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
+    data["validation_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
+    
+    # Write the updated data back to file
+    with open(output_file, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+def printTestingSummary(settings):
+    """Print a summary of the validation results stored in Model folder."""
+    print(f"\n\n{'='*60}")
+    print("TESTING SUMMARY")
+    print(f"{'='*60}")
+    saved_models_dir = settings['PATHS']['MODEL_PATH']
+
+    # Go through each json file and print the result of the validation
+    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
+        model_file_name = os.path.join(saved_models_dir, f"Best{model_name}_metrics.json")
+        assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
+        
+        with open(model_file_name, 'r') as json_file:
+            model_metrics = json.load(json_file)
+
+        # extract the validation result and model's configuration
+        model_config = model_metrics['config']
+        validation_result = model_metrics['validation_result']
+        ordered_runtime = validation_result['ordered_runtime']
+        unordered_runtime = validation_result['unordered_runtime']
+        less_time_percentage = (unordered_runtime - ordered_runtime) / unordered_runtime * 100 if unordered_runtime > 0 else 0.0
+
+        # print result out
+        print(f"\nModel '{model_name}':")
+
+        print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
+            f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
+            f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
+        print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
+        print(f"  F1: {validation_result['AVG_F1']:.4f}")
+        print(f"  Speed improvement: {validation_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
+              f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
+
+    print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
+

@@ -14,7 +14,7 @@ from Model import ModelManager
 import optuna
 import json
 
-def preprocessTrainingData(X_transformed, output_data, config):
+def preprocessTrainingData(input_data, output_data, config):
     """
     Features are removed because low variance features do not contribute to the model's learning.
     Constant labels are removed because they are trivial to predict and model doesnt need to learn anything to predict them correctly.
@@ -23,6 +23,7 @@ def preprocessTrainingData(X_transformed, output_data, config):
     The removed labels are stored so we can add them later to the model's predictions to get a final output with all labels.
 
     In summary, this func does the following:
+    0. apply PCA if specified in config.
     1. convert input data to binary format if specified in config.
     2. convert output data to binary format (1, 0) (-1 is converted to 1).
     3. remove features with low variance (variance < 0.01) and mark their indexes.
@@ -38,6 +39,14 @@ def preprocessTrainingData(X_transformed, output_data, config):
         - removed_features: The indexes of the removed features (numpy array)
         - removed_label_info: A dictionary with the indexes and values of the removed labels.
     """
+    # 0. Apply PCA if specified
+    if config['use_pca']:
+        pca = PCA(n_components=config['pca_components'])
+        X_transformed = pca.fit_transform(input_data)
+    else:
+        X_transformed = input_data
+        pca = None
+
     # 1. convert input data to binary format if needed
     if config['convert_input']:
         X_transformed = (X_transformed > 0).astype(int)
@@ -63,18 +72,14 @@ def preprocessTrainingData(X_transformed, output_data, config):
     return X_transformed, new_output_data, removed_features, removed_label_info
 
 def trainOneModel(input_data, output_data, config):
-    """Train and evaluate a single model configuration."""
-    
-    # Apply PCA if specified
-    if config['use_pca']:
-        pca = PCA(n_components=config['pca_components'])
-        X_transformed = pca.fit_transform(input_data)
-    else:
-        X_transformed = input_data
-        pca = None
-    
+    """Train and evaluate a single model configuration. 
+    Args:
+        input_data (numpy.ndarray): The unmodified input data for training, only splitted for validation so far.
+        output_data (numpy.ndarray): The unmodified output data (labels) for training, only splitted for validation so far.
+        config (dict): The configuration for the model, including hyperparameters.
+    """   
     # preprocess training data
-    X_transformed, output_data, removed_features, removed_labels = preprocessTrainingData(X_transformed, output_data, config)
+    X_transformed, output_data, removed_features, removed_labels, pca = preprocessTrainingData(input_data, output_data, config)
     
     # Split data. (Note: this data is already split into training and validation sections in the trainAllModels func)
     X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=0.2, random_state=42)
@@ -82,11 +87,11 @@ def trainOneModel(input_data, output_data, config):
     # Create model manager
     model_manager = ModelManager(config, X_train, X_test, y_train, y_test)
     
-    # Train model
+    # Train model on the training set
     model_manager.trainModel()
 
-    # Evaluate
-    metrics = model_manager.evaluateModel()
+    # Evaluate the model on the validation set
+    metrics = model_manager.evaluateModel(model_manager.model_, model_manager.test_loader_)
     
     # print results
     Utils.printOneModelTrainResult(config, metrics)

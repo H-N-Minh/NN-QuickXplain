@@ -196,16 +196,17 @@ class ModelManager:
         # else:
             # print(f"Trained for full {self.num_epochs_} epochs.")
 
-    def evaluateModel(self):
+    @staticmethod
+    def evaluateModel(model, data_loader):
         """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, ROC AUC, and combined score."""
 
         # Get raw output (logits) from the model using the test data loader.
-        self.model_.eval()      # Evaluation Mode
+        model.eval()      # Evaluation Mode
         y_pred_logits_list = []
         y_test_list = []
         with torch.no_grad():
-            for inputs, labels in self.test_loader_:
-                outputs = self.model_(inputs)
+            for inputs, labels in data_loader:
+                outputs = model(inputs)
                 y_pred_logits_list.append(outputs.cpu())
                 y_test_list.append(labels.cpu())
         
