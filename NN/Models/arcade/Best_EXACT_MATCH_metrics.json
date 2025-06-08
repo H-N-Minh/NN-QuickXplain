@@ -1,13 +1,13 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.9685505925250684,
-    "F1": 0.7204047948667082,
-    "MCC": 0.4632624967168834,
-    "MAP": 0.4683085640626933,
-    "HAMMING_LOSS": 0.06227469545040192,
-    "COMBINED": 57.35510835525383,
-    "accuracy": 0.9377253045495979,
-    "roc_auc": 0.8761176912231345,
+    "EXACT_MATCH": 2.1422060164083865,
+    "F1": 0.5695129748857976,
+    "MCC": 0.2175028608105831,
+    "MAP": 0.2771118648603567,
+    "HAMMING_LOSS": 0.07589914643241899,
+    "COMBINED": 48.01798367766221,
+    "accuracy": 0.924100853567581,
+    "roc_auc": 0.8741119502485468,
     "total_samples": 8776
   },
   "validation_indexes": [
@@ -15,19 +15,20 @@
     20670
   ],
   "config": {
-    "convert_input": true,
+    "convert_input": false,
     "hidden_layers": [
-      128
+      64
     ],
-    "dropout_rate": 0.03143134109019753,
+    "dropout_rate": 0.10763425399780636,
     "hidden_activation_func": "relu",
     "batch_size": 1024,
     "batch_norm": true,
-    "patience": null,
-    "loss_func": "Focal Loss",
-    "optimizer": "AdamW",
-    "learning_rate": 0.08365242814551474,
-    "weight_decay": 0.0055268018914401,
+    "max_epochs": 21,
+    "patience": 5,
+    "loss_func": "bcewithlogitloss",
+    "optimizer": "Adam",
+    "learning_rate": 0.011487808197204696,
+    "weight_decay": 0.0014811979535776288,
     "use_pca": false,
     "pca_components": 0.95
   },
@@ -39,21 +40,21 @@
   },
   "testing_result": {
     "EXACT_MATCH": 0.0,
-    "F1": 0.7805286838193194,
-    "MCC": 0.17766942425890658,
-    "MAP": 0.14739849183574485,
-    "HAMMING_LOSS": 0.20334265734265733,
-    "COMBINED": 46.26838460883721,
-    "accuracy": 0.7966573426573427,
-    "roc_auc": 0.6704760766578706,
+    "F1": 0.7806801334375333,
+    "MCC": 0.1885101162236086,
+    "MAP": 0.14752650795126004,
+    "HAMMING_LOSS": 0.20512820512820512,
+    "COMBINED": 46.34666988744785,
+    "accuracy": 0.7948717948717949,
+    "roc_auc": 0.6706728427210352,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 4.220533352384618,
-    "ordered_cc": 10.057025641025641,
-    "unordered_runtime": 1.723777170392205,
+    "ordered_runtime": 0.8776398086276923,
+    "ordered_cc": 12.127794871794872,
+    "unordered_runtime": 0.431777246606564,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": -59.15736172495204,
-    "CC_less_percentage": 10.721829703547241
+    "faster_performance_percentage": -50.80245422302507,
+    "CC_less_percentage": -7.660791026294706
   }
 }

@@ -63,6 +63,7 @@ training sessions for arcade
       weight_decays: [0.0001, 0.001]
 
       use_pca_options: [false]    
+Beated no existing models
       
 3. session: 500 models with COMBINED. Based on the model that was working in the past
 
@@ -79,6 +80,12 @@ training sessions for arcade
       learning_rates: [0.01, 0.1] 
       weight_decays: [ 0.001, 0.01] 
       use_pca_options: [false, true] 
+Beated 1 model:
+Best 'EXACT_MATCH' Model:
+  convert_input: False || hidden_layers: [64] || dropout_rate: 0.11 || hidden_activation_func: relu || batch_size: 1024 || batch_norm: True
+  patience: 5 || loss_func: bcewithlogitloss || optimizer: Adam || learning_rate: 0.01 || weight_decay: 0.00 || use_pca: False || max_epochs: 21
+==> Exact Match = 2.14% || F1 = 0.5695 || MCC = 0.2175 || MAP = 0.2771 || Hamming Loss = 0.0759 || Combined Score = 48.02%
+
 
 4. session: 350 models, MAP, hugeee search space, consulted with gemini
       convert_input: [true] # [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
