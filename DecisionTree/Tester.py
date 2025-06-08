@@ -126,6 +126,7 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
 
     # process the output of QuickXplain (get average runtime and cc)
     avg_ordered_runtime, avg_ordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+    assert avg_ordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is very unlikely. check calculation"
 
 
     ########### Same thing again as above but now with default ordering (no predicted probabilities)
@@ -136,6 +137,7 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
 
     # process the output of QuickXplain (get average runtime and cc)
     avg_unordered_runtime, avg_unordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+    assert avg_unordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is very unlikely. check calculation"
 
     return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc]
 
