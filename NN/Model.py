@@ -116,6 +116,10 @@ class ModelManager:
         self.num_epochs_ = 200
         self.patience_ = config.get('patience')
 
+        # training and validation loss (used to plot the loss curves later)
+        self.train_loss_ = []
+        self.val_loss_ = []
+
     def getValidationLoss(self):
         """Calculate loss on the validation set. This is used during training to monitor performance."""
         self.model_.eval()
@@ -163,8 +167,10 @@ class ModelManager:
 
                 epoch_train_loss += loss.item()
             
-            # Calculate loss validation
+            # store the training and validation loss for this epoch
+            self.train_loss_.append(epoch_train_loss / num_train_batches)
             val_loss = self.getValidationLoss()
+            self.val_loss_.append(val_loss)
 
             # Update learning rate scheduler based on validation loss
             self.scheduler_.step(val_loss)

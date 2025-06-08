@@ -69,6 +69,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       patience: [null] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
 
       loss_funcs: ['Focal Loss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
+      focal_loss_gamma: [2.0] # [null] or [1.0, 2.0, 3.0]  # this is only applied when loss func is focal loss, else keep it null!!
       optimizers: ['AdamW']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
       learning_rates: [0.02, 0.09] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
       weight_decays: [ 0.004, 0.0099] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer

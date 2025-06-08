@@ -10,6 +10,7 @@ import traceback
 import multiprocessing
 import concurrent.futures
 import re
+import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
@@ -190,6 +191,26 @@ def importTrainingData(settings):
 
     return input_data.values , output_data.values
 
+
+def saveTrainingPlot(model, path):
+    """Save the training and validation loss plot to a file."""    
+    # X-axis: epochs
+    epochs = range(1, len(model.train_losses_) + 1)
+
+    # Create plot
+    plt.figure(figsize=(8, 5))
+    plt.plot(epochs, model.train_losses_, label='Training Loss')
+    plt.plot(epochs, model.val_losses_, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss Over Epochs')
+    plt.legend()
+    plt.grid(True)
+
+    # Save plot to file
+    plt.savefig(path)
+    plt.close()  # Close the figure to free memory
+
 def saveModel(best_models, settings):
     """Save the model object, pca object and the metrices of the best models into the folder Models.
     Args:
@@ -251,12 +272,18 @@ def saveModel(best_models, settings):
         # If code reaches here, it means we need to save the new model
         print(f"✅ Saving '{name}' model as it is better than the existing one.")
         
-        # Save model and PCA
+        # Save model
         model_filename = os.path.join(model_folder_path, f"Best_{name}.pt")
         model = best_model['model_manager'].model_
         torch.save(model, model_filename)
+
+        # save PCA
         pca_filename = os.path.join(model_folder_path, f"Best_{name}_pca.joblib")
         joblib.dump(best_model['pca'], pca_filename)
+
+        # save training plot
+        training_plot_filename = os.path.join(model_folder_path, f"Best_{name}_training_plot.png")
+        saveTrainingPlot(model, training_plot_filename)
 
         # Save metrics
         metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca']}
