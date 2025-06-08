@@ -46,22 +46,22 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: true # skip training if the model already exists and stored in the model folder
+    SKIP: false # skip training if the model already exists and stored in the model folder
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_sizes: [0.5]   # test size for train/test split
-      max_depths: [10]       # max training depth, null for unlimited depth
-      estimator_types: ['RandomForest']    # ['DecisionTree', 'RandomForest']
-      multi_output_types: ['MultiOutputClassifier']         # ['MultiOutputClassifier', 'ClassifierChain']
-      use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      class_weight_options: [null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+      test_sizes: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]   # test size for train/test split
+      max_depths: [null, 5, 10, 15, 20, 30, 40, 50]       # max training depth, null for unlimited depth
+      estimator_types: ['DecisionTree', 'RandomForest']    # ['DecisionTree', 'RandomForest']
+      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain']
+      use_pca_options: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
+      class_weight_options: [null, 'balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
 
       random_forest_direct:     # for only RandomForest  with multi_output_type = 'Direct'. 
-        skip: true     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
+        skip: false     # NOTE: setting this to false will adds around 25% more configurations to the current list, aka longer training time
 
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: false # skip validation part completely if set to true
+    SKIP: true # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
     # Note: the selected dataset must also be correctly set in the PATHS section above
     models_to_test: ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.
