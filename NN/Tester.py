@@ -73,7 +73,7 @@ def testWithQuickXplain(settings, y_pred_prob, input_data, model_metadata):
     constraint_name_list = Utils.getConstraintNameList(settings)
 
     # Generate input for QuickXplain using the predicted probabilities
-    Utils.createSolverInput(input_data, y_pred_prob, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
+    Utils.createSolverInput(input_data, y_pred_final, output_dir= settings["PATHS"]["SOLVER_INPUT_PATH"], constraint_name_list= constraint_name_list)
 
     # Run QuickXplain to analyze conflicts
     Solver.getConflict(settings)

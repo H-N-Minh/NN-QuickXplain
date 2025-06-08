@@ -50,6 +50,6 @@ def getConflict(settings):
 
         return result
     except:
-        assert False, "Subprocess (QuickXplain) did not answer! Make sure Java is installed and correctly pathed"
+        assert False, "Subprocess (QuickXplain) did not answer! Make sure Java is installed and Solver's .jar file is correctly pathed"
 
 

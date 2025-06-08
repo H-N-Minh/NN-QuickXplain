@@ -636,7 +636,7 @@ def processOutputFile(directory_path):
     cc_sum = 0
     total_processed = 0
     with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:           
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             # Submit tasks to the executor for each chunk
             for chunk_data in chunks:
@@ -743,7 +743,7 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
         "Error:createSolverInput:: constraint_name_list must be a non-empty list."
     if test_pred is not None:
         assert isinstance(test_pred, np.ndarray) and test_pred.shape == test_input.shape, \
-            "Error:createSolverInput:: test_pred must be a numpy array with the same shape as test_input."
+            f"Error:createSolverInput:: test_pred ({test_pred.shape}) must be a numpy array with the same shape as test_input ({test_input.shape})."
     assert len(constraint_name_list) == test_input.shape[1], \
         "Error:createSolverInput:: constraint_name_list must have the same length as the number of features in test_input."
 
@@ -767,7 +767,7 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     # Use ProcessPoolExecutor for true parallelism
     total_processed = 0
     with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             # Submit tasks to the executor for each chunk
             for chunk_data in chunks:
