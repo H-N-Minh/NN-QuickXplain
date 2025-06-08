@@ -195,12 +195,12 @@ def importTrainingData(settings):
 def saveTrainingPlot(model_manager, path):
     """Save the training and validation loss plot to a file."""    
     # X-axis: epochs
-    epochs = range(1, len(model_manager.train_losses_) + 1)
+    epochs = range(1, len(model_manager.train_loss_) + 1)
 
     # Create plot
     plt.figure(figsize=(8, 5))
-    plt.plot(epochs, model_manager.train_losses_, label='Training Loss')
-    plt.plot(epochs, model_manager.val_losses_, label='Validation Loss')
+    plt.plot(epochs, model_manager.train_loss_, label='Training Loss')
+    plt.plot(epochs, model_manager.val_loss_, label='Validation Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training and Validation Loss Over Epochs')
