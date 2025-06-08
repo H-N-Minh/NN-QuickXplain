@@ -64,7 +64,6 @@ class ConflictModel(nn.Module):
             layers.append(linear_layer)
 
             # Add batch normalization if specified
-            layers.append(nn.Linear(current_size, hidden_size))
             if batch_norm:
                 layers.append(nn.BatchNorm1d(hidden_size))
             

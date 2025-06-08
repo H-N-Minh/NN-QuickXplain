@@ -158,7 +158,7 @@ def printOneModelTrainResult(config, metrics):
     print(f"  convert_input: {config['convert_input']} || hidden_layers: {config['hidden_layers']} || dropout_rate: {config['dropout_rate']:.2f} || "
           f"hidden_activation_func: {config['hidden_activation_func']} || batch_size: {config['batch_size']} || batch_norm: {config['batch_norm']}"
           f"\n  patience: {config['patience']} || loss_func: {config['loss_func']} || optimizer: {config['optimizer']} || learning_rate: {config['learning_rate']:.2f} || "
-          f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']}")
+          f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']} || max_epochs: {config['max_epochs']}")
     if metrics is not None:
         print(
             f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
