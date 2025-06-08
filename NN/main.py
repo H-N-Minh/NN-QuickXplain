@@ -15,6 +15,7 @@ def main():
         Utils.startClearing(settings)
             
     print("\n\n################## TRAINING PHASE ##########################")
+    error_list = []         # store error messages during training
     if not settings['WORKFLOW']['TRAIN']['SKIP']:
         error_list = startTraining(settings)
     else:

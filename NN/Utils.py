@@ -16,7 +16,7 @@ import traceback
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score, accuracy_score
+from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score, accuracy_score, precision_recall_curve
 import torch
 from tqdm import tqdm
 import yaml
@@ -30,6 +30,35 @@ from torch.utils.data import DataLoader, TensorDataset
 
 ############################################ for main.py ########################################
 
+def set_seed(seed_value=42):
+    """
+    Set seed for reproducibility in random, numpy, and torch.
+    """
+    import os
+    
+    random.seed(seed_value)
+    np.random.seed(seed_value)
+    torch.manual_seed(seed_value)
+    
+    # Set environment variables for deterministic behavior
+    os.environ['PYTHONHASHSEED'] = str(seed_value)
+    
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed_value)
+        torch.cuda.manual_seed_all(seed_value)
+        # For full reproducibility with CUDA
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        # Additional CUDA environment variables
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+    
+    # Set torch to use deterministic algorithms where possible
+    try:
+        torch.use_deterministic_algorithms(True)
+    except Exception as e:
+        print(f"Warning: Could not set deterministic algorithms: {e}")
+    
 def loadSettings():
     """Load settings from YAML file."""
     root_dir = os.path.dirname(os.path.abspath(__file__))
@@ -88,6 +117,43 @@ METRIC_ACCURACY = 'accuracy'
 METRIC_ROC_AUC = 'roc_auc'
 METRIC_TOTAL_SAMPLES = 'total_samples'
 
+def getConfigFromOptuna(trial, configs_settings):
+    """
+    Get the config suggested by Optuna. All of these below are hyperparameters for 1 model configuration.
+    """
+    hidden_layer_choices = [json.dumps(l) for l in configs_settings['hidden_layers']]
+    patience_choices = [str(p) for p in configs_settings['patience']]
+    config = {
+        'convert_input': trial.suggest_categorical('convert_input', configs_settings['convert_input']),
+        'hidden_layers': json.loads(trial.suggest_categorical('hidden_layers', hidden_layer_choices)),
+        'dropout_rate': trial.suggest_float('dropout_rate', min(configs_settings['dropout_rates']), max(configs_settings['dropout_rates'])),
+        'hidden_activation_func': trial.suggest_categorical('hidden_activation_func', configs_settings['hidden_activation_funcs']),
+        'batch_size': trial.suggest_categorical('batch_size', configs_settings['batch_sizes']),
+        'batch_norm': trial.suggest_categorical('batch_norm', configs_settings['batch_norm']),
+        'patience': trial.suggest_categorical('patience', patience_choices),
+        'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
+        'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
+        'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates'])),
+        'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays'])),
+        'use_pca': trial.suggest_categorical('use_pca', configs_settings['use_pca_options']),
+        'pca_components': 0.95
+    }
+    # Correct the value of 'patience'
+    config['patience'] = None if config['patience'].lower() == 'none' or config['patience'].lower() == 'null' else int(config['patience'])
+
+    return config
+
+def getOptunaTargetMetric(settings):
+    """
+    Optuna needs a score to evaluate a set of hyperparameters. During the training phase, it will try to maximize this score.
+    This score is chosen as one of the metrics, which is defined in the settings.yaml file under 'optuna_goal'.
+    """
+    target_metric = settings['WORKFLOW']['TRAIN']['optuna_goal']
+    valid_metrics = [METRIC_EXACT_MATCH, METRIC_F1, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS, METRIC_COMBINED]
+    assert target_metric in valid_metrics, f"Invalid optuna_goal: {target_metric}. Must be one of {valid_metrics}"
+    optimize_direction = "minimize" if target_metric == METRIC_HAMMING_LOSS else "maximize"
+
+    return target_metric, optimize_direction
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
@@ -126,9 +192,13 @@ def importTrainingData(settings):
 
     return input_data.values , output_data.values
 
-
 def saveModel(best_models, settings):
-    """Save the model object, pca object and the metrices of the best models."""
+    """Save the model object, pca object and the metrices of the best models into the folder Models.
+    Args:
+        best_models (dict): Dictionary containing the best models found during training.
+    Note:
+        This doesnt save all models of best_models, but only the ones that are better than the existing models in the Models folder.
+    """
 
     # get an appropriate name for the folder to save these models
     current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -197,12 +267,12 @@ def saveModel(best_models, settings):
                     
     return model_folder_path
 
-
 def splitData(input_data, output_data):
     """
     Randomly select a continuous portion of the data (10% of total data),
     remove it from input_data and output_data, because it will not be used for training, instead it will
     be used later in validation phase. The index of removed chunks will be returned.
+    This indexes are stored, so later in Testing phase, the same chunk will be loaded for testing
     """
     total_data = len(input_data)
     chunk_size = int(0.1 * total_data)  # 10% of the total data
@@ -218,10 +288,9 @@ def splitData(input_data, output_data):
 
     return input_data, output_data, (start_index, end_index)
 
-
 def updateBestModel(model_info, best_models):
     """
-    Update the best model if the current model is better than the previous best.
+    Update the best model if the current model (model_info) is better than any model in best_models.
     """
     # go through the dictionary of best models, and update the best model if the current model is better
     for name, best_model in best_models.items():
@@ -266,37 +335,6 @@ def printTrainingSummary(best_models, saved_models_dir):
 
 
 ################################## For Model.py ########################################
-
-def set_seed(seed_value=42):
-    """
-    Set seed for reproducibility in random, numpy, and torch.
-    """
-    import os
-    
-    random.seed(seed_value)
-    np.random.seed(seed_value)
-    torch.manual_seed(seed_value)
-    
-    # Set environment variables for deterministic behavior
-    os.environ['PYTHONHASHSEED'] = str(seed_value)
-    
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed_value)
-        torch.cuda.manual_seed_all(seed_value)
-        # For full reproducibility with CUDA
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-        # Additional CUDA environment variables
-        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-        os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
-    
-    # Set torch to use deterministic algorithms where possible
-    try:
-        torch.use_deterministic_algorithms(True)
-    except Exception as e:
-        print(f"Warning: Could not set deterministic algorithms: {e}")
-    
-
 def seed_worker(worker_id):
     """
     Seeding for DataLoader workers to ensure reproducibility.
@@ -305,9 +343,36 @@ def seed_worker(worker_id):
     np.random.seed(worker_seed)
     random.seed(worker_seed)
 
+def findBestThreshold(y_true, y_pred_prob):
+    """
+    Find the best classification threshold by maximizing the F1-score on the
+    precision-recall curve. For multi-label problems, this function considers
+    all predictions (micro-average).
+
+    Args:
+        y_true (np.array): Ground truth labels.
+        y_pred_prob (np.array): Predicted probabilities.
+
+    Returns:
+        float: The optimal threshold.
+    """
+    # Generate precision-recall curve for all predictions
+    precision, recall, thresholds = precision_recall_curve(y_true.ravel(), y_pred_prob.ravel())
+
+    # Calculate F1 score for each threshold, adding a small epsilon to avoid division by zero
+    f1_scores = (2 * precision * recall) / (precision + recall + 1e-6)
+
+    # The 'thresholds' array is one element shorter than 'f1_scores'.
+    # We find the threshold that corresponds to the maximum F1 score.
+    best_f1_idx = np.argmax(f1_scores[:-1])
+    best_threshold = thresholds[best_f1_idx]
+    
+    print(f"Best threshold found: {best_threshold:.4f} with F1 score: {f1_scores[best_f1_idx]:.4f}")
+    
+    return best_threshold
 
 def prepareData(X_train, X_test, y_train, y_test, batch_size):
-    """Prepare the data for training."""
+    """Prepare the data for training: Put data into PyTorch DataLoader format, calculate pos_weight for BCEWithLogitsLoss"""
     # Convert numpy arrays to PyTorch tensors
     train_x_tensor = torch.tensor(X_train, dtype=torch.float32)
     train_labels_tensor = torch.tensor(y_train, dtype=torch.float32)
@@ -318,15 +383,9 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     train_dataset = TensorDataset(train_x_tensor, train_labels_tensor)
     test_dataset = TensorDataset(test_x_tensor, test_labels_tensor)
 
-    # get sample size
-    train_size = len(train_dataset)
-    test_size = len(test_dataset)
-    
-    # Create a generator for reproducible shuffling
-    g = torch.Generator()
-    g.manual_seed(42)
-
     # Use Dataloader for easier batch processing later
+    g = torch.Generator()       # Create a generator for reproducible shuffling
+    g.manual_seed(42)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, worker_init_fn=seed_worker, generator=g)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -336,9 +395,7 @@ def prepareData(X_train, X_test, y_train, y_test, batch_size):
     pos_weight = num_negative_train / (num_positive_train + 1e-6) # Add epsilon to avoid division by zero
     pos_weight = pos_weight.to('cpu')
 
-    return train_loader, test_loader, train_size, test_size, pos_weight
-
-
+    return train_loader, test_loader, pos_weight
 
 def calculateF1_Mcc_Accuracy(y_pred, y_test):
     """Calculate F1 and MCC and accuracy scores for each label."""
@@ -363,7 +420,6 @@ def calculateF1_Mcc_Accuracy(y_pred, y_test):
     avg_accuracy = np.mean(accuracies) if len(accuracies) > 0 else np.nan
 
     return avg_f1, avg_mcc, avg_accuracy
-
 
 def calculateMapAndROC(y_pred_probs, y_test):
     """Calculate mAP (mean Average Precision) and mean ROC-AUC scores
@@ -415,7 +471,6 @@ def calculateMapAndROC(y_pred_probs, y_test):
     roc_macro = np.nanmean(roc_scores)
     
     return map_macro, roc_macro
-
 
 def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_loss):
     # Normalize metrics (all in range 0-1, with 1 being best, 0 being worst)
