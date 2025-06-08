@@ -130,8 +130,8 @@ def getConfigFromOptuna(trial, configs_settings):
         'max_epochs': trial.suggest_int('max_epochs', min(configs_settings['max_epochs']), max(configs_settings['max_epochs'])),
         'patience': trial.suggest_categorical('patience', patience_choices),
         'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
-        'focal_loss_gamma': trial.suggest_float('focal_loss_gamma', min(configs_settings['focal_loss_gammas']), max(configs_settings['focal_loss_gammas'])),
-        'focal_loss_alpha': trial.suggest_float('focal_loss_alpha', min(configs_settings['focal_loss_alphas']), max(configs_settings['focal_loss_alphas'])),
+        'focal_loss_gamma': trial.suggest_float('focal_loss_gamma', min(configs_settings['focal_loss_gamma']), max(configs_settings['focal_loss_gamma'])),
+        'focal_loss_alpha': trial.suggest_float('focal_loss_alpha', min(configs_settings['focal_loss_alpha']), max(configs_settings['focal_loss_alpha'])),
         'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
         'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates'])),
         'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays'])),
@@ -157,10 +157,23 @@ def getOptunaTargetMetric(settings):
 
 def printOneModelTrainResult(config, metrics):
     """Print the training result of one model configuration."""
-    print(f"  convert_input: {config['convert_input']} || hidden_layers: {config['hidden_layers']} || dropout_rate: {config['dropout_rate']:.2f} || "
-          f"hidden_activation_func: {config['hidden_activation_func']} || batch_size: {config['batch_size']} || batch_norm: {config['batch_norm']}"
-          f"\n  patience: {config['patience']} || loss_func: {config['loss_func']} || optimizer: {config['optimizer']} || learning_rate: {config['learning_rate']:.2f} || "
-          f"weight_decay: {config['weight_decay']:.2f} || use_pca: {config['use_pca']} || max_epochs: {config['max_epochs']}")
+    # Print all keys and values in config, split into two lines, separated by '||'
+    config_items = list(config.items())
+    # middle index
+    middle_idx = len(config_items) // 3
+
+    first_line = "  " + " || ".join(
+        f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" for k, v in config_items[:middle_idx]
+    )
+    second_line = "  " + " || ".join(
+        f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" for k, v in config_items[middle_idx:(middle_idx*2)]
+    )
+    third_line = "  " + " || ".join(
+        f"{k}: {v:.2f}" if isinstance(v, float) else f"{k}: {v}" for k, v in config_items[(middle_idx*2):]
+    )
+    print(first_line)
+    print(second_line)
+    print(third_line)
     if metrics is not None:
         print(
             f"==> Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}% || "
