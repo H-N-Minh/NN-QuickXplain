@@ -192,15 +192,15 @@ def importTrainingData(settings):
     return input_data.values , output_data.values
 
 
-def saveTrainingPlot(model, path):
+def saveTrainingPlot(model_manager, path):
     """Save the training and validation loss plot to a file."""    
     # X-axis: epochs
-    epochs = range(1, len(model.train_losses_) + 1)
+    epochs = range(1, len(model_manager.train_losses_) + 1)
 
     # Create plot
     plt.figure(figsize=(8, 5))
-    plt.plot(epochs, model.train_losses_, label='Training Loss')
-    plt.plot(epochs, model.val_losses_, label='Validation Loss')
+    plt.plot(epochs, model_manager.train_losses_, label='Training Loss')
+    plt.plot(epochs, model_manager.val_losses_, label='Validation Loss')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training and Validation Loss Over Epochs')
@@ -283,7 +283,7 @@ def saveModel(best_models, settings):
 
         # save training plot
         training_plot_filename = os.path.join(model_folder_path, f"Best_{name}_training_plot.png")
-        saveTrainingPlot(model, training_plot_filename)
+        saveTrainingPlot(best_model['model_manager'], training_plot_filename)
 
         # Save metrics
         metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca']}
@@ -357,6 +357,81 @@ def printTrainingSummary(best_models, saved_models_dir):
         printOneModelTrainResult(config, metrics)
 
     print(f"\n (These models are stored in folder {saved_models_dir}.)")
+
+def getAllModelsConfigs(settings):
+    """
+    Extract all model configurations from the JSON files in the model folder and update the settings.
+    """
+    model_folder = settings['PATHS']['MODEL_PATH']
+    if not os.path.exists(model_folder):
+        raise FileNotFoundError(f"Model folder not found: {model_folder}")
+
+    json_files = [f for f in os.listdir(model_folder) if f.endswith('.json')]
+    if not json_files:
+        raise FileNotFoundError(f"No JSON files found in the model folder: {model_folder}")
+
+    configurations = {}
+    for json_file in json_files:
+        model_name = json_file.replace('Best_', '').replace('_metrics.json', '')
+        assert model_name in [METRIC_EXACT_MATCH, METRIC_F1, METRIC_MCC, METRIC_MAP, METRIC_HAMMING_LOSS, METRIC_COMBINED], "Invalid model name in JSON file: {json_file}. Expected one of the known metrics."
+        json_path = os.path.join(model_folder, json_file)
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+            if 'config' in data:
+                configurations[model_name] = data['config']
+            else:
+                print(f"Warning: 'config' not found in {json_file}. Skipping.")
+
+    if not configurations:
+        raise ValueError("No valid configurations found in the JSON files.")
+
+    return configurations
+
+def updateSettingsConfig(settings, config):
+    settings['WORKFLOW']['TRAIN']['configurations']['convert_input'] = [config['convert_input']]
+    settings['WORKFLOW']['TRAIN']['configurations']['hidden_layers'] = [config['hidden_layers']]
+    settings['WORKFLOW']['TRAIN']['configurations']['dropout_rates'] = [config['dropout_rate']]
+    settings['WORKFLOW']['TRAIN']['configurations']['hidden_activation_funcs'] = [config['hidden_activation_func']]
+    settings['WORKFLOW']['TRAIN']['configurations']['batch_sizes'] = [config['batch_size']]
+    settings['WORKFLOW']['TRAIN']['configurations']['batch_norm'] = [config['batch_norm']]
+    settings['WORKFLOW']['TRAIN']['configurations']['patience'] = [config['patience']]
+    settings['WORKFLOW']['TRAIN']['configurations']['loss_funcs'] = [config['loss_func']]
+    settings['WORKFLOW']['TRAIN']['configurations']['optimizers'] = [config['optimizer']]
+    settings['WORKFLOW']['TRAIN']['configurations']['learning_rates'] = [config['learning_rate']]
+    settings['WORKFLOW']['TRAIN']['configurations']['weight_decays'] = [config['weight_decay']]
+    settings['WORKFLOW']['TRAIN']['configurations']['use_pca_options'] = [config['use_pca']]
+
+    settings['WORKFLOW']['TRAIN']['optuna_trials'] = 1
+
+
+def removeOldModelFiles(settings, model_name):
+    """
+    Remove old model files from the Models folder.
+    This is used to remove the old model files before saving the new best model.
+    """
+    model_folder = settings['PATHS']['MODEL_PATH']
+    if not os.path.exists(model_folder):
+        return  # No models to remove
+
+    # Remove model file
+    model_file = os.path.join(model_folder, f"Best_{model_name}.pt")
+    if os.path.exists(model_file):
+        os.rename(model_file, model_file.replace("Best_", "Old_"))
+
+    # Remove metrics file
+    metrics_file = os.path.join(model_folder, f"Best_{model_name}_metrics.json")
+    if os.path.exists(metrics_file):
+        os.rename(metrics_file, metrics_file.replace("Best_", "Old_"))
+
+    # Remove PCA file
+    pca_file = os.path.join(model_folder, f"Best_{model_name}_pca.joblib")
+    if os.path.exists(pca_file):
+        os.rename(pca_file, pca_file.replace("Best_", "Old_"))
+
+    # Remove training plot
+    training_plot_file = os.path.join(model_folder, f"Best_{model_name}_training_plot.png")
+    if os.path.exists(training_plot_file):
+        os.rename(training_plot_file, training_plot_file.replace("Best_", "Old_"))
 
 
 ################################## For Model.py ########################################

@@ -199,3 +199,26 @@ def startTraining(settings):
     # Train all models with different configurations. The best ones will be saved.
     return trainAllModels(input_data, output_data, settings)
 
+def startRetraining(settings):
+    """Retrain all the existing models with the exact same configs. 
+    This is mostly used during development of the program to quickly retrain models without changing the settings.yaml."""
+    # Import data
+    input_data, output_data = Utils.importTrainingData(settings)
+
+    all_configs = Utils.getAllModelsConfigs(settings)
+
+    error_list = []  # Store errors during retraining
+
+    for model_name, config in all_configs.items():
+        print(f"\nRetraining model: {model_name}")
+
+        # Update the settings with the current model's config
+        Utils.updateSettingsConfig(settings, config)
+
+        # remove the files from old models to allow new one to be saved
+        Utils.removeOldModelFiles(settings, model_name)
+
+        # retrain
+        error_list += trainAllModels(input_data, output_data, settings)
+
+    return error_list

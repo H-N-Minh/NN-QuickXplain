@@ -1,4 +1,5 @@
 from Trainer import startTraining
+from Trainer import startRetraining
 from Tester import startTesting
 import Utils as Utils
 
@@ -17,7 +18,11 @@ def main():
 
     print("\n\n################## TRAINING PHASE ##########################")
     error_list = []         # store error messages during training
-    if not settings['WORKFLOW']['TRAIN']['SKIP']:
+    if not settings['WORKFLOW']['RETRAIN']['SKIP']:
+        print("\n<Retraining mode>")
+        error_list = startRetraining(settings)
+    elif not settings['WORKFLOW']['TRAIN']['SKIP']:
+        print("\n<Normal training mode>")
         error_list = startTraining(settings)
     else:
         print("\n\n<Training phase skipped (as per settings.yaml file)>")
