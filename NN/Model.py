@@ -46,25 +46,48 @@ class ConflictModel(nn.Module):
         torch.manual_seed(42)
         layers = []
         current_size = input_size
-        for hidden_size in hidden_layers:
+        for i, hidden_size in enumerate(hidden_layers):
+            # Initialize each layer:
+            linear_layer = nn.Linear(current_size, hidden_size)
+
+            # Apply He initialization based on the activation function
+            if hidden_activation_func == 'relu':
+                nn.init.kaiming_normal_(linear_layer.weight, nonlinearity='relu')
+            elif hidden_activation_func == 'leaky relu':
+                # LeakyReLU's default negative_slope is 0.01 if not specified
+                nn.init.kaiming_normal_(linear_layer.weight, nonlinearity='leaky_relu')
+            else:
+                assert False, f"Unknown activation function: {hidden_activation_func}. Check typo in settings.yaml"
+            
+            # Initialize biases to zero
+            nn.init.zeros_(linear_layer.bias)
+            layers.append(linear_layer)
+
+            # Add batch normalization if specified
             layers.append(nn.Linear(current_size, hidden_size))
             if batch_norm:
                 layers.append(nn.BatchNorm1d(hidden_size))
             
+            # Add activation function and dropout
             if hidden_activation_func == 'leaky relu':
                 layers.append(nn.LeakyReLU())
             elif hidden_activation_func == 'relu':
                 layers.append(nn.ReLU())
-            else:
-                assert False, f"Unknown activation function: {hidden_activation_func}. Check typo in settings.yaml"
                 
             layers.append(nn.Dropout(dropout_rate))
             current_size = hidden_size
         
-        layers.append(nn.Linear(current_size, output_size))
-        # Sigmoid will be applied in the loss function (BCEWithLogitsLoss) or manually for predictions
+        # Create the output layer with Xavier normal initialization
+        output_layer = nn.Linear(current_size, output_size)
+        nn.init.xavier_normal_(output_layer.weight)
+        nn.init.zeros_(output_layer.bias)
+        layers.append(output_layer)
 
+        # Sigmoid will be applied later in the loss function  or manually for predictions
+
+        # Combine all layers into a sequential network
         self.network = nn.Sequential(*layers)
+
 
     def forward(self, x):
         return self.network(x)
@@ -113,7 +136,7 @@ class ModelManager:
         self.scheduler_ = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_, mode='min', patience=10)
 
         # Epochs
-        self.num_epochs_ = 200
+        self.num_epochs_ = config.get('max_epochs', 100)
         self.patience_ = config.get('patience')
 
         # training and validation loss (used to plot the loss curves later)
