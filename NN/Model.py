@@ -113,7 +113,7 @@ class ModelManager:
         if config['loss_func'] == 'bcewithlogitloss':
             self.loss_func_ = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         elif config['loss_func'] == 'Focal Loss':
-            self.loss_func_ = FocalLoss(pos_weight=pos_weight)
+            self.loss_func_ = FocalLoss(alpha= config['focal_loss_alpha'], gamma= config['focal_loss_gamma'], pos_weight=pos_weight)
         else:
             assert False, f"Unknown loss function: {config['loss_func']}"
         
