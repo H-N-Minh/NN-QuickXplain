@@ -21,6 +21,7 @@ DecisionTree/TrainingData/busybox/invalid_confs_126725.csv
 DecisionTree/Models/**/*.pkl
 
 # specific files that only stored locally
+DecisionTree/Old_Models/**/*.pkl
 
 # others
 jdk-24_windows-x64_bin/
