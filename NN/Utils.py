@@ -804,7 +804,11 @@ def extractDataFromFile(chunk_data, all_files):
                 
                 # Get runtime from 4th line
                 runtime_line = next(f)
-                runtime = float(re.search(r'Runtime: (\d+\.\d+)', runtime_line).group(1))
+                runtime_match = re.search(r'Runtime:\s*([0-9.eE+-]+)', runtime_line)
+                if runtime_match:
+                    runtime = float(runtime_match.group(1))
+                else:
+                    assert False, "Runtime not found in the expected format."
                 
                 # Get CC from 5th line
                 cc_line = next(f)
