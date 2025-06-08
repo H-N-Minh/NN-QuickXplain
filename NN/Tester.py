@@ -98,7 +98,7 @@ def startTesting(settings):
         # Import the model and the validation data
         print(f"\nTesting model '{model_name}'...")
         model, pca, model_metadata = Utils.importModel(settings, model_name)
-        input_data, output_data = Utils.importValidationData(settings, model_metadata, pca)
+        input_data, output_data = Utils.importValidationData(settings, model_metadata)
 
         # Preprocess the validation data the same way as during training
         test_loader = Utils.preprocessValidationData(input_data, output_data, pca, model_metadata)

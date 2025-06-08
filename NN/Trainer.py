@@ -68,7 +68,7 @@ def preprocessTrainingData(input_data, output_data, config):
             removed_label_info[i] = constant_value
     new_output_data = output_data[:, ~constant_label_mask]
     
-    return X_transformed, new_output_data, removed_features, removed_label_info
+    return X_transformed, new_output_data, removed_features, removed_label_info, pca
 
 def trainOneModel(input_data, output_data, config):
     """Train and evaluate a single model configuration. 
@@ -90,7 +90,7 @@ def trainOneModel(input_data, output_data, config):
     model_manager.trainModel()
 
     # Evaluate the model on the validation set
-    metrics = model_manager.evaluateModel(model_manager.model_, model_manager.test_loader_)
+    metrics, _ = model_manager.evaluateModel(model_manager.model_, model_manager.test_loader_)
     
     # print results
     Utils.printOneModelTrainResult(config, metrics)

@@ -244,7 +244,7 @@ class ModelManager:
             Utils.METRIC_ROC_AUC: roc_auc,
             Utils.METRIC_TOTAL_SAMPLES: y_test.shape[0]
         }
-    
+        
         return metrics, y_pred_prob
 
     
