@@ -1,13 +1,13 @@
 {
   "training_result": {
-    "EXACT_MATCH": 1.0824977210574294,
-    "F1": 0.6813192964951844,
-    "MCC": 0.41017500427967946,
-    "MAP": 0.4862511543491194,
-    "HAMMING_LOSS": 0.035800116018894504,
-    "COMBINED": 56.95365628351647,
-    "accuracy": 0.9641998839811056,
-    "roc_auc": 0.8776882189381151,
+    "EXACT_MATCH": 1.2192342752962624,
+    "F1": 0.6810935541601674,
+    "MCC": 0.42084183572364114,
+    "MAP": 0.5064288232823708,
+    "HAMMING_LOSS": 0.03584155133836082,
+    "COMBINED": 57.48588173437922,
+    "accuracy": 0.9641584486616391,
+    "roc_auc": 0.8773537132786919,
     "total_samples": 8776
   },
   "validation_indexes": [
@@ -19,15 +19,15 @@
     "hidden_layers": [
       128
     ],
-    "dropout_rate": 0.05636968998990506,
+    "dropout_rate": 0.1099687571153367,
     "hidden_activation_func": "relu",
     "batch_size": 1024,
     "batch_norm": true,
     "patience": null,
     "loss_func": "Focal Loss",
     "optimizer": "AdamW",
-    "learning_rate": 0.08173068141702859,
-    "weight_decay": 0.00709788770409141,
+    "learning_rate": 0.02771709291195932,
+    "weight_decay": 0.009293371953931233,
     "use_pca": false,
     "pca_components": 0.95
   },
