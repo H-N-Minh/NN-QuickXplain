@@ -107,3 +107,27 @@ Best 'EXACT_MATCH' Model:
 
       use_pca_options: [false, true] 
 
+5. session: 500 models
+      convert_input: [true] # [true, false]   # convert input data from (-1 and 1) to (0 and 1) for training
+
+      # number of neurons in hidden layers, can be more than one layer, e.g. [2, 3] means 2 hidden layers with 2 and 3 neurons respectively
+      # [[32], [64], [128], [32, 32], [64, 32], [64, 64], [128, 64], [128, 128], [256, 128, 64] ]
+      hidden_layers: [[64]] 
+      dropout_rates: [0.0, 0.2] # [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
+      hidden_activation_funcs: ['relu', 'leaky relu'] # ['relu', 'leaky relu']  # activation function for the hidden layers
+
+      batch_sizes: [1024, 2048] # [32, 64, 128, 256, 512, 1024]   # test size for train/test split
+      batch_norm: [true] # [false, true]  # use batch normalization or not
+
+      max_epochs: [10, 40] # [50, 100]  # MIN MAX values only, maximum number of epochs to train the model
+      patience: [5, 20] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
+
+      loss_funcs: ['Focal Loss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
+      focal_loss_gamma: [1.0, 3.0] # [null] or [1.0, 2.0, 3.0]  # this is only applied when loss func is focal loss, else keep it null!!
+      focal_loss_alpha: [0.25, 0.5]
+      optimizers: ['AdamW']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
+      learning_rates: [0.001, 0.01] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
+      weight_decays: [ 0.0, 0.01] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer
+
+      use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
+      
