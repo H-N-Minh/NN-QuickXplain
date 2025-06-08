@@ -3,63 +3,54 @@
 # only important funcs are here, the rest is in Utils.py
 
 import numpy as np
-from sklearn.multioutput import ClassifierChain, MultiOutputClassifier
 import Utils as Utils
 
 import Solver.RunQuickXplain as Solver
-from Trainer import evaluateModel
 from Model import ModelManager
 
-def getPredictedProbabilities(model, X_validate):
+
+def finalizePredictions(y_pred_prob, model_metadata):
     """
-    Get the predicted probabilities for each output constraint using the model.
-    Probability is calculated as follow:
-    - for each constraint, the model predicts the probability of each class (1, -1, 0).
-    - Since we only want 1 probability per constraint, we sum the probabilities of classes 1 and -1 and assign
-        that as the predicted probability for that constraint.
-    This means it is the probability that the constraint will be parted of the conflict set or not. 
+    Finalize the predicted probabilities by ensuring they have all the labels
+    # if labels were removed during training (because of constant value), the predictions will also not have these labels
+    # we add them back with probab based on the constant value
+    # so if constant value was 0, we add column filled with 0.0, if const was 1 or -1, new column is filled with 1.0.
     
     Parameters:
-    model: The trained model to use for predictions
-    X_validate (numpy.ndarray): Input data for validation
+    y_pred_prob (numpy.ndarray): Predicted probabilities for each output constraint
+    model_metadata (dict): Metadata containing information about the model and constraints
     
     Returns:
-    numpy.ndarray: Predicted probabilities for each output constraint
+    numpy.ndarray: Finalized predicted probabilities with correct shape and labels
     """
-    # Initialize output array: (n_samples, n_constraints)
-    n_constraints = len(model.estimators_)
-    y_pred_prob = np.zeros((X_validate.shape[0], n_constraints), dtype=float)
-    
-    if isinstance(model, MultiOutputClassifier):
-        # For MultiOutputClassifier: each estimator is independent
-        for i, estimator in enumerate(model.estimators_):
-            probas = estimator.predict_proba(X_validate)  # Shape: (n_samples, n_classes_i)
-            class_labels = estimator.classes_
-            # Find indices of classes 1 and -1
-            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
-            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
-            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
-    elif isinstance(model, ClassifierChain):
-        # For ClassifierChain: predict labels first to use as features
-        y_pred = model.predict(X_validate)  # Shape: (n_samples, n_constraints)
-        for i, estimator in enumerate(model.estimators_):
-            # Prepare input: X_validate plus previous predicted labels
-            if i == 0:
-                input_i = X_validate
-            else:
-                input_i = np.hstack((X_validate, y_pred[:, 0:i]))
-            probas = estimator.predict_proba(input_i)  # Shape: (n_samples, n_classes_i)
-            class_labels = estimator.classes_
-            # Find indices of classes 1 and -1
-            prob_indices = [j for j, label in enumerate(class_labels) if label in [1, -1]]
-            # Sum probabilities for classes 1 and -1, or 0.0 if neither exists
-            y_pred_prob[:, i] = np.sum(probas[:, prob_indices], axis=1) if prob_indices else 0.0
-    else:
-        raise ValueError("Model must be MultiOutputClassifier or ClassifierChain")
-    
+    if 'removed_labels' in model_metadata and model_metadata['removed_labels']:
+        removed_labels_meta = model_metadata['removed_labels']
+        
+        # Convert string keys (original column indices) from YAML to integer keys
+        removed_labels_int_keys = {int(k): v for k, v in removed_labels_meta.items()}
+
+        old_cols_count = y_pred_prob.shape[1]
+        new_cols_count = old_cols_count + len(removed_labels_int_keys)
+        
+        # Create the new array that will hold the predictions with removed labels re-inserted
+        new_y_pred_prob = np.zeros((y_pred_prob.shape[0], new_cols_count), dtype=float)
+
+        # Iterate through each column index of the new_y_pred_prob to fill correct values
+        old_col_index = 0 # Index for iterating through columns of the old y_pred_prob
+        for new_col_index in range(new_cols_count):
+            # if it was one of the removed labels, we fill it with probability based on the constant value
+            if new_col_index in removed_labels_int_keys:
+                new_y_pred_prob[:, new_col_index] = 0.0 if removed_labels_int_keys[new_col_index] == 0 else 1.0
+            else: # just copy from the old y_pred_prob
+                new_y_pred_prob[:, new_col_index] = y_pred_prob[:, old_col_index]
+                old_col_index += 1
+        
+        # Update y_pred_prob to be the new array with re-inserted columns
+        y_pred_prob = new_y_pred_prob
+
     return y_pred_prob
 
-def testWithQuickXplain(settings, model, X_validate, input_data):
+def testWithQuickXplain(settings, y_pred_prob, input_data, model_metadata):
     """
     Test the model with QuickXplain to evaluate its performance on constraint ordering.
     
@@ -75,8 +66,8 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
         - ordered_runtime: Runtime of QuickXplain with predicted probabilities
         - unordered_runtime: Runtime of QuickXplain with default ordering
     """
-    # get predicted probabilities from model
-    y_pred_prob = getPredictedProbabilities(model, X_validate)
+    # Add missing labels to complete the full predictions (if any were removed during training)
+    y_pred_final = finalizePredictions(y_pred_prob, model_metadata)
 
     # Get the list of constraint names
     constraint_name_list = Utils.getConstraintNameList(settings)
@@ -102,7 +93,6 @@ def testWithQuickXplain(settings, model, X_validate, input_data):
 
     return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc]
 
-
 def startTesting(settings):
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
         # Import the model and the validation data
@@ -115,11 +105,11 @@ def startTesting(settings):
         
         # Test model on validation data.
         print(f"...Testing model '{model_name}' on validation data...")
-        metrics = ModelManager.evaluateModel(model, test_loader)
+        metrics, y_pred_prob = ModelManager.evaluateModel(model, test_loader)
 
         # Test the model on QX
         print(f"...Testing model '{model_name}' with QuickXplain...")
-        result = testWithQuickXplain(settings, model, X_test, input_data)
+        result = testWithQuickXplain(settings, y_pred_prob, input_data, model_metadata)
 
         # store the result in json file
         Utils.saveTestResults(settings, model_name, metrics, result)

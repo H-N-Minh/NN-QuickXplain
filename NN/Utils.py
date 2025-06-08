@@ -1,30 +1,26 @@
 # collections of all helper functions, small or standalone funcs for all files in DecisionTree
-
-
-from concurrent.futures import ProcessPoolExecutor
-import glob
-import json
-import multiprocessing
 import os
-import random
-import re
-import shutil
-
-import concurrent
 import sys
-import traceback
+import json
+import glob
+import shutil
+import random
 import joblib
+import traceback
+import multiprocessing
+import concurrent.futures
+import re
+
 import numpy as np
 import pandas as pd
-from sklearn.metrics import average_precision_score, f1_score, matthews_corrcoef, roc_auc_score, accuracy_score, precision_recall_curve
-import torch
-from tqdm import tqdm
 import yaml
-
+from tqdm import tqdm
+from sklearn.metrics import (
+    average_precision_score, f1_score, matthews_corrcoef, 
+    roc_auc_score, accuracy_score, precision_recall_curve
+)
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
 
@@ -496,8 +492,6 @@ def calculateCombinedScore(exact_match_pct, f1_scores, avg_mcc, mAP, hamming_los
     return combined_score
 
 
-
-
 ############################################# for Tester.py ########################################
 def importModel(settings, model_name):
     """
@@ -611,7 +605,6 @@ def preprocessValidationData(input_data, output_data, pca, model_metadata):
     
     return test_loader
 
-
 def processOutputFile(directory_path):
     """
     Process all output files of QuickXplain in the given directory. Use multiprocessing for faster processing.
@@ -676,7 +669,6 @@ def processOutputFile(directory_path):
     
     return avg_runtime, avg_cc
 
-
 def extractDataFromFile(chunk_data, all_files):
     """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
     try:
@@ -710,8 +702,6 @@ def extractDataFromFile(chunk_data, all_files):
         print(traceback.format_exc())
         return 0
 
-
-
 def getConstraintNameList(settings):
     """
     Get the list of constraint names (list of strings)
@@ -733,7 +723,6 @@ def getConstraintNameList(settings):
             if name:
                 column_names_list.append(name)
     return column_names_list
-
 
 def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     """
@@ -804,7 +793,6 @@ def createSolverInput(test_input, test_pred, output_dir, constraint_name_list):
     # Verify all samples were processed
     assert total_processed == num_samples, f"Error:createSolverInput:: Not all samples were processed."
     
-
 # Func for parallel processing in createSolverInput()
 def processChunk(chunk_data, features_array, test_pred, constraint_name_list, output_dir):
     """Process a chunk of samples concurrently"""
@@ -844,7 +832,6 @@ def processChunk(chunk_data, features_array, test_pred, constraint_name_list, ou
         print(traceback.format_exc())
         return 0
 
-
 def saveTestResults(settings, model_name, metrics, result):
     """
     Add the test results to the JSON file of the model.
@@ -858,13 +845,13 @@ def saveTestResults(settings, model_name, metrics, result):
     print(f"...Saving validation results for model {model_name}...")
 
     # Check if the output file exists
-    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best{model_name}_metrics.json")
+    output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
     assert os.path.exists(output_file), f"Json file ({output_file}) does not exist. Check path"
 
     with open(output_file, 'r') as f:
         data = json.load(f)
     
-    # make sure the key 'validation_result' does not already exist
+    # make sure the key 'QX_result' does not already exist
     assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
     assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
 
@@ -875,18 +862,18 @@ def saveTestResults(settings, model_name, metrics, result):
     unordered_cc = result[3]
     performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
     CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
-    data["validation_result"] = metrics
-    data["validation_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
-    data["validation_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
-    data["validation_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
-    data["validation_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
-    data["validation_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
-    data["validation_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
+    data["testing_result"] = metrics
+    data["QX_result"] = {}
+    data["QX_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
+    data["QX_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
+    data["QX_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
+    data["QX_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
+    data["QX_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
+    data["QX_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
     
     # Write the updated data back to file
     with open(output_file, 'w') as f:
         json.dump(data, f, indent=2)
-
 
 def printTestingSummary(settings):
     """Print a summary of the validation results stored in Model folder."""
@@ -897,7 +884,7 @@ def printTestingSummary(settings):
 
     # Go through each json file and print the result of the validation
     for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
-        model_file_name = os.path.join(saved_models_dir, f"Best{model_name}_metrics.json")
+        model_file_name = os.path.join(saved_models_dir, f"Best_{model_name}_metrics.json")
         assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
         
         with open(model_file_name, 'r') as json_file:
@@ -905,21 +892,16 @@ def printTestingSummary(settings):
 
         # extract the validation result and model's configuration
         model_config = model_metrics['config']
-        validation_result = model_metrics['validation_result']
-        ordered_runtime = validation_result['ordered_runtime']
-        unordered_runtime = validation_result['unordered_runtime']
+        metrics = model_metrics['testing_result']
+        QX_result = model_metrics['QX_result']
+        ordered_runtime = QX_result['ordered_runtime']
+        unordered_runtime = QX_result['unordered_runtime']
         less_time_percentage = (unordered_runtime - ordered_runtime) / unordered_runtime * 100 if unordered_runtime > 0 else 0.0
 
         # print result out
         print(f"\nModel '{model_name}':")
-
-        print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
-            f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
-            f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
-        print(f"  Exact Match: {validation_result['EXACT_MATCH']:.2f}%")
-        print(f"  F1: {validation_result['AVG_F1']:.4f}")
-        print(f"  Speed improvement: {validation_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
+        printOneModelTrainResult(model_config, metrics)
+        print(f"  Speed improvement: {QX_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
               f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
-

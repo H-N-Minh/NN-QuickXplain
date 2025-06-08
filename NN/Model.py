@@ -1,19 +1,13 @@
-import os
-import random
 import copy
-import uuid
-import matplotlib
 import numpy as np
 from sklearn.metrics import hamming_loss
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import Utils as Utils
-
 import torch.nn.functional as F
+
+import Utils
 
 class FocalLoss(nn.Module):
     """ Class that acts like a loss function. Loss is calculated as a weighted binary cross entropy loss.
@@ -198,7 +192,10 @@ class ModelManager:
 
     @staticmethod
     def evaluateModel(model, data_loader):
-        """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, ROC AUC, and combined score."""
+        """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, ROC AUC, and combined score.
+        Returns:
+        - metrics: A dictionary containing the evaluation metrics.
+        - y_pred_prob: The predicted probabilities for each output constraint."""
 
         # Get raw output (logits) from the model using the test data loader.
         model.eval()      # Evaluation Mode
@@ -248,7 +245,7 @@ class ModelManager:
             Utils.METRIC_TOTAL_SAMPLES: y_test.shape[0]
         }
     
-        return metrics
+        return metrics, y_pred_prob
 
     
   
