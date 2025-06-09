@@ -24,7 +24,7 @@
     "batch_size": 1024,
     "batch_norm": true,
     "max_epochs": 75,
-    "patience": 5,
+    "patience": 10,
     "loss_func": "bcewithlogitloss",
     "focal_loss_gamma": 0.0,
     "focal_loss_alpha": 0.0,
