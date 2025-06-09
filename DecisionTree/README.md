@@ -47,6 +47,7 @@ for arcade, i trained on this tweaks
   SUMARY: 2 sessions ran in parallel at a time: (1. together with 2.) and (3. together with 4.) 
   Each metrics below are marked for which session this best score is from
   After training, all best models of each 500 models per session are tested. ✅ means they improved QX
+  After testing, only models with ✅ can stay, all other models are deleted to allow new sessions to overwrite them
 
 1. Best 'EXACT_MATCH' Model:
   test_size: 0.80 || max_depth: 15 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
@@ -76,3 +77,11 @@ for arcade, i trained on this tweaks
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
   Exact Match = 0.84%, F1 = 0.5972, MCC = 0.3969, MAP = 0.3945, Hamming Loss = 0.0356, Combined Score = 53.26%
 
+
+=================================================================================================================
+suggestions: still need to tweak 
+optuna_goal
+max_depth
+n_estimator
+try to close the range on other metrics so we can go tweak through these fast. keep the balance of number of trials
+with possible tweaks.
