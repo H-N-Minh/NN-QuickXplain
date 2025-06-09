@@ -72,10 +72,10 @@ for arcade, i trained on this tweaks
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimator: 8
   Exact Match = 0.44%, F1 = 0.5523, MCC = 0.2667, MAP = 0.4062, Hamming Loss = 0.0407, Combined Score = 51.11%
 
-2. Best 'HAMMING_LOSS' Model:
-  test_size: 0.10 || max_depth: 5 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
-  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
-  Exact Match = 0.84%, F1 = 0.5972, MCC = 0.3969, MAP = 0.3945, Hamming Loss = 0.0356, Combined Score = 53.26%
+3. Best 'HAMMING_LOSS' Model: ✅
+  test_size: 0.50 || max_depth: 10 || estimator_type: RandomForest || multi_output_type: Direct
+  use_pca: True || pca_components: 0.95 || class_weight: balanced || n_estimator: 6
+  Exact Match = 0.05%, F1 = 0.4576, MCC = 0.1783, MAP = 0.1214, Hamming Loss = 0.0380, Combined Score = 42.61%
 
 
 =================================================================================================================
