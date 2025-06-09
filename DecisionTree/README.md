@@ -47,7 +47,7 @@ for arcade, i trained on this tweaks
   SUMARY: 2 sessions ran in parallel at a time: (1. together with 2.) and (3. together with 4.) 
   Each metrics below are marked for which session this best score is from
   After training, all best models of each 500 models per session are tested. ✅ means they improved QX
-  After testing, only models with ✅ can stay, all other models are deleted to allow new sessions to overwrite them
+
 
 1. Best 'EXACT_MATCH' Model:
   test_size: 0.80 || max_depth: 15 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
