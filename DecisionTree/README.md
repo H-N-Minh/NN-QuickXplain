@@ -24,91 +24,65 @@ CC_less_percentage: 20% means if no model needs 100CC, new model needs 80.
 
 Training logs:
 for arcade, i trained on this tweaks
-    configurations: 
-      test_sizes: [0.2, 0.5, 0.8] 
-      max_depths: [null, 10, 20, 30]
-      estimator_types: ['DecisionTree', 'RandomForest'] 
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']
-      use_pca_options: [false, true]
-      class_weight_options: [null, 'balanced'] 
-      
-      random_forest_direct: 
-        skip: false
-This results in 240 different models trained and evaluated. 6 best models were then tested
 
------------------------------------------------------------------------------------------------------------------------------------
 
-for busy box, i trained on this tweaks
-    configurations: 
+    optuna_trials: 500 
+    optuna_goal: "EXACT_MATCH" 
 
-      test_sizes: [0.2, 0.5, 0.8] 
-      max_depths: [10] 
-      estimator_types: ['DecisionTree']
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']    
-      use_pca_options: [false]  
-      class_weight_options: [null, 'balanced']   
-      
-      random_forest_direct:  
-        skip: true  
-  Since data is much larger and theres more constraints, training each model takes significantly longer, so its not practical to
-  test every possible tweaks. Training data was capped at 70k samples to shorten training time.
-  The configurations above result in 12 models trained and evaluated, again the top 6 is saved and tested later on
-  Best was Multioutput, test size 0.2, class weight null.
+      test_size: [0.1, 0.9]   
+      max_depth: [3, 5, 10, 15, 20, 40, 60, 80, 100, null]   
+      estimator_type: ['DecisionTree', 'RandomForest']    
+      multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         
+      use_pca: [false]   
+      class_weight: ['balanced']      
+      n_estimator: [1, 10]   
 
-for busy box 2nd training session:
-      test_sizes: [0.1, 0.3]  
-      max_depths: [null, 20]      
-      estimator_types: ['RandomForest'] 
-      multi_output_types: ['ClassifierChain']       
-      use_pca_options: [true]  
-      class_weight_options: ['balanced']   
-  this is again trained on 70k max
-  This is testing 4 models, none of which beat the last training session
-  best was 01 test size, max depth null
-      
-for busy box 3rd training session
-      test_sizes: [0.1, 0.2]  
-      max_depths: [10, 30]    
-      estimator_types: ['RandomForest']   
-      multi_output_types: ['MultiOutputClassifier']      
-      use_pca_options: [false, true]   
-      class_weight_options: [null]     
-      
-      random_forest_direct:    
-        skip: false 
-  This tests 16 models on 70k data
-  Best test size 0.1, max depth 10, pca false
+  ran in paralel with 2. session and got best in exact match and combined:
+  Best 'EXACT_MATCH' Model:
+  test_size: 0.80 || max_depth: 15 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
+  use_pca: False || pca_components: 0.95 || class_weight: balanced || n_estimators: None
+  Exact Match = 11.36%, F1 = 0.6374, MCC = 0.3352, MAP = nan, Hamming Loss = 0.0542, Combined Score = 59.11%
+Best 'COMBINED' Model:
+  test_size: 0.30 || max_depth: 15 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
+  use_pca: False || pca_components: 0.95 || class_weight: balanced || n_estimators: None
+  Exact Match = 9.11%, F1 = 0.6607, MCC = 0.3707, MAP = nan, Hamming Loss = 0.0546, Combined Score = 59.56%
 
-for busy box 4th training session
-      test_sizes: [0.1] 
-      max_depths: [10, null]  
-      estimator_types: ['DecisionTree', 'RandomForest']  
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']  
-      use_pca_options: [false, true]   
-      class_weight_options: [null, 'balanced']  
-      
-      random_forest_direct: 
-        skip: false
-  This tests 40 models on 70k data
-  best was decisiontree, clasifierchain, depth 10, pca false
+=================================================================================================================
+2. session: same as above, but now with class weight == null
 
-for busy box 5th training session
-      test_sizes: [0.1, 0.3, 0.5, 0.9]  
-      max_depths: [5, 10, 15, 20]      
-      estimator_types: ['DecisionTree']  
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']  
-      use_pca_options: [false]   
-      class_weight_options: [null]      
-  this tests 32 models on 70k data
-  0.1 and 0.3 test size won, max depth 5, multioutputclassifier
+    # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
+    optuna_trials: 500  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
+    optuna_goal: "EXACT_MATCH" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
+    # Note each session should only train 6 hyperparams,  
 
-last session
-      test_sizes: [0.1, 0.3]  
-      max_depths: [5, 10]    
-      estimator_types: ['DecisionTree']  
-      multi_output_types: ['MultiOutputClassifier', 'ClassifierChain']        
-      use_pca_options: [false]    
-      class_weight_options: ['balanced']    
+    configurations:   # different configs for different models to find best model
+      # NOTE: the more configurations, the more time it takes to train the model
 
-      random_forest_direct:   
-        skip: false  
+      test_size: [0.1, 0.9]   # continuous range, so min max values. test size for train/test split
+      max_depth: [3, 5, 10, 15, 20, 40, 60, 80, 100, null]       # max training depth, null for unlimited depth
+      estimator_type: ['DecisionTree', 'RandomForest']    # ['DecisionTree', 'RandomForest']
+      multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
+      use_pca: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
+      class_weight: [null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+      n_estimator: [1, 10]   # Min max values. number of estimators for RandomForest (only used if estimator_type is 'RandomForest')
+  found new best for f1, mcc, map and hamming
+  Best 'F1' Model:
+  test_size: 0.10 || max_depth: 60 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
+  Exact Match = 1.00%, F1 = 0.6896, MCC = 0.4067, MAP = 0.3509, Hamming Loss = 0.0403, Combined Score = 54.27%
+
+Best 'MCC' Model:
+  test_size: 0.40 || max_depth: 3 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
+  Exact Match = 0.91%, F1 = 0.5557, MCC = 0.4809, MAP = 0.3353, Hamming Loss = 0.0359, Combined Score = 52.09%
+
+Best 'MAP' Model:
+  test_size: 0.30 || max_depth: 100 || estimator_type: RandomForest || multi_output_type: MultiOutputClassifier
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimator: 8
+  Exact Match = 0.44%, F1 = 0.5523, MCC = 0.2667, MAP = 0.4062, Hamming Loss = 0.0407, Combined Score = 51.11%
+
+Best 'HAMMING_LOSS' Model:
+  test_size: 0.10 || max_depth: 5 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
+  Exact Match = 0.84%, F1 = 0.5972, MCC = 0.3969, MAP = 0.3945, Hamming Loss = 0.0356, Combined Score = 53.26%
+
