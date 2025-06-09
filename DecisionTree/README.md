@@ -26,20 +26,28 @@ Training logs:
 for arcade, i trained on this tweaks
 
 =================================================================================================================
-1. session (actually 2 sessions, each 500. 1 with class weight balanced and 1 with class weight null)
-    optuna_trials: 1000 
-    optuna_goal: "EXACT_MATCH" 
+1. session 
+    optuna_trials: 2000 
+    optuna_goal: "EXACT_MATCH" for 1000, "F1" for 1000
 
       test_size: [0.1, 0.9]   
       max_depth: [3, 5, 10, 15, 20, 40, 60, 80, 100, null]   
       estimator_type: ['DecisionTree', 'RandomForest']    
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         
-      use_pca: [false]   
+      use_pca: [true, false]   
       class_weight: ['balanced', null]      
       n_estimator: [1, 10]   
 
+  This yields about 20k possible combinations. we train only 2k of them, splited into 4 sessions, each 500 models.
+  1. pca false, class weight balanced, Optuna goal Exact match.       Rest is unchanged
+  2. pca false, class weight null      Optuna goal Exact match.       Rest is unchanged
+  3. pca true,  class weight balanced, Optuna goal F1.                Rest is unchanged 
+  4. pca true,  class weight null,     Optuna goal F1.                Rest is unchanged
   \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-  SUMARY: 2 sessions ran in parallel. This is best top 6 of both of them
+  SUMARY: 2 sessions ran in parallel at a time: (1. together with 2.) and (3. together with 4.) 
+  Each metrics below are marked for which session this best score is from
+  After training, all best models of each 500 models per session are tested. ✅ means they improved QX
+
 1. Best 'EXACT_MATCH' Model:
   test_size: 0.80 || max_depth: 15 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
   use_pca: False || pca_components: 0.95 || class_weight: balanced || n_estimators: None
@@ -53,7 +61,7 @@ for arcade, i trained on this tweaks
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
   Exact Match = 1.00%, F1 = 0.6896, MCC = 0.4067, MAP = 0.3509, Hamming Loss = 0.0403, Combined Score = 54.27%
 
-2. Best 'MCC' Model: ✅ (good performance on QX)
+2. Best 'MCC' Model: ✅ 
   test_size: 0.40 || max_depth: 3 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
   Exact Match = 0.91%, F1 = 0.5557, MCC = 0.4809, MAP = 0.3353, Hamming Loss = 0.0359, Combined Score = 52.09%
