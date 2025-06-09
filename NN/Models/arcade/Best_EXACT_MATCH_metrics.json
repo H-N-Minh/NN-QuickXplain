@@ -23,7 +23,7 @@
     "hidden_activation_func": "relu",
     "batch_size": 1024,
     "batch_norm": true,
-    "max_epochs": 50,
+    "max_epochs": 75,
     "patience": 5,
     "loss_func": "bcewithlogitloss",
     "focal_loss_gamma": 0.0,

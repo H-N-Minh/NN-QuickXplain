@@ -23,7 +23,7 @@
     "hidden_activation_func": "relu",
     "batch_size": 1024,
     "batch_norm": true,
-    "max_epochs": 75,
+    "max_epochs": 200,
     "patience": null,
     "loss_func": "Focal Loss",
     "focal_loss_gamma": 2.0,
