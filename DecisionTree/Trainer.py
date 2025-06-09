@@ -18,6 +18,24 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import label_binarize
 from sklearn.feature_selection import VarianceThreshold
 
+class EarlyStopping():
+    def __init__(self, patience=100):
+        self.patience = patience
+        self.best_score = None
+        self.no_improvement_count = 0
+    
+    def __call__(self, study, trial):
+        score = study.best_value
+        if self.best_score is None or score > self.best_score:
+            self.best_score = score
+            self.no_improvement_count = 0
+        else:
+            self.no_improvement_count += 1
+        if self.no_improvement_count >= self.patience:
+            print(f"Early stopping triggered after {self.no_improvement_count} trials without improvement.")
+            return True
+        return False
+
 
 def createBaseEstimator(estimator_type, config):
     """Create base estimator for Model according to configuration."""
@@ -235,13 +253,14 @@ def trainAllModels(input_data, output_data, settings):
     configs_settings = settings['WORKFLOW']['TRAIN']['configurations']      # Includes all hyperparameters to try
     error_list = []                                                         # Store errors during training                                
     sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10, n_ei_candidates=24)     # Fixed seed for reproducibility     
-    
+    early_stop = EarlyStopping(100)
+
     # 3. Start the Optuna study process    
     print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials with target metric '{target_metric}'...")
     optuna.logging.set_verbosity(optuna.logging.WARNING)            # Keep the logs minimal, only show warnings and errors
     study = optuna.create_study(direction=optimize_direction, sampler=sampler)
     study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
-                                           error_list, n_trials, best_models, target_metric), n_trials=n_trials)
+                                           error_list, n_trials, best_models, target_metric), n_trials=n_trials, callbacks=[early_stop])
     
     print(f"\n\n...Training completed with {len(error_list)} error(s).")
 
