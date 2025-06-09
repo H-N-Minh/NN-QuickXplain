@@ -1,28 +1,28 @@
 {
   "training_result": {
-    "EXACT_MATCH": 10.711030082041932,
-    "F1": 0.6237101942712168,
-    "MCC": 0.3233176803642317,
+    "EXACT_MATCH": 11.816317228805834,
+    "F1": 0.666983439551722,
+    "MCC": 0.4018237661917647,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.055652813458191765,
-    "COMBINED": 58.420663045389,
-    "accuracy": 0.9442798541476756,
+    "HAMMING_LOSS": 0.05316669429021298,
+    "COMBINED": 60.82229501613624,
+    "accuracy": 0.946753024778321,
     "roc_auc": NaN,
-    "total_samples": 4388
+    "total_samples": 8776
   },
   "validation_indexes": [
     15795,
     20670
   ],
   "config": {
-    "test_size": 0.1,
+    "test_size": 0.2,
     "max_depth": 10,
-    "estimator_type": "DecisionTree",
+    "estimator_type": "RandomForest",
     "multi_output_type": "ClassifierChain",
     "use_pca": false,
     "pca_components": 0.95,
     "class_weight": "balanced",
-    "n_estimators": null
+    "n_estimator": 11
   },
   "removed_features": [],
   "removed_labels": {
@@ -31,22 +31,22 @@
     "11": 0
   },
   "testing_result": {
-    "EXACT_MATCH": 12.41025641025641,
-    "F1": 0.8152202528363236,
-    "MCC": 0.05453720379446882,
+    "EXACT_MATCH": 12.34871794871795,
+    "F1": 0.8162545584216923,
+    "MCC": 0.04590440434090035,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.05194871794871795,
-    "COMBINED": 60.366067522185105,
-    "accuracy": 0.9480512820512821,
+    "HAMMING_LOSS": 0.05216317016317017,
+    "COMBINED": 60.26326924790379,
+    "accuracy": 0.9478368298368299,
     "roc_auc": NaN,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 0.0025754801302564105,
-    "ordered_cc": 11.266461538461538,
-    "unordered_runtime": 0.0022668233624615376,
+    "ordered_runtime": 0.0024077778656410266,
+    "ordered_cc": 12.812717948717948,
+    "unordered_runtime": 0.0020885701329230763,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": -11.984435995790172,
-    "CC_less_percentage": -0.014567703401549862
+    "faster_performance_percentage": -13.257358050883447,
+    "CC_less_percentage": -13.740986233520273
   }
 }

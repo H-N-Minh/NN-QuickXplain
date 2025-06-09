@@ -1,28 +1,28 @@
 {
   "training_result": {
-    "EXACT_MATCH": 1.4984901145233889,
-    "F1": 0.5215009575859532,
-    "MCC": 0.2850553000958828,
-    "MAP": NaN,
-    "HAMMING_LOSS": 0.03630458766918228,
-    "COMBINED": 53.567723027748656,
-    "accuracy": 0.9636824630557181,
-    "roc_auc": NaN,
-    "total_samples": 17551
+    "EXACT_MATCH": 0.0,
+    "F1": 0.4065164592781331,
+    "MCC": 0.09615630641023526,
+    "MAP": 0.32178689445525355,
+    "HAMMING_LOSS": 0.0362766221927571,
+    "COMBINED": 44.80209769491495,
+    "accuracy": 0.9637181983923097,
+    "roc_auc": 0.836854867694326,
+    "total_samples": 4388
   },
   "validation_indexes": [
     15795,
     20670
   ],
   "config": {
-    "test_size": 0.4,
-    "max_depth": 5,
-    "estimator_type": "DecisionTree",
-    "multi_output_type": "ClassifierChain",
+    "test_size": 0.1,
+    "max_depth": 10,
+    "estimator_type": "RandomForest",
+    "multi_output_type": "Direct",
     "use_pca": false,
     "pca_components": 0.95,
     "class_weight": null,
-    "n_estimators": null
+    "n_estimator": 19
   },
   "removed_features": [],
   "removed_labels": {
@@ -34,19 +34,19 @@
     "EXACT_MATCH": 0.0,
     "F1": 0.8168559134872209,
     "MCC": NaN,
-    "MAP": NaN,
+    "MAP": 0.05022413605523883,
     "HAMMING_LOSS": 0.03478787878787879,
-    "COMBINED": 59.402267823311405,
+    "COMBINED": 45.80730426886453,
     "accuracy": 0.9652121212121213,
-    "roc_auc": NaN,
+    "roc_auc": 0.6703553021743425,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 0.003227864196307692,
-    "ordered_cc": 15.680410256410257,
-    "unordered_runtime": 0.002217756621128206,
+    "ordered_runtime": 0.0019098642457435896,
+    "ordered_cc": 9.886974358974358,
+    "unordered_runtime": 0.0019593095074871797,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": -31.29337276131175,
-    "CC_less_percentage": -39.198047927744184
+    "faster_performance_percentage": 2.588941169708059,
+    "CC_less_percentage": 12.231407968533773
   }
 }
