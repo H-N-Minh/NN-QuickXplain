@@ -80,7 +80,7 @@ for arcade, i trained on this tweaks
 
 =================================================================================================================
 2. big session.
-    optuna_trials: 700 
+    optuna_trials: 1400 
     optuna_goal: "MCC"
 
     test_size: [0.1, 0.7]  
@@ -96,9 +96,29 @@ Now this is 13.4k possible combination, we train only 1400 of them, so 2 session
   2.1: estimator type: DecisionTree, rest is same
   2.2: estimator type: randomforest, rest is same
 
+The 700 from decision tree finished but no new model that is better, except hamming loss is tiny bit better but worse QX performance
+Best 'HAMMING_LOSS' Model:
+  test_size: 0.40 || max_depth: 5 || estimator_type: DecisionTree || multi_output_type: ClassifierChain
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
+  Exact Match = 1.50%, F1 = 0.5215, MCC = 0.2851, MAP = nan, Hamming Loss = 0.0363, Combined Score = 53.57%
+
 
 =================================================================================================================
+optuna_trials: 1200  
+optuna_goal: "MAP"
 
+Idea: next 10 of n estimators
+  test_size: [0.1, 0.6] 
+  max_depth: [3, 5, 10, 15, 100, 110, 120, null]   
+  estimator_type: ['DecisionTree', 'RandomForest']  
+  multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']   
+  use_pca: [true, false]   
+  class_weight: ['balanced', null]   
+  n_estimator: [21, 30] 
+
+1. session: class weight balanced
+
+=================================================================================================================
 suggestions: still need to tweak 
 optuna_goal
 max_depth
