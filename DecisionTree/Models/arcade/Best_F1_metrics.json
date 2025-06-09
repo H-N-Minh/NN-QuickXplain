@@ -1,0 +1,52 @@
+{
+  "training_result": {
+    "EXACT_MATCH": 3.821317328876396,
+    "F1": 0.6842170618107943,
+    "MCC": 0.38333884249096184,
+    "MAP": NaN,
+    "HAMMING_LOSS": 0.0580915513871527,
+    "COMBINED": 58.90020262394716,
+    "accuracy": 0.9418618303371017,
+    "roc_auc": NaN,
+    "total_samples": 13163
+  },
+  "validation_indexes": [
+    15795,
+    20670
+  ],
+  "config": {
+    "test_size": 0.30000000000000004,
+    "max_depth": 110,
+    "estimator_type": "DecisionTree",
+    "multi_output_type": "ClassifierChain",
+    "use_pca": false,
+    "pca_components": 0.95,
+    "class_weight": "balanced",
+    "n_estimators": null
+  },
+  "removed_features": [],
+  "removed_labels": {
+    "0": 0,
+    "1": 0,
+    "11": 0
+  },
+  "testing_result": {
+    "EXACT_MATCH": 12.471794871794872,
+    "F1": 0.8222953971906942,
+    "MCC": 0.035312507783542446,
+    "MAP": NaN,
+    "HAMMING_LOSS": 0.0528065268065268,
+    "COMBINED": 60.29657682484719,
+    "accuracy": 0.9471934731934731,
+    "roc_auc": NaN,
+    "total_samples": 4875
+  },
+  "QX_result": {
+    "ordered_runtime": 0.002513937245948718,
+    "ordered_cc": 11.268102564102565,
+    "unordered_runtime": 0.0022379228982564105,
+    "unordered_cc": 11.264820512820513,
+    "faster_performance_percentage": -10.9793650631937,
+    "CC_less_percentage": -0.02913540680311549
+  }
+}
