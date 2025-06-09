@@ -79,6 +79,26 @@ for arcade, i trained on this tweaks
 
 
 =================================================================================================================
+2. big session.
+    optuna_trials: 700 
+    optuna_goal: "MCC"
+
+    test_size: [0.1, 0.7]  
+    max_depth: [3, 5, 10, 15, 95, 100, 110, null]   
+    estimator_type: ['DecisionTree', 'RandomForest'] 
+    multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']   
+    use_pca: [true, false]   
+    class_weight: ['balanced', null]    
+    n_estimator: [11, 20]  
+
+Main idea: trying now n_estimator from 11 to 20. dont wanna train 2k again, so trimmed down test size and max depth
+Now this is 13.4k possible combination, we train only 1400 of them, so 2 sessions running in parallel, each trying 700 models
+  2.1: estimator type: DecisionTree, rest is same
+  2.2: estimator type: randomforest, rest is same
+
+
+=================================================================================================================
+
 suggestions: still need to tweak 
 optuna_goal
 max_depth
