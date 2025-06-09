@@ -46,11 +46,11 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: true # skip training if the model already exists and stored in the model folder
+    SKIP: false # skip training if the model already exists and stored in the model folder
 
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
     optuna_trials: 500  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
-    optuna_goal: "EXACT_MATCH" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
+    optuna_goal: "F1" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
     # Note each session should only train 6 hyperparams,  
 
     configurations:   # different configs for different models to find best model
@@ -60,11 +60,11 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       max_depth: [3, 5, 10, 15, 20, 40, 60, 80, 100, null]       # max training depth, null for unlimited depth
       estimator_type: ['DecisionTree', 'RandomForest']    # ['DecisionTree', 'RandomForest']
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
-      use_pca: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      class_weight: [null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+      use_pca: [true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
+      class_weight: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
       n_estimator: [1, 10]   # Min max values. number of estimators for RandomForest (only used if estimator_type is 'RandomForest')
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: false # skip validation part completely if set to true
+    SKIP: true # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
     # Note: the selected dataset must also be correctly set in the PATHS section above
     models_to_test: [ "MCC"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.
