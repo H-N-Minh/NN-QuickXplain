@@ -67,12 +67,12 @@ for arcade, i trained on this tweaks
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
   Exact Match = 0.91%, F1 = 0.5557, MCC = 0.4809, MAP = 0.3353, Hamming Loss = 0.0359, Combined Score = 52.09%
 
-2. Best 'MAP' Model: ✅
+2. Best 'MAP' Model: GOOD
   test_size: 0.30 || max_depth: 100 || estimator_type: RandomForest || multi_output_type: MultiOutputClassifier
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimator: 8
   Exact Match = 0.44%, F1 = 0.5523, MCC = 0.2667, MAP = 0.4062, Hamming Loss = 0.0407, Combined Score = 51.11%
 
-3. Best 'HAMMING_LOSS' Model: ✅
+3. Best 'HAMMING_LOSS' Model: GOOD
   test_size: 0.50 || max_depth: 10 || estimator_type: RandomForest || multi_output_type: Direct
   use_pca: True || pca_components: 0.95 || class_weight: balanced || n_estimator: 6
   Exact Match = 0.05%, F1 = 0.4576, MCC = 0.1783, MAP = 0.1214, Hamming Loss = 0.0380, Combined Score = 42.61%
@@ -102,7 +102,8 @@ Best 'HAMMING_LOSS' Model:
   use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
   Exact Match = 1.50%, F1 = 0.5215, MCC = 0.2851, MAP = nan, Hamming Loss = 0.0363, Combined Score = 53.57%
 
-
+the 700 from randomforest beated Hammingloss and MAP, both with good performance
+(too lazy to put them here)
 =================================================================================================================
 optuna_trials: 1200  
 optuna_goal: "MAP"
@@ -117,8 +118,23 @@ Idea: next 10 of n estimators
   n_estimator: [21, 30] 
 
 1. session: class weight balanced
+2. session: class weight null
 
 =================================================================================================================
+optuna_trials: 1000
+optuna_goal: "COMBINED"
+  test_size: [0.1, 0.6]  
+  max_depth: [5, 10, 15, 60, 100, 130, null]   
+  estimator_type: ['DecisionTree', 'RandomForest']   
+  multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']   
+  use_pca: [true, false] 
+  class_weight: [null, 'balanced']  
+  n_estimator: [31, 60]
+
+this is last attemp. Around 30k models, but with Optuna we only need to train around 2% to find the best, so 600 trials
+Divided by 2 so each session 300 trials. We set max trials for each model is 1000, but with early stopping (new). Which means after 100 trials with no improvement we will stop. 
+
+
 suggestions: still need to tweak 
 optuna_goal
 max_depth

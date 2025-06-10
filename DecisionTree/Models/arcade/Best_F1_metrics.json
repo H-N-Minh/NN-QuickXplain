@@ -1,27 +1,27 @@
 {
   "training_result": {
-    "EXACT_MATCH": 3.821317328876396,
-    "F1": 0.6842170618107943,
-    "MCC": 0.38333884249096184,
-    "MAP": NaN,
-    "HAMMING_LOSS": 0.0580915513871527,
-    "COMBINED": 58.90020262394716,
-    "accuracy": 0.9418618303371017,
-    "roc_auc": NaN,
-    "total_samples": 13163
+    "EXACT_MATCH": 1.048313582497721,
+    "F1": 0.6980220566480736,
+    "MCC": 0.43392938261680514,
+    "MAP": 0.41272743737638307,
+    "HAMMING_LOSS": 0.03682564017568576,
+    "COMBINED": 56.02743361964302,
+    "accuracy": 0.9631432833347146,
+    "roc_auc": 0.8027758806471305,
+    "total_samples": 4388
   },
   "validation_indexes": [
     15795,
     20670
   ],
   "config": {
-    "test_size": 0.30000000000000004,
-    "max_depth": 110,
+    "test_size": 0.1,
+    "max_depth": 10,
     "estimator_type": "DecisionTree",
-    "multi_output_type": "ClassifierChain",
+    "multi_output_type": "MultiOutputClassifier",
     "use_pca": false,
     "pca_components": 0.95,
-    "class_weight": "balanced",
+    "class_weight": null,
     "n_estimators": null
   },
   "removed_features": [],
@@ -31,22 +31,22 @@
     "11": 0
   },
   "testing_result": {
-    "EXACT_MATCH": 12.471794871794872,
-    "F1": 0.8222953971906942,
-    "MCC": 0.035312507783542446,
-    "MAP": NaN,
-    "HAMMING_LOSS": 0.0528065268065268,
-    "COMBINED": 60.29657682484719,
-    "accuracy": 0.9471934731934731,
-    "roc_auc": NaN,
+    "EXACT_MATCH": 0.041025641025641026,
+    "F1": 0.817089986223906,
+    "MCC": 0.0008041410247756099,
+    "MAP": 0.05007374729383123,
+    "HAMMING_LOSS": 0.03498834498834499,
+    "COMBINED": 46.65975430904073,
+    "accuracy": 0.965011655011655,
+    "roc_auc": 0.6695609466459879,
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 0.002513937245948718,
-    "ordered_cc": 11.268102564102565,
-    "unordered_runtime": 0.0022379228982564105,
+    "ordered_runtime": 0.0011387071417435894,
+    "ordered_cc": 10.725128205128206,
+    "unordered_runtime": 0.0011578485411282051,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": -10.9793650631937,
-    "CC_less_percentage": -0.02913540680311549
+    "faster_performance_percentage": 1.6809764936844436,
+    "CC_less_percentage": 4.790953456187632
   }
 }
