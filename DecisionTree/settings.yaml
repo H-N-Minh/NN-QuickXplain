@@ -6,10 +6,10 @@ PATHS:
   # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
   
   # ARCADE bigger dataset (48752 invalid configurations)
-  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
-  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
-  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
 
   #BUSYBOX small dataset
   # TRAINDATA_INPUT_PATH: "TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
@@ -18,10 +18,10 @@ PATHS:
   # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
   #BUSYBOX HUGE dataset
-  # TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
-  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+  TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
 
   SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
@@ -32,7 +32,7 @@ PATHS:
   JAVA_PATH: "java"     # default java path (if java is installed in the system)
   # JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
 
-  MODEL_PATH: "Models/arcade"  # path to the folder of trained models
+  MODEL_PATH: "Models/busybox"  # path to the folder of trained models
   # MODEL_PATH: "Models/busybox"  # path to the folder of trained models
 
 
@@ -46,25 +46,25 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: true # skip training if the model already exists and stored in the model folder
+    SKIP: false # skip training if the model already exists and stored in the model folder
 
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
     optuna_trials: 1000  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
-    optuna_goal: "COMBINED" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
+    optuna_goal: "MAP" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
     # Note each session should only train 6 hyperparams,  
 
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      test_size: [0.1, 0.6]   # continuous range, so min max values. test size for train/test split
-      max_depth: [5, 10, 15, 60, 100, 130, null]       # max training depth, null for unlimited depth
+      test_size: [0.1, 0.9]   # continuous range, so min max values. test size for train/test split
+      max_depth: [10, 20, 30, 40, 50, 60, 70, 80, 90, null]       # max training depth, null for unlimited depth
       estimator_type: ['DecisionTree', 'RandomForest']    # ['DecisionTree', 'RandomForest']
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
-      use_pca: [true, false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
-      class_weight: [null, 'balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
-      n_estimator: [31, 60]   # Min max values. number of estimators for RandomForest (only used if estimator_type is 'RandomForest')
+      use_pca: [true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
+      class_weight: ['balanced']       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
+      n_estimator: [1, 100]   # Min max values. number of estimators for RandomForest (only used if estimator_type is 'RandomForest')
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: false # skip validation part completely if set to true
+    SKIP: true # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
     # Note: the selected dataset must also be correctly set in the PATHS section above
     models_to_test: ["F1", "HAMMING_LOSS"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.

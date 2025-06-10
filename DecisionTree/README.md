@@ -135,9 +135,19 @@ this is last attemp. Around 30k models, but with Optuna we only need to train ar
 Divided by 2 so each session 300 trials. We set max trials for each model is 1000, but with early stopping (new). Which means after 100 trials with no improvement we will stop. 
 
 
-suggestions: still need to tweak 
-optuna_goal
-max_depth
-n_estimator
-try to close the range on other metrics so we can go tweak through these fast. keep the balance of number of trials
-with possible tweaks.
+
+
+started training on BUSY BOX
+1. session 
+    optuna_trials: 2000 
+    optuna_goal: "MAP"
+
+      test_size: [0.1, 0.9]   
+      max_depth:[10, 20, 30, 40, 50, 60, 70, 80, 90, null]  
+      estimator_type: ['DecisionTree', 'RandomForest']    
+      multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         
+      use_pca: [true, false]   
+      class_weight: ['balanced', null]      
+      n_estimator: [1, 100]
+  1 session with classweight null, 1 with classweight balanced
+  Each session has 1000 trials   
