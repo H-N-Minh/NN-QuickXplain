@@ -139,15 +139,17 @@ Divided by 2 so each session 300 trials. We set max trials for each model is 100
 
 started training on BUSY BOX
 1. session 
-    optuna_trials: 2000 
+    optuna_trials: 20
     optuna_goal: "MAP"
 
-      test_size: [0.1, 0.9]   
-      max_depth:[10, 20, 30, 40, 50, 60, 70, 80, 90, null]  
-      estimator_type: ['DecisionTree', 'RandomForest']    
-      multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']         
-      use_pca: [true, false]   
-      class_weight: ['balanced', null]      
-      n_estimator: [1, 100]
-  1 session with classweight null, 1 with classweight balanced
-  Each session has 1000 trials   
+    test_size: [0.1]  
+    max_depth: [10, 50, 100, null]    
+    estimator_type: ['DecisionTree', 'RandomForest']   
+    multi_output_type: ['MultiOutputClassifier', 'ClassifierChain', 'Direct']    
+    use_pca: [false] 
+    class_weight: [null]      
+    n_estimator: [1, 20]  
+  This is 480 possible combination, im training 4% of that so 20 models
+  The config is inspried by best config of arcade
+
+NOTE: only train 1 session at a time cause each session is 10gb ram crazy

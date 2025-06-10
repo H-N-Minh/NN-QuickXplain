@@ -145,14 +145,14 @@ def importValidationData(settings, model_metadata, pca):
     assert output_data.shape[0] == (end_index - start_index), "Output data row count does not match the specified validation indexes."
 
     # Debugminh TODO: remove this: Limit the testing data for busybox to a maximum of 1,000 samples to get faster training
-    # max_samples = 1000
-    # model_folder_name = os.path.basename(os.path.dirname(settings['PATHS']['TRAINDATA_INPUT_PATH']))
-    # if model_folder_name == "busybox" and input_data.shape[0] > max_samples:
-    #     print(f"(importing only {max_samples} samples for faster testing on busybox data)")
-    #     np.random.seed(42)  # for reproducibility
-    #     random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
-    #     input_data = input_data.iloc[random_indices]
-    #     output_data = output_data.iloc[random_indices]
+    max_samples = 1000
+    model_folder_name = os.path.basename(os.path.dirname(settings['PATHS']['TRAINDATA_INPUT_PATH']))
+    if model_folder_name == "busybox" and input_data.shape[0] > max_samples:
+        print(f"(importing only {max_samples} samples for faster testing on busybox data)")
+        np.random.seed(42)  # for reproducibility
+        random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
+        input_data = input_data.iloc[random_indices]
+        output_data = output_data.iloc[random_indices]
 
     print(f"...Imported {input_data.shape[0]} testing samples with {input_data.shape[1]} features and {output_data.shape[1]} labels")
 
@@ -630,13 +630,13 @@ def importTrainingData(settings):
     assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
 
     
-    # # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
-    # max_samples = 70000
-    # if input_data.shape[0] > max_samples:
-    #     print(f"(Importing only {max_samples} samples for faster training on busybox data)")
-    #     random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
-    #     input_data = input_data.iloc[random_indices]
-    #     output_data = output_data.iloc[random_indices]
+    # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
+    max_samples = 70000
+    if input_data.shape[0] > max_samples:
+        print(f"(Importing only {max_samples} samples for faster training on busybox data)")
+        random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
+        input_data = input_data.iloc[random_indices]
+        output_data = output_data.iloc[random_indices]
 
     print(f"...Imported {input_data.shape[0]} samples with {input_data.shape[1]} features and {output_data.shape[1]} labels.")
 
