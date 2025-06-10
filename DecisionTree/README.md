@@ -153,3 +153,20 @@ started training on BUSY BOX
   The config is inspried by best config of arcade
 
 NOTE: only train 1 session at a time cause each session is 10gb ram crazy
+
+start again smarter way
+idea: train all models with configs that doesnt depends that estimator must be Randomforest
+since n_estimators and 'direct' requires randomforest, it is redundant to have trials of them with anything else
+so we include them in next training session
+    optuna_trials: 30 
+    optuna_goal: "MCC"
+    test_size: [0.1, 0,9] 
+    max_depth: [10, 20, 30, 40, 50, 60, 70, 80, 90, null]  
+    estimator_type: ['DecisionTree', 'RandomForest']  
+    multi_output_type: ['MultiOutputClassifier', 'ClassifierChain']  
+    use_pca: [false, true]   
+    class_weight: ['balanced', null]    
+    n_estimator: [1]  
+
+next one:
+remove decisiontree, every other metrics is anything
