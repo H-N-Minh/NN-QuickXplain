@@ -568,21 +568,21 @@
   },
   "testing_result": {
     "EXACT_MATCH": 0.0,
-    "F1": 0.8592147418073827,
+    "F1": 0.841858693219763,
     "MCC": NaN,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.007388888888888889,
-    "COMBINED": 61.72752843061646,
-    "accuracy": 0.9926111111111111,
+    "HAMMING_LOSS": 0.007371031746031746,
+    "COMBINED": 61.14958871579105,
+    "accuracy": 0.9926289682539683,
     "roc_auc": NaN,
-    "total_samples": 1000
+    "total_samples": 7000
   },
   "QX_result": {
-    "ordered_runtime": 0.025945918893999997,
-    "ordered_cc": 16.442,
-    "unordered_runtime": 0.07458246558800001,
-    "unordered_cc": 12.902,
-    "faster_performance_percentage": 187.45355249394245,
-    "CC_less_percentage": -27.437606572624407
+    "ordered_runtime": 0.02861578055014287,
+    "ordered_cc": 16.451428571428572,
+    "unordered_runtime": 0.08386706848671428,
+    "unordered_cc": 12.894285714285715,
+    "faster_performance_percentage": 193.07978630796273,
+    "CC_less_percentage": -27.5869709727454
   }
 }
