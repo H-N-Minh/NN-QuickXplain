@@ -168,5 +168,19 @@ so we include them in next training session
     class_weight: ['balanced', null]    
     n_estimator: [1]  
 
+(these are topped at 70k training samples and tested on 1k)
+Best 'MCC' Model:
+  test_size: 0.10 || max_depth: 10 || estimator_type: DecisionTree || multi_output_type: MultiOutputClassifier
+  use_pca: False || pca_components: 0.95 || class_weight: None || n_estimators: None
+  Exact Match = 1.37%, F1 = 0.6976, MCC = 0.4655, MAP = 0.3105, Hamming Loss = 0.0082, Combined Score = 54.93%
+
+
+Best 'HAMMING_LOSS' Model:
+  test_size: 0.10 || max_depth: 10 || estimator_type: RandomForest || multi_output_type: ClassifierChain
+  use_pca: True || pca_components: 0.95 || class_weight: None || n_estimator: 1
+  Exact Match = 0.00%, F1 = 0.5582, MCC = 0.3332, MAP = nan, Hamming Loss = 0.0080, Combined Score = 55.42%
+
+
+
 next one:
 remove decisiontree, every other metrics is anything
