@@ -6,10 +6,10 @@ PATHS:
   # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
   
   # ARCADE bigger dataset (48752 invalid configurations)
-  TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
-  TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
-  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
+  # TRAINDATA_INPUT_PATH: "TrainingData/arcade/invalid_confs_48752.csv" # invalid configurations (all stored in .csv file)
+  # TRAINDATA_OUTPUT_PATH: "TrainingData/arcade/conflicts_48752.csv"    # conflicts computed by the solver (also stored in .csv format)
+  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/arcade/arcade_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  # TRAINDATA_FM_PATH: "TrainingData/arcade/arcade-game.splx"   # the feature model (SPLX file), needed for solver
 
   #BUSYBOX small dataset
   # TRAINDATA_INPUT_PATH: "TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
@@ -18,10 +18,10 @@ PATHS:
   # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
   #BUSYBOX HUGE dataset
-  # TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
-  # TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
-  # TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-  # TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+  TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
+  TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
+  TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+  TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
 
   SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
@@ -32,7 +32,8 @@ PATHS:
   JAVA_PATH: "java"     # default java path (if java is installed in the system)
   # JAVA_PATH: "jdk-24_windows-x64_bin/jdk-24.0.1/bin/java.exe" # path to the "java.exe". path should starts from root directory. (this is for when java cant be install in the system)
 
-  MODEL_PATH: "Models/arcade"  # path to the folder of trained models
+  # MODEL_PATH: "Models/arcade"  # path to the folder of trained models
+  MODEL_PATH: "Models/busybox"  # path to the folder of trained models
 
 
 CLEAR:  # this is currently not set up yet
@@ -50,8 +51,8 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     SKIP: true # skip training if the model already exists and stored in the model folder
     
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
-    optuna_trials: 4  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
-    optuna_goal: "EXACT_MATCH" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
+    optuna_trials: 350  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
+    optuna_goal: "MAP" # the metric that Optuna will try to maximize (F1, EXACT_MATCH, MCC, MAP, HAMMING_LOSS, COMBINED)
     # Note each session should only train 6 hyperparams,  
 
     configurations:   # different configs for different models to find best model
@@ -61,24 +62,24 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
 
       # number of neurons in hidden layers, can be more than one layer, e.g. [2, 3] means 2 hidden layers with 2 and 3 neurons respectively
       # [[32], [64], [128], [32, 32], [64, 32], [64, 64], [128, 64], [128, 128], [256, 128, 64] ]
-      hidden_layers: [[32], [64]] 
-      dropout_rates: [0.0] # [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
-      hidden_activation_funcs: ['relu'] # ['relu', 'leaky relu']  # activation function for the hidden layers
+      hidden_layers: [[64, 64], [128, 64], [64], [128], [256, 128]] 
+      dropout_rates: [0.0, 0.3] # [0.0, 0.4]  # Min Max values only, dropout rate for the hidden layers (to prevent overfitting)
+      hidden_activation_funcs: ['relu', 'leaky relu'] # ['relu', 'leaky relu']  # activation function for the hidden layers
 
-      batch_sizes: [1024] # [32, 64, 128, 256, 512, 1024]   # test size for train/test split
-      batch_norm: [false] # [false, true]  # use batch normalization or not
+      batch_sizes: [1024, 512] # [32, 64, 128, 256, 512, 1024]   # test size for train/test split
+      batch_norm: [true] # [false, true]  # use batch normalization or not
 
-      max_epochs: [30] # [50, 100]  # MIN MAX values only, maximum number of epochs to train the model
-      patience: [null] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
+      max_epochs: [10, 50] # [50, 100]  # MIN MAX values only, maximum number of epochs to train the model
+      patience: [5, 15] # [null, 10, 15, 20]  # number of epochs with no improvement after which training will be stopped
 
-      loss_funcs: ['bcewithlogitloss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
-      focal_loss_gamma: [0] # [0] or [1.0, 2.0, 3.0]  # this is only applied when loss func is focal loss, else keep it null!!
-      focal_loss_alpha: [0] # [0] or [0.25, 0.5]
-      optimizers: ['Adam']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
-      learning_rates: [0.0005] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
-      weight_decays: [ 0.0] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer
+      loss_funcs: ['Focal Loss'] # ['bcewithlogitloss', 'Focal Loss'] # loss function to use for training (binary cross entropy with logits or binary cross entropy)
+      focal_loss_gamma: [1.0, 3.0] # [0] or [1.0, 2.0, 3.0] MINMAX  # this is only applied when loss func is focal loss, else keep it null!!
+      focal_loss_alpha: [0.2 ,0.5] # [0] or [0.25, 0.5]
+      optimizers: ['AdamW']  # ['Adam', 'SGD', 'AdamW']  # optimizers to use (loss function minimization algorithm)
+      learning_rates: [0.001, 0.05] # [0.01, 0.1]  # Min Max values only,  learning rate for the optimizer
+      weight_decays: [0.0, 0.01] # [0.0001, 0.001]  # Min Max values only, weight decay for the optimizer
 
-      use_pca_options: [false]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
+      use_pca_options: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data 
       
 
   VALIDATE:  # test the trained model directly with QuickXPlain, tested on unseen data.
