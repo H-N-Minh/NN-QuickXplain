@@ -578,22 +578,22 @@
     "682": 0
   },
   "testing_result": {
-    "EXACT_MATCH": 0.0,
-    "F1": 0.812113736174029,
-    "MCC": 0.035022204698540595,
-    "MAP": 0.05930509246746061,
-    "HAMMING_LOSS": 0.09888888888888889,
-    "COMBINED": 45.80082084203742,
-    "accuracy": 0.9011111111111111,
-    "roc_auc": 0.7321750609940734,
-    "total_samples": 1000
+    "EXACT_MATCH": 0.014285714285714287,
+    "F1": 0.8178178212567931,
+    "MCC": 0.03407953465857887,
+    "MAP": 0.037846702469303446,
+    "HAMMING_LOSS": 0.08239285714285714,
+    "COMBINED": 45.80908582110772,
+    "accuracy": 0.9176071428571428,
+    "roc_auc": 0.7655043692698579,
+    "total_samples": 7000
   },
   "QX_result": {
-    "ordered_runtime": 0.024407265344000003,
-    "ordered_cc": 15.635,
-    "unordered_runtime": 0.07488678592299998,
-    "unordered_cc": 12.902,
-    "faster_performance_percentage": 206.8216978327286,
-    "CC_less_percentage": -21.182762362424437
+    "ordered_runtime": 0.01146939539457143,
+    "ordered_cc": 10.118,
+    "unordered_runtime": 0.07562781968400002,
+    "unordered_cc": 12.894285714285715,
+    "faster_performance_percentage": 559.3880242353086,
+    "CC_less_percentage": 21.531132284511415
   }
 }

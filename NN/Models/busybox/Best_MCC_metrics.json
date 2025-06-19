@@ -578,22 +578,22 @@
     "682": 0
   },
   "testing_result": {
-    "EXACT_MATCH": 0.1,
-    "F1": 0.848886341647074,
-    "MCC": 0.02523372357713514,
-    "MAP": 0.061543095946086826,
-    "HAMMING_LOSS": 0.044520833333333336,
-    "COMBINED": 47.5905093209679,
-    "accuracy": 0.9554791666666667,
-    "roc_auc": 0.7509986888608908,
-    "total_samples": 1000
+    "EXACT_MATCH": 0.0,
+    "F1": 0.8090352512038962,
+    "MCC": 0.05255560199200327,
+    "MAP": 0.03786434406380424,
+    "HAMMING_LOSS": 0.09346031746031747,
+    "COMBINED": 45.5943415760677,
+    "accuracy": 0.9065396825396825,
+    "roc_auc": 0.7662656842741201,
+    "total_samples": 7000
   },
   "QX_result": {
-    "ordered_runtime": 0.025877946039999995,
-    "ordered_cc": 15.88,
-    "unordered_runtime": 0.08128985163199999,
-    "unordered_cc": 12.902,
-    "faster_performance_percentage": 214.12791226300897,
-    "CC_less_percentage": -23.081692760812288
+    "ordered_runtime": 0.009167560105857142,
+    "ordered_cc": 10.096,
+    "unordered_runtime": 0.07897825023,
+    "unordered_cc": 12.894285714285715,
+    "faster_performance_percentage": 761.4969448582169,
+    "CC_less_percentage": 21.701750498559722
   }
 }

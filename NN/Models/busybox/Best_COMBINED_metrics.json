@@ -579,21 +579,21 @@
   },
   "testing_result": {
     "EXACT_MATCH": 0.0,
-    "F1": 0.8390854755085686,
-    "MCC": 0.03964594580392018,
-    "MAP": 0.06254296343013974,
-    "HAMMING_LOSS": 0.06111805555555556,
-    "COMBINED": 47.20666712570225,
-    "accuracy": 0.9388819444444445,
-    "roc_auc": 0.7382227989298344,
-    "total_samples": 1000
+    "F1": 0.8119711553375415,
+    "MCC": 0.046979762069013345,
+    "MAP": 0.03708193955740139,
+    "HAMMING_LOSS": 0.0899781746031746,
+    "COMBINED": 45.6512960265255,
+    "accuracy": 0.9100218253968255,
+    "roc_auc": 0.7638938860943644,
+    "total_samples": 7000
   },
   "QX_result": {
-    "ordered_runtime": 0.027499591820999994,
-    "ordered_cc": 15.602,
-    "unordered_runtime": 0.077005231128,
-    "unordered_cc": 12.902,
-    "faster_performance_percentage": 180.02317863203757,
-    "CC_less_percentage": -20.926988063866077
+    "ordered_runtime": 0.009674767539428569,
+    "ordered_cc": 10.077714285714286,
+    "unordered_runtime": 0.07435009358085716,
+    "unordered_cc": 12.894285714285715,
+    "faster_performance_percentage": 668.4948840150487,
+    "CC_less_percentage": 21.84356304010636
   }
 }
