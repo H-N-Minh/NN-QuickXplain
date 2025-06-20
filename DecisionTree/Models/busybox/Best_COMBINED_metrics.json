@@ -567,22 +567,22 @@
     "682": 0
   },
   "testing_result": {
-    "EXACT_MATCH": 5.314285714285714,
-    "F1": 0.9576587994640968,
-    "MCC": 0.02659280323494413,
+    "EXACT_MATCH": 5.342487373737374,
+    "F1": 0.9576440217262534,
+    "MCC": 0.026515682653233938,
     "MAP": NaN,
-    "HAMMING_LOSS": 0.009180555555555556,
-    "COMBINED": 62.87293756672177,
-    "accuracy": 0.9908194444444445,
+    "HAMMING_LOSS": 0.009184181221941638,
+    "COMBINED": 62.87856388920756,
+    "accuracy": 0.9908158187780585,
     "roc_auc": NaN,
-    "total_samples": 7000
+    "total_samples": 12672
   },
   "QX_result": {
-    "ordered_runtime": 0.04218329455914288,
-    "ordered_cc": 14.839,
-    "unordered_runtime": 0.07638494464100001,
-    "unordered_cc": 13.082428571428572,
-    "faster_performance_percentage": 81.07866025946569,
-    "CC_less_percentage": -13.426952182316517
+    "ordered_runtime": 0.008918502800505053,
+    "ordered_cc": 10.0,
+    "unordered_runtime": 0.07345756975939079,
+    "unordered_cc": 13.085227272727273,
+    "faster_performance_percentage": 723.6536042263831,
+    "CC_less_percentage": 23.577941815023888
   }
 }

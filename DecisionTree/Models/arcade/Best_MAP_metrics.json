@@ -42,11 +42,11 @@
     "total_samples": 4875
   },
   "QX_result": {
-    "ordered_runtime": 0.001643940202461538,
-    "ordered_cc": 9.053333333333333,
-    "unordered_runtime": 0.0020116219152820506,
+    "ordered_runtime": 0.0008429431019487179,
+    "ordered_cc": 8.470564102564103,
+    "unordered_runtime": 0.0011305169905641028,
     "unordered_cc": 11.264820512820513,
-    "faster_performance_percentage": 22.365881208450766,
-    "CC_less_percentage": 19.631801296525612
+    "faster_performance_percentage": 34.11545666019104,
+    "CC_less_percentage": 24.805156967004155
   }
 }

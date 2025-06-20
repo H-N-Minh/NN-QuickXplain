@@ -145,14 +145,14 @@ def importValidationData(settings, model_metadata, pca):
     assert output_data.shape[0] == (end_index - start_index), "Output data row count does not match the specified validation indexes."
 
     # Debugminh TODO: remove this: Limit the testing data for busybox to a maximum of 1,000 samples to get faster training
-    max_samples = 1000
-    model_folder_name = os.path.basename(os.path.dirname(settings['PATHS']['TRAINDATA_INPUT_PATH']))
-    if model_folder_name == "busybox" and input_data.shape[0] > max_samples:
-        print(f"(importing only {max_samples} samples for faster testing on busybox data)")
-        np.random.seed(42)  # for reproducibility
-        random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
-        input_data = input_data.iloc[random_indices]
-        output_data = output_data.iloc[random_indices]
+    # max_samples = 1000
+    # model_folder_name = os.path.basename(os.path.dirname(settings['PATHS']['TRAINDATA_INPUT_PATH']))
+    # if model_folder_name == "busybox" and input_data.shape[0] > max_samples:
+    #     print(f"(importing only {max_samples} samples for faster testing on busybox data)")
+    #     np.random.seed(42)  # for reproducibility
+    #     random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
+    #     input_data = input_data.iloc[random_indices]
+    #     output_data = output_data.iloc[random_indices]
 
     print(f"...Imported {input_data.shape[0]} testing samples with {input_data.shape[1]} features and {output_data.shape[1]} labels")
 
@@ -401,7 +401,7 @@ def processChunk(chunk_data, features_array, test_pred, constraint_name_list, ou
             
             # Sort by probability (descending) (only if test_pred is not None)
             if test_pred is not None:
-                constraints_data.sort(key=lambda x: x[2], reverse=True)
+                constraints_data.sort(key=lambda x: x[2], reverse=False)
             
             # Write name and boolean string to text file
             output_file = os.path.join(output_dir, f"conf{idx}.txt")
