@@ -1,36 +1,37 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.13492063492063494,
-    "F1": 0.5075861529540295,
-    "MCC": 0.019315646511242606,
-    "MAP": 0.03131202172340452,
-    "HAMMING_LOSS": 0.026024029982363316,
-    "COMBINED": 40.47762348599797,
-    "accuracy": 0.9739759700176367,
-    "roc_auc": 0.870943221912364,
-    "total_samples": 12600
+    "EXACT_MATCH": 0.9469115777475778,
+    "F1": 0.5068833260100861,
+    "MCC": 0.044757510179189594,
+    "MAP": 0.028075790892212068,
+    "HAMMING_LOSS": 0.029926777529359617,
+    "COMBINED": 40.737604204800185,
+    "accuracy": 0.9700732224706403,
+    "roc_auc": 0.8766287631819853,
+    "total_samples": 22811
   },
   "validation_indexes": [
-    56422,
-    63422
+    15795,
+    28467
   ],
   "config": {
     "convert_input": true,
     "hidden_layers": [
-      128
+      64,
+      64
     ],
-    "dropout_rate": 0.1291229140198042,
-    "hidden_activation_func": "relu",
-    "batch_size": 512,
+    "dropout_rate": 0.22330288111644395,
+    "hidden_activation_func": "leaky relu",
+    "batch_size": 1024,
     "batch_norm": true,
-    "max_epochs": 53,
-    "patience": null,
+    "max_epochs": 35,
+    "patience": 15,
     "loss_func": "Focal Loss",
-    "focal_loss_gamma": 1.5924145688620426,
-    "focal_loss_alpha": 0.5232252063599989,
+    "focal_loss_gamma": 1.3946047092800715,
+    "focal_loss_alpha": 0.23504137410345874,
     "optimizer": "AdamW",
-    "learning_rate": 0.01,
-    "weight_decay": 0.001,
+    "learning_rate": 0.021764315024436084,
+    "weight_decay": 0.004762848526271242,
     "use_pca": false,
     "pca_components": 0.95
   },
@@ -575,24 +576,5 @@
     "677": 0,
     "680": 0,
     "682": 0
-  },
-  "testing_result": {
-    "EXACT_MATCH": 0.0,
-    "F1": 0.8189375518106343,
-    "MCC": 0.04137726367732888,
-    "MAP": 0.04093552519791968,
-    "HAMMING_LOSS": 0.08213888888888889,
-    "COMBINED": 45.96845639916659,
-    "accuracy": 0.9178611111111111,
-    "roc_auc": 0.7789328603995103,
-    "total_samples": 7000
-  },
-  "QX_result": {
-    "ordered_runtime": 0.010948570273142855,
-    "ordered_cc": 10.073142857142857,
-    "unordered_runtime": 0.07608739636057141,
-    "unordered_cc": 12.894285714285715,
-    "faster_performance_percentage": 594.9528062784224,
-    "CC_less_percentage": 21.879016175493028
   }
 }

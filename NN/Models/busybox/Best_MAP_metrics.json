@@ -1,18 +1,18 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.5,
-    "F1": 0.5380053112137091,
-    "MCC": 0.020467740780420296,
-    "MAP": 0.04715100135789751,
-    "HAMMING_LOSS": 0.03449570105820106,
-    "COMBINED": 41.317889638072316,
-    "accuracy": 0.965504298941799,
-    "roc_auc": 0.8728209231525473,
-    "total_samples": 12600
+    "EXACT_MATCH": 0.1885055455701197,
+    "F1": 0.5138044425684897,
+    "MCC": 0.06411064118708415,
+    "MAP": 0.05128217248944213,
+    "HAMMING_LOSS": 0.03452129576861066,
+    "COMBINED": 41.29011390677129,
+    "accuracy": 0.9654787042313894,
+    "roc_auc": 0.8873021405949373,
+    "total_samples": 22811
   },
   "validation_indexes": [
-    56422,
-    63422
+    15795,
+    28467
   ],
   "config": {
     "convert_input": true,
@@ -20,18 +20,18 @@
       64,
       64
     ],
-    "dropout_rate": 0.22330288111644395,
+    "dropout_rate": 0.21710132121075126,
     "hidden_activation_func": "leaky relu",
     "batch_size": 1024,
     "batch_norm": true,
-    "max_epochs": 35,
+    "max_epochs": 37,
     "patience": 15,
     "loss_func": "Focal Loss",
-    "focal_loss_gamma": 1.3946047092800715,
-    "focal_loss_alpha": 0.23504137410345874,
+    "focal_loss_gamma": 1.3807806220713392,
+    "focal_loss_alpha": 0.23929107699294508,
     "optimizer": "AdamW",
-    "learning_rate": 0.021764315024436084,
-    "weight_decay": 0.004762848526271242,
+    "learning_rate": 0.04978783760948371,
+    "weight_decay": 0.004558547606541791,
     "use_pca": false,
     "pca_components": 0.95
   },
@@ -576,24 +576,5 @@
     "677": 0,
     "680": 0,
     "682": 0
-  },
-  "testing_result": {
-    "EXACT_MATCH": 0.014285714285714287,
-    "F1": 0.8166975542882733,
-    "MCC": 0.04135775669051041,
-    "MAP": 0.038126269329230696,
-    "HAMMING_LOSS": 0.07610714285714286,
-    "COMBINED": 45.99076832496947,
-    "accuracy": 0.9238928571428571,
-    "roc_auc": 0.7673453006463139,
-    "total_samples": 7000
-  },
-  "QX_result": {
-    "ordered_runtime": 0.009354024331285715,
-    "ordered_cc": 10.109714285714286,
-    "unordered_runtime": 0.07182401738457146,
-    "unordered_cc": 12.894285714285715,
-    "faster_performance_percentage": 667.8408227392243,
-    "CC_less_percentage": 21.595391092399733
   }
 }
