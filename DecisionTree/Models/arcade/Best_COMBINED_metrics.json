@@ -1,0 +1,28 @@
+{
+  "training_result": {
+    "EXACT_MATCH": 45.73170731707317,
+    "F1": 0.815184861019798,
+    "MCC": 0.7981032702306773,
+    "MAP": NaN,
+    "HAMMING_LOSS": 0.02106430155210643,
+    "COMBINED": 78.76223169384406,
+    "accuracy": 0.9789356984478936,
+    "roc_auc": NaN,
+    "total_samples": 164
+  },
+  "config": {
+    "max_depth": 5,
+    "estimator_type": "RandomForest",
+    "multi_output_type": "ClassifierChain",
+    "use_pca": false,
+    "pca_components": 0.95,
+    "class_weight": "balanced",
+    "n_estimator": 150
+  },
+  "removed_features": [],
+  "removed_labels": {
+    "0": 0,
+    "1": 0,
+    "11": 0
+  }
+}
