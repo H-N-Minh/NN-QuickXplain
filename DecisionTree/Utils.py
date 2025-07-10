@@ -39,12 +39,25 @@ def loadSettings():
         print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
         sys.exit(1)
     
+    # Choose the right dataset based on the DATASET key
+    dataset = settings.get('DATASET', 'ARCADE_SMALL')  # Default to arcade_small if not specified
+    assert dataset in ['ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG'], \
+        "Invalid dataset specified in settings.yaml. Choose from 'ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG'."
+    
+    settings['PATHS']['MODEL_PATH'] = settings['PATHS'][dataset]['MODEL_PATH']
+    settings['PATHS']['TRAINDATA_INPUT_PATH'] = settings['PATHS'][dataset]['TRAINDATA_INPUT_PATH']
+    settings['PATHS']['TRAINDATA_OUTPUT_PATH'] = settings['PATHS'][dataset]['TRAINDATA_OUTPUT_PATH']
+    settings['PATHS']['TRAINDATA_CONSTRAINTS_NAME_PATH'] = settings['PATHS'][dataset]['TRAINDATA_CONSTRAINTS_NAME_PATH']
+    settings['PATHS']['TRAINDATA_FM_PATH'] = settings['PATHS'][dataset]['TRAINDATA_FM_PATH']
+
     # Ensure all paths in settings are absolute
     for key in settings['PATHS']:
-        # Except for Java path, which is handled separately
-        if key == 'JAVA_PATH':
+        # JAVA path is set exactly in settings.yaml, so skip it here. Also skip if the value is a valid path (path should be a String)
+        if key == 'JAVA_PATH' or not isinstance(settings['PATHS'][key], str):
             continue
         settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
+
+    print(f"\nSettings loaded from: {settings_path}\nSelected dataset: {dataset}")
     return settings
 
 def startClearing(settings):
