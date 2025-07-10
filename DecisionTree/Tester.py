@@ -143,7 +143,7 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
 
 
 def startTesting(settings):
-    for model_name in settings['WORKFLOW']['Test']['models_to_test']:
+    for model_name in settings['WORKFLOW']['TEST']['models_to_test']:
         # Import the model and the test data
         print(f"\nTesting model '{model_name}'...")
         model, pca, testing_indexes, model_metadata = Utils.importModel(settings, model_name)

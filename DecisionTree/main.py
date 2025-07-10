@@ -22,7 +22,7 @@ def main():
         print("\n\n<Training phase skipped (as per settings.yaml file)>")
 
     print("\n\n################## Testing PHASE ########################")
-    if not settings['WORKFLOW']['Test']['SKIP']:
+    if not settings['WORKFLOW']['TEST']['SKIP']:
         startTesting(settings)
     else:
         print("\n<Testing phase skipped (as per settings.yaml file)>")

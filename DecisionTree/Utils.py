@@ -154,8 +154,9 @@ def importTestData(settings, testing_indexes, pca, model_metadata):
 
     # Check for out-of-bounds indexes
     max_index = input_data.shape[0] - 1
-    for idx in testing_indexes if idx < 0 or idx > max_index:
-        raise IndexError(f"Error: The test index {idx} is out of bound for dataset at {input_file}. Check path for right dataset. ")
+    for idx in testing_indexes:
+        if idx < 0 or idx > max_index:
+            raise IndexError(f"Error: The test index {idx} is out of bound for dataset at {input_file}. Check path for right dataset. ")
 
     # Check if testing_indexes are about 10% of the whole data
     percent_test = len(testing_indexes) / input_data.shape[0] * 100
