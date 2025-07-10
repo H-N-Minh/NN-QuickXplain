@@ -112,51 +112,62 @@ def importModel(settings, model_name):
 
     print(f"...Importing model {model_name}...")
 
-    # import the model and pca
+    # import the model and pca and testing indexes
     model_data = joblib.load(model_file_name)
     model = model_data['model']
     pca = model_data['pca']
+    testing_indexes = model_data['testing_indexes']
 
     # Import the metrics of the model
     with open(model_metrics_file_name, 'r') as json_file:
         model_metadata = yaml.safe_load(json_file)
     
-    return model, pca, model_metadata
+    return model, pca, testing_indexes, model_metadata
 
 
-def importValidationData(settings, model_metadata, pca):
+def importTestData(settings, testing_indexes, pca, model_metadata):
     """
-    Import validation data. Only the section specified in the model metadata is used.
+    Import test data. Only the section specified in the model metadata is used.
     This data is then applied to pca if pca was also used during training.
     
     Parameters:
     settings (dict): Settings dictionary containing paths and configurations
-    model_metadata (dict): Metadata of the model
+    testing_indexes (list): indexes of samples that were splitted during training phase for testing
     pca: PCA object if used, otherwise None
     
     Returns:
-    X_validate: Validation features (numpy)
-    y_validate: Validation labels (numpy)
+    X_validate: test features (numpy)
+    y_validate: test labels (numpy)
     input_data: Original input data without PCA transformation, needed for later with QuickXplain test.
     """
+    # make sure dataset is valid
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
         print(f"Error: Cant find file at {input_file} or {output_file}.")
         raise FileNotFoundError("TrainingData file not found. Please check the file paths in settings.yaml .")
 
-    # import only the section of the data that is relevant for validation
-    print("...Importing validation data...")
-    (start_index, end_index) = model_metadata['validation_indexes']
-    input_data = pd.read_csv(input_file).iloc[start_index:end_index, 1:]
-    output_data = pd.read_csv(output_file).iloc[start_index:end_index, 1:]
+    # import the whole dataset
+    print("...Importing test data...")
+    input_data = pd.read_csv(input_file, header=None).iloc[:, 1:]
+    output_data = pd.read_csv(output_file, header=None).iloc[:, 1:]
 
-    assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
-    assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
+    # Check for out-of-bounds indexes
+    max_index = input_data.shape[0] - 1
+    for idx in testing_indexes if idx < 0 or idx > max_index:
+        raise IndexError(f"Error: The test index {idx} is out of bound for dataset at {input_file}. Check path for right dataset. ")
+
+    # Check if testing_indexes are about 10% of the whole data
+    percent_test = len(testing_indexes) / input_data.shape[0] * 100
+    if not (8 <= percent_test <= 12):
+        warnings.warn(f"Warning: Number of testing_indexes ({len(testing_indexes)}) is {percent_test:.2f}% of input_data size ({input_data.shape[0]}). Expected ~10%.")
+
+    # import only the section of the data that is relevant for test
+    input_data = input_data.iloc[testing_indexes]
+    output_data = output_data.iloc[testing_indexes]
+
     assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
     assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
-    assert input_data.shape[0] == (end_index - start_index), "Input data row count does not match the specified validation indexes."
-    assert output_data.shape[0] == (end_index - start_index), "Output data row count does not match the specified validation indexes."
 
     # Debugminh TODO: remove this: Limit the testing data for busybox to a maximum of 1,000 samples to get faster training
     # max_samples = 1000
@@ -442,7 +453,7 @@ def saveTestResults(settings, model_name, metrics, result):
     metrics (dict): Metrics to save, e.g., F1, Exact Match, accuracy, etc.
     result (list): Result of the QuickXplain test, containing [faster_performance, ordered_runtime, unordered_runtime]
     """
-    print(f"...Saving validation results for model {model_name}...")
+    print(f"...Saving test results for model {model_name}...")
 
     # Check if the output file exists
     output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
@@ -477,21 +488,21 @@ def saveTestResults(settings, model_name, metrics, result):
 
 
 def printTestingSummary(settings):
-    """Print a summary of the validation results stored in Model folder."""
+    """Print a summary of the testing results stored in Model folder."""
     print(f"\n\n{'='*60}")
     print("TESTING SUMMARY")
     print(f"{'='*60}")
     saved_models_dir = settings['PATHS']['MODEL_PATH']
 
-    # Go through each json file and print the result of the validation
-    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
+    # Go through each json file and print the result of the test
+    for model_name in settings['WORKFLOW']['TEST']['models_to_test']:
         model_file_name = os.path.join(saved_models_dir, f"Best_{model_name}_metrics.json")
         assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
         
         with open(model_file_name, 'r') as json_file:
             model_metrics = json.load(json_file)
 
-        # extract the validation result and model's configuration
+        # extract the test result and model's configuration
         model_config = model_metrics['config']
         metrics = model_metrics['testing_result']
         QX_result = model_metrics['QX_result']

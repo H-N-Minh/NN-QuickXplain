@@ -143,14 +143,14 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
 
 
 def startTesting(settings):
-    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
-        # Import the model and the validation data
+    for model_name in settings['WORKFLOW']['Test']['models_to_test']:
+        # Import the model and the test data
         print(f"\nTesting model '{model_name}'...")
-        model, pca, model_metadata = Utils.importModel(settings, model_name)
-        X_validate, y_validate, orig_input_data = Utils.importValidationData(settings, model_metadata, pca)
+        model, pca, testing_indexes, model_metadata = Utils.importModel(settings, model_name)
+        X_validate, y_validate, orig_input_data = Utils.importTestData(settings, testing_indexes, pca, model_metadata)
         
-        # Test model on validation data.
-        print(f"...Testing model '{model_name}' on validation data...")
+        # Test model on test data.
+        print(f"...Testing model '{model_name}' on test data...")
         metrics = evaluateModel(model, X_validate, y_validate)
 
         # Test the model on QX
@@ -161,6 +161,6 @@ def startTesting(settings):
         Utils.saveTestResults(settings, model_name, metrics, result)
         print(f"Done testing '{model_name}'!")
 
-    # Print validation summary
+    # Print test summary
     Utils.printTestingSummary(settings)
 
