@@ -236,16 +236,18 @@ def processOutputFile(directory_path):
     # Use ProcessPoolExecutor for true parallelism
     runtime_sum = 0.0
     cc_sum = 0
+    all_conflict_sets = [None] * num_samples
     total_processed = 0
     with tqdm(total=len(chunks), desc=f">> Multiprocessing with {num_workers} workers") as pbar:           
-        with ProcessPoolExecutor(max_workers=num_workers) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
             futures = []
             # Submit tasks to the executor for each chunk
-            for chunk_data in chunks:
+            for start_idx, end_idx in chunks:
+                chunk_files = all_files[start_idx:end_idx]
                 future = executor.submit(
                     extractDataFromFile,
-                    chunk_data=chunk_data,
-                    all_files=all_files
+                    chunk_files=chunk_files,
+                    start_file_idx=start_idx
                 )
                 futures.append(future)
 
@@ -253,14 +255,17 @@ def processOutputFile(directory_path):
             for future in concurrent.futures.as_completed(futures):
                 try:
                     result = future.result()
-                    total_processed += result[0]
-                    runtime_sum += result[1]
-                    cc_sum += result[2]
+                    processed_count, runtime_chunk_sum, cc_chunk_sum, conflict_sets_chunk = result
+                    total_processed += processed_count
+                    runtime_sum += runtime_chunk_sum
+                    cc_sum += cc_chunk_sum
+                    # Place the results in the correct positions in the pre-allocated list
+                    for cs_data in conflict_sets_chunk:
+                        all_conflict_sets[cs_data['original_index']] = cs_data['cs']
                     pbar.update(1)
                 except Exception as e:
                     print(f"...Error processing chunk: {e}")
                     print(traceback.format_exc())
-
 
     # make sure all files were processed
     assert total_processed == num_samples, f"Error:processOutputFile:: Not all files were processed. {num_samples - total_processed} files failed."
@@ -269,46 +274,115 @@ def processOutputFile(directory_path):
     avg_runtime = runtime_sum / total_processed
     avg_cc = cc_sum / total_processed
     
-    return avg_runtime, avg_cc
+    return avg_runtime, avg_cc, all_conflict_sets
 
-
-def extractDataFromFile(chunk_data, all_files):
-    """Extract runtime and CC from a single file. Helper function for processOutputFile()."""
+def extractDataFromFile(chunk_files, start_file_idx):
+    """Extract runtime, CC, and the conflict set from a chunk of files."""
     try:
-        start_idx, end_idx = chunk_data
         processed_count = 0
         runtime_sum = 0.0
         cc_sum = 0
+        conflict_sets_chunk = []
 
-        # process only the specified chunk of samples
-        for idx in range(start_idx, end_idx):
-            with open(all_files[idx], 'r') as f:
-                # Skip the first 3 lines
-                for _ in range(3):
-                    next(f)
-                
+        for i, file_path in enumerate(chunk_files):
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+                assert len(lines) >= 5, f"Error:extractDataFromFile:: File {file_path} does not contain enough lines to extract data. Expected at least 5 lines, got {len(lines)}."
+
+                # Get conflict set from 3rd line
+                cs_line = lines[2]
+                cs_match = re.search(r'CS: \[(.*?)\]', cs_line)
+                conflict_set = set()
+                if cs_match:
+                    content = cs_match.group(1)
+                    if content: # Ensure content is not empty
+                        # Split by comma and strip, then split by '=' to get the name
+                        constraints = [part.strip().split('=')[0] for part in content.split(',')]
+                        conflict_set = set(constraints)
+
                 # Get runtime from 4th line
-                runtime_line = next(f)
+                runtime_line = lines[3]
                 runtime_match = re.search(r'Runtime:\s*([0-9.eE+-]+)', runtime_line)
-                if runtime_match:
-                    runtime = float(runtime_match.group(1))
-                else:
-                    assert False, "Runtime not found in the expected format."
-                    
+                runtime = float(runtime_match.group(1)) if runtime_match else 0.0
+                
                 # Get CC from 5th line
-                cc_line = next(f)
-                cc = int(re.search(r'CC: (\d+)', cc_line).group(1))
-
-                # store the results
+                cc_line = lines[4]
+                cc_match = re.search(r'CC: (\d+)', cc_line)
+                cc = int(cc_match.group(1)) if cc_match else 0
+                
                 runtime_sum += runtime
                 cc_sum += cc
+                conflict_sets_chunk.append({'original_index': start_file_idx + i, 'cs': conflict_set})
                 processed_count += 1
                 
-        return [processed_count, runtime_sum, cc_sum]
+        return [processed_count, runtime_sum, cc_sum, conflict_sets_chunk]
     except Exception as e:
         print(traceback.format_exc())
-        return 0
+        return 0, 0.0, 0, []
+    
 
+def calculateConformanceMetrics(ordered_conflict_set, unordered_conflict_set):
+    """
+    Calculates average cosine similarity and exact match percentage between two lists of conflict set.
+
+    Args:
+        ordered_conflict_set (list of sets): The MCS from the NN-ordered run.
+        unordered_conflict_set (list of sets): The MCS from the default-ordered run (ground truth).
+
+    Returns:
+        tuple: (average_cosine_similarity, exact_match_percentage)
+    """
+    assert len(ordered_conflict_set) == len(unordered_conflict_set), "Input lists must have the same length."
+    num_samples = len(ordered_conflict_set)
+    if num_samples == 0:
+        return 0.0, 0.0
+
+    # 1. Create a global vocabulary of all unique constraints
+    all_constraints = set()
+    for s in ordered_conflict_set:
+        all_constraints.update(s)
+    for s in unordered_conflict_set:
+        all_constraints.update(s)
+    
+    vocab = {constraint: i for i, constraint in enumerate(all_constraints)}
+    vocab_size = len(vocab)
+    
+    if vocab_size == 0: # Handle case where all diagnoses are empty
+        return 100.0, 100.0
+
+    # 2. Create binary vectors for each diagnosis
+    ordered_matrix = np.zeros((num_samples, vocab_size), dtype=np.int8)
+    unordered_matrix = np.zeros((num_samples, vocab_size), dtype=np.int8)
+
+    for i in range(num_samples):
+        for constraint in ordered_conflict_set[i]:
+            if constraint in vocab:
+                ordered_matrix[i, vocab[constraint]] = 1
+        for constraint in unordered_conflict_set[i]:
+            if constraint in vocab:
+                unordered_matrix[i, vocab[constraint]] = 1
+    
+    # 3. Calculate Exact Match Percentage (vectorized)
+    exact_matches = np.all(ordered_matrix == unordered_matrix, axis=1).sum()
+    exact_match_percentage = (exact_matches / num_samples) * 100
+
+    # 4. Calculate Cosine Similarity (vectorized and safely)
+    dot_product = np.sum(ordered_matrix * unordered_matrix, axis=1)
+    
+    norm_ordered = np.linalg.norm(ordered_matrix, axis=1)
+    norm_unordered = np.linalg.norm(unordered_matrix, axis=1)
+    
+    # Handle potential division by zero for empty diagnoses
+    denominator = norm_ordered * norm_unordered
+    # Initialize similarities array with 1.0 where denominator is zero (e.g., both are empty sets)
+    similarities = np.ones_like(denominator)
+    # Calculate similarity only where denominator is non-zero
+    non_zero_mask = denominator > 0
+    similarities[non_zero_mask] = dot_product[non_zero_mask] / denominator[non_zero_mask]
+    
+    average_cosine_similarity = np.mean(similarities) * 100
+
+    return average_cosine_similarity, exact_match_percentage
 
 
 def getConstraintNameList(settings):
@@ -465,24 +539,24 @@ def saveTestResults(settings, model_name, metrics, result):
     
     # make sure the key 'QX_result' does not already exist
     assert len(metrics) > 0, "Metrics dictionary is empty. Cannot save empty metrics."
-    assert len(result) == 4, "Result list must contain exactly 4 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc]."
+    assert len(result) == 6, "Result list must contain exactly 6 elements: [ordered_runtime, ordered_cc, unordered_runtime, unordered_cc, cosine_similarity, exact_match]."
 
     # Add the new key with the metrics dictionary
-    ordered_runtime = result[0]
-    ordered_cc = result[1]
-    unordered_runtime = result[2]
-    unordered_cc = result[3]
+    ordered_runtime, ordered_cc, unordered_runtime, unordered_cc, cosine_similarity, exact_match = result
+
     performance_improvement = (unordered_runtime - ordered_runtime) / ordered_runtime * 100 if ordered_runtime > 0 else 0.0
     CC_less = (unordered_cc - ordered_cc) / unordered_cc * 100 if unordered_cc > 0 else 0.0
     data["testing_result"] = metrics
-    data["QX_result"] = {}
-    data["QX_result"]['ordered_runtime'] = ordered_runtime  # runtime of QuickXplain with predicted probabilities
-    data["QX_result"]['ordered_cc'] = ordered_cc  # CC of QuickXplain with predicted probabilities
-    data["QX_result"]['unordered_runtime'] = unordered_runtime  # runtime of QuickXplain with default ordering
-    data["QX_result"]['unordered_cc'] = unordered_cc  # CC of QuickXplain with default ordering
-    data["QX_result"]['faster_performance_percentage'] = performance_improvement  # percentage improvement in runtime with predicted probabilities vs default ordering
-    data["QX_result"]['CC_less_percentage'] = CC_less  # percentage improvement in CC with predicted probabilities vs default ordering
-    
+    data["QX_result"] = {
+        'ordered_runtime': ordered_runtime,     # average runtime of the ordered run with NN
+        'ordered_cc': ordered_cc,               # average CC of the ordered run with NN
+        'unordered_runtime': unordered_runtime, # average runtime of the unordered run (ground truth)
+        'unordered_cc': unordered_cc,           # average CC of the unordered run (ground truth)
+        'faster_performance_percentage': performance_improvement,  # percentage of how much faster the ordered run is compared to the unordered run
+        'CC_less_percentage': CC_less,          # percentage of how much less CC the ordered run has compared to the unordered run
+        'cosine_similarity_percentage': cosine_similarity,      # average cosine similarity between the conflict sets of the ordered and unordered run
+        'exact_match_percentage': exact_match                   # exact match percentage of the conflict sets of the ordered and unordered run
+    }
     # Write the updated data back to file
     with open(output_file, 'w') as f:
         json.dump(data, f, indent=2)
@@ -526,6 +600,7 @@ def printTestingSummary(settings):
         )
         print(f"  Speed improvement: {QX_result['faster_performance_percentage']:.2f}%, i.e. ordered takes {less_time_percentage:.2f} % less time than unordered "
               f"(ordered: {ordered_runtime:.5f}s, unordered: {unordered_runtime:.5f}s)")
+        print(f"  Conformance: Exact Match = {QX_result.get('exact_match_percentage', 0.0):.2f}% || Cosine Similarity = {QX_result.get('cosine_similarity_percentage', 0.0):.2f}%")
 
     print(f"\n (These result are stored in json files in folder {saved_models_dir}.)")
 

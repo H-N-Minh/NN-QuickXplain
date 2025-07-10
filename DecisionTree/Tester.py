@@ -124,9 +124,9 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
     # Run QuickXplain to analyze conflicts
     Solver.getConflict(settings)
 
-    # process the output of QuickXplain (get average runtime and cc)
-    avg_ordered_runtime, avg_ordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
-    assert avg_ordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is very unlikely. check calculation"
+    # process the output of QuickXplain (get average runtime, cc, and conflict sets)
+    avg_ordered_runtime, avg_ordered_cc, ordered_diagnoses = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+    assert avg_ordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is probably wrong. check calculation, else ignore this assert"
 
 
     ########### Same thing again as above but now with default ordering (no predicted probabilities)
@@ -136,10 +136,13 @@ def testWithQuickXplain(settings, model, X_validate, orig_input_data, model_meta
     Solver.getConflict(settings)
 
     # process the output of QuickXplain (get average runtime and cc)
-    avg_unordered_runtime, avg_unordered_cc = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
-    assert avg_unordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is very unlikely. check calculation"
+    avg_unordered_runtime, avg_unordered_cc, unordered_diagnoses = Utils.processOutputFile(settings["PATHS"]["SOLVER_OUTPUT_PATH"])
+    assert avg_unordered_runtime < 1, "Avg runtime for QX per file is longer than 1s, which is probably wrong. check calculation, else ignore this assert"
 
-    return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc]
+    # Calculate conformance metrics
+    cosine_similarity, exact_match = Utils.calculateConformanceMetrics(ordered_diagnoses, unordered_diagnoses)
+
+    return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc, cosine_similarity, exact_match]
 
 
 def startTesting(settings):
