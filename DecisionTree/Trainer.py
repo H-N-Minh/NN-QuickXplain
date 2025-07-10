@@ -53,26 +53,26 @@ def createMultiOutputModel(base_estimator, config):
         )
     
 
-def evaluateModel(model, X_test, y_test):
+def evaluateModel(model, X_val, y_val):
     """Evaluate model and return metrics. This includes F1, accuracy, exact matches, MCC, mAP, Hamming Loss, and ROC-AUC"""
     
-    y_pred = model.predict(X_test)
+    y_pred = model.predict(X_val)
    
     # Exact matches
-    exact_matches = np.sum(np.all(y_pred == y_test, axis=1))
-    total_rows = y_test.shape[0]
+    exact_matches = np.sum(np.all(y_pred == y_val, axis=1))
+    total_rows = y_val.shape[0]
     exact_match_pct = (exact_matches / total_rows) * 100
    
     # F1, Accuracy, and MCC for each label
-    avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_test)
+    avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred, y_val)
 
     # Hamming Loss
-    y_test_bin = np.where(y_test == -1, 1, y_test)
+    y_val_bin = np.where(y_val == -1, 1, y_val)
     y_pred_bin = np.where(y_pred == -1, 1, y_pred)
-    hamming = hamming_loss(y_test_bin, y_pred_bin)
+    hamming = hamming_loss(y_val_bin, y_pred_bin)
 
     # For ROC-AUC and mAP, we need probability scores
-    mAP, roc_auc = Utils.calculateMapAndROC(model, X_test, y_test)
+    mAP, roc_auc = Utils.calculateMapAndROC(model, X_val, y_val)
 
     # Calculate combined score
     combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)
@@ -94,6 +94,7 @@ def evaluateModel(model, X_test, y_test):
 def preprocessTrainingData(input_data, output_data, config):
     """Preprocess training data by removing features with variance lower than threshold and labels with constant values.
         in other words, remove features in X_transformed and labels in output_data that has constant values or low variance (almost constant)
+        (constant values means when a label has the same value for all samples, making it trivial to predict)
         Features are removed because low variance features do not contribute to the model's learning.
         Constant labels are removed because they are trivial to predict and model doesnt need to learn anything to predict them correctly.
         Removing them will helps with more precise training and evaluation of the model. 
@@ -128,7 +129,7 @@ def preprocessTrainingData(input_data, output_data, config):
     return X_transformed, new_output_data, removed_features, removed_label_info, pca
 
 
-def trainOneModel(input_data, output_data, config):
+def trainOneModel(input_data, output_data, train_indices, val_indices, config):
     """Train and evaluate a single model configuration.
     Returns:
     - metrics: Dictionary of evaluation metrics result for test set
@@ -142,8 +143,11 @@ def trainOneModel(input_data, output_data, config):
     X_transformed, output_data, removed_features, removed_labels, pca = preprocessTrainingData(input_data, output_data, config)
 
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(X_transformed, output_data, test_size=config['test_size'], random_state=42)
-    
+    X_train = X_transformed[train_indices]
+    y_train = output_data[train_indices]
+    X_val = X_transformed[val_indices]
+    y_val = output_data[val_indices]
+
     # Create base estimator
     base_estimator = createBaseEstimator(config['estimator_type'], config)
     
@@ -154,7 +158,7 @@ def trainOneModel(input_data, output_data, config):
     model.fit(X_train, y_train)
 
     # Evaluate
-    metrics = evaluateModel(model, X_test, y_test)
+    metrics = evaluateModel(model, X_val, y_val)
     
     # print results
     Utils.printOneModelTrainResult(config, metrics)
@@ -163,7 +167,7 @@ def trainOneModel(input_data, output_data, config):
 
                 
 
-def objective(trial, input_data, output_data, validation_indexes, configs_settings, error_list, n_trials, best_models, target_metric=Utils.METRIC_COMBINED):
+def objective(trial, input_data, output_data, splitted_indexes, configs_settings, error_list, n_trials, best_models, target_metric=Utils.METRIC_COMBINED):
     """Helper for trainAllModels. Used by Optuna to suggest hyperparameters and train a model.
     This creates exactly 1 model based on the suggested hyperparameters, trains it, evaluates it, and returns a score. (Optiuna will use this score to determine the best hyperparameters.)
     If there is an error during training, it will return -1.0 and store the error in the error_list.
@@ -179,13 +183,16 @@ def objective(trial, input_data, output_data, validation_indexes, configs_settin
         input_data_copy = np.copy(input_data)
         output_data_copy = np.copy(output_data)
 
+        # Get the indexes for training, validation, and testing from the splitted_indexes
+        (train_indices, val_indices, testing_indexes) = splitted_indexes
+
         # Start training this model
-        metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data_copy, output_data_copy, config)
+        metrics, model, pca, removed_features, removed_labels = trainOneModel(input_data_copy, output_data_copy, train_indices, val_indices, config)
 
         # Store the training result and all infor about this model in a dict
         model_info = {}
         model_info['training_result'] = metrics
-        model_info['validation_indexes'] = validation_indexes
+        model_info['testing_indexes'] = testing_indexes
         model_info['config'] = config
         model_info['model'] = model
         model_info['pca'] = pca
@@ -216,8 +223,7 @@ def trainAllModels(input_data, output_data, settings):
     """
 
     # split a section of the data out for validation after the training
-    input_data, output_data, validation_indexes = Utils.splitData(input_data, output_data)
-
+    splitted_indexes = Utils.splitData(output_data)
 
     # 2. Prepare variables for Optuna
         # 2.1 these metrics will be used to track the best models
@@ -231,7 +237,7 @@ def trainAllModels(input_data, output_data, settings):
     n_trials = settings['WORKFLOW']['TRAIN']['optuna_trials']
     assert n_trials > 0, "Number of trials must be greater than 0"
     
-        # 2.4 Some more variables
+        # 2.4 Some more variables for optuna
     configs_settings = settings['WORKFLOW']['TRAIN']['configurations']      # Includes all hyperparameters to try
     error_list = []                                                         # Store errors during training                                
     sampler = optuna.samplers.TPESampler(seed=42, n_startup_trials=10, n_ei_candidates=24)     # Fixed seed for reproducibility     
@@ -240,7 +246,7 @@ def trainAllModels(input_data, output_data, settings):
     print(f"\nStarting Optuna hyperparameter tuning for {n_trials} trials with target metric '{target_metric}'...")
     optuna.logging.set_verbosity(optuna.logging.WARNING)            # Keep the logs minimal, only show warnings and errors
     study = optuna.create_study(direction=optimize_direction, sampler=sampler)
-    study.optimize(lambda trial: objective(trial, input_data, output_data, validation_indexes, configs_settings, \
+    study.optimize(lambda trial: objective(trial, input_data, output_data, splitted_indexes, configs_settings, \
                                            error_list, n_trials, best_models, target_metric), n_trials=n_trials)
     
     print(f"\n\n...Training completed with {len(error_list)} error(s).")

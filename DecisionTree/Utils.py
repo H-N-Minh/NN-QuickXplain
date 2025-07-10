@@ -23,6 +23,7 @@ from sklearn.metrics import (f1_score, accuracy_score, matthews_corrcoef,
                            hamming_loss, roc_auc_score, average_precision_score)
 from sklearn.preprocessing import LabelBinarizer
 import warnings
+from sklearn.model_selection import train_test_split
 
 ############################################ for main.py ########################################
 
@@ -503,7 +504,7 @@ def printTestingSummary(settings):
 
         print(f"  Estimator: {model_config['estimator_type']}, MultiOutput: {model_config['multi_output_type']}, "
             f"PCA: {model_config['use_pca']}, Class Weight: {model_config['class_weight']}, "
-            f"Test Size: {model_config['test_size']}, Max Depth: {model_config.get('max_depth', 'None')}")
+            f"Max Depth: {model_config.get('max_depth', 'None')}")
         print(f"  Exact Match = {metrics[METRIC_EXACT_MATCH]:.2f}%, "
             f"F1 = {metrics[METRIC_F1]:.4f}, "
             f"MCC = {metrics[METRIC_MCC]:.4f}, "
@@ -570,9 +571,6 @@ def getConfigFromOptuna(trial, configs_settings):
     """
     config = {}
 
-    # Suggest test_size from the available options
-    config['test_size'] = trial.suggest_float('test_size', min(configs_settings['test_size']), max(configs_settings['test_size']), step=0.1)
-
     # Suggest max_depth from the available options
     # Note: Optuna handles None values in categorical choices correctly.
     config['max_depth'] = trial.suggest_categorical('max_depth', configs_settings['max_depth'])
@@ -606,7 +604,7 @@ def getConfigFromOptuna(trial, configs_settings):
 
     # Set n_estimators conditionally: only for RandomForest
     if estimator_type == 'RandomForest':
-        config['n_estimator'] = trial.suggest_int('n_estimator', min(configs_settings['n_estimator']), max(configs_settings['n_estimator']), step=1)
+        config['n_estimator'] = trial.suggest_int('n_estimator', min(configs_settings['n_estimator']), max(configs_settings['n_estimator']), step=50)
     else:
         config['n_estimators'] = None # Explicitly set to None if not RandomForest
 
@@ -634,8 +632,8 @@ def importTrainingData(settings):
         raise FileNotFoundError("Training file not found. Please check the file paths in settings.yaml .")
 
     print("Importing data...")
-    input_data = pd.read_csv(input_file).iloc[:, 1:]
-    output_data = pd.read_csv(output_file).iloc[:, 1:]
+    input_data = pd.read_csv(input_file, header=None).iloc[:, 1:]
+    output_data = pd.read_csv(output_file, header=None).iloc[:, 1:]
 
     assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
     assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
@@ -643,13 +641,13 @@ def importTrainingData(settings):
     assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
 
     
-    # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
-    max_samples = 70000
-    if input_data.shape[0] > max_samples:
-        print(f"(Importing only {max_samples} samples for faster training on busybox data)")
-        random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
-        input_data = input_data.iloc[random_indices]
-        output_data = output_data.iloc[random_indices]
+    # # Debugminh TODO: remove this: Limit the data to a maximum of 70,000 rows to get faster training
+    # max_samples = 70000
+    # if input_data.shape[0] > max_samples:
+    #     print(f"(Importing only {max_samples} samples for faster training on busybox data)")
+    #     random_indices = np.random.choice(input_data.shape[0], max_samples, replace=False)
+    #     input_data = input_data.iloc[random_indices]
+    #     output_data = output_data.iloc[random_indices]
 
     print(f"...Imported {input_data.shape[0]} samples with {input_data.shape[1]} features and {output_data.shape[1]} labels.")
 
@@ -685,6 +683,7 @@ def saveModel(best_models, settings):
     
     # Save the best models if they are better than the existing ones
     for name, best_model in best_models.items():
+        # Check if the model is valid and is better than the existing one
         if best_model is None:      # this should never happen, but just in case
             assert False, f"Error:saveModel:: Best model for '{name}' is None. This should not happen."
         
@@ -711,37 +710,89 @@ def saveModel(best_models, settings):
         # If code reaches here, it means we need to save the new model
         print(f"✅ Saving '{name}' model as it is better than the existing one.")
         
-        # Save model and PCA
+        # Save model and PCA and testing indexes
         model_filename = os.path.join(model_folder_path, f"Best_{name}.pkl")
-        joblib.dump({'model': best_model['model'], 'pca': best_model['pca']}, model_filename)
+        joblib.dump({'model': best_model['model'], 'pca': best_model['pca'], 'testing_indexes': best_model['testing_indexes']}, model_filename)
 
         # Save metrics
-        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model', 'pca']}
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model', 'pca', 'testing_indexes']}
         with open(metrics_filename, 'w') as f:
             json.dump(metrics_serializable, f, indent=2)
                     
     return model_folder_path
 
 
-def splitData(input_data, output_data):
+def splitData(output_data):
     """
-    Randomly select a continuous portion of the data (10% of total data),
-    remove it from input_data and output_data, because it will not be used for training, instead it will
-    be used later in validation phase. The index of removed chunks will be returned.
+    Splits input and output data into training, validation, and testing sets.
+    Dataset is made of groups, where each group is defined by a unique Conflict set as output.
+    Each group is split as follows:
+    80% for training, 10% for validation, and 10% for testing.
+
+    Args:
+        output_data (np.array): The output labels/targets (y), where unique values
+                                 define groups.
+
+    Returns:
+        tuple: A tuple containing:
+            - train_indices_overall (np.array): Indices of the training data in the original dataset.
+            - val_indices_overall (np.array): Indices of the validation data in the original dataset.
+            - test_indices_overall (np.array): Indices of the testing data in the original dataset.
     """
-    total_data = len(input_data)
-    chunk_size = int(0.1 * total_data)  # 10% of the total data
+    # We'll collect the indices for training, validation, and testing
+    train_indices_overall = []
+    val_indices_overall = []
+    test_indices_overall = []
 
-    # Randomly select the start index for the chunk
-    np.random.seed(42)  # For reproducibility
-    start_index = np.random.randint(0, total_data - chunk_size)
-    end_index = start_index + chunk_size
+    # Create a mapping from unique output patterns (as tuples) to their original indices
+    unique_patterns_map = {}
+    for i, row_output in enumerate(output_data):
+        # Convert the numpy array row to a tuple to make it hashable for dictionary keys
+        row_tuple = tuple(row_output)
+        if row_tuple not in unique_patterns_map:
+            unique_patterns_map[row_tuple] = []
+        unique_patterns_map[row_tuple].append(i)
 
-    # Remove the validation chunk from the original data
-    input_data = np.delete(input_data, slice(start_index, end_index), axis=0)
-    output_data = np.delete(output_data, slice(start_index, end_index), axis=0)
+    print(f"\nThere are {len(unique_patterns_map)} unique conflict sets in the output data.")
 
-    return input_data, output_data, (start_index, end_index)
+    # Iterate through each unique group's indices
+    for group_id_pattern, group_indices in unique_patterns_map.items():
+        # Sanity check: ensure we have at least 20 samples per group and at most 1000
+        if len(group_indices) < 20 or len(group_indices) > 1000:
+            # Print the pattern for skipped groups for better debugging
+            print(f"Warning: Skipping group with {len(group_indices)} samples (expected between 20 and 1000).")
+            print(f"A sample of this group is at index {group_indices[0]}")
+            continue
+
+        # Step 1: Split the group into 90% for (train+val) and 10% for test
+        # We use random_state for reproducibility and shuffle=True to ensure random selection
+        train_val_indices, group_test_indices = train_test_split(
+            group_indices, test_size=0.1, random_state=42, shuffle=True
+        )
+
+        # Step 2: Split the again for 10% for validation and 80% for training
+        group_train_indices, group_val_indices = train_test_split(
+            train_val_indices, test_size=(1/9), random_state=42, shuffle=True
+        )
+
+        # Extend the overall lists with the indices from the current group
+        train_indices_overall.extend(group_train_indices)
+        val_indices_overall.extend(group_val_indices)
+        test_indices_overall.extend(group_test_indices)
+
+    # Convert lists to NumPy arrays for easier indexing and consistency
+    train_indices_overall = np.array(train_indices_overall)
+    val_indices_overall = np.array(val_indices_overall)
+    test_indices_overall = np.array(test_indices_overall)
+
+    # Shuffle the overall indices to mix up the order, but maintain the split proportions
+    # Using the same seed for shuffling ensures reproducibility of the overall shuffle
+    np.random.seed(42)
+    np.random.shuffle(train_indices_overall)
+    np.random.shuffle(val_indices_overall)
+    np.random.shuffle(test_indices_overall)
+
+    return (train_indices_overall, val_indices_overall, test_indices_overall)
 
 
 def updateBestModel(model_info, best_models):
