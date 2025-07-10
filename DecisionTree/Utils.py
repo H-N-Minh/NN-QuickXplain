@@ -757,13 +757,6 @@ def splitData(output_data):
 
     # Iterate through each unique group's indices
     for group_id_pattern, group_indices in unique_patterns_map.items():
-        # Sanity check: ensure we have at least 20 samples per group and at most 1000
-        if len(group_indices) < 20 or len(group_indices) > 1000:
-            # Print the pattern for skipped groups for better debugging
-            print(f"Warning: Skipping group with {len(group_indices)} samples (expected between 20 and 1000).")
-            print(f"A sample of this group is at index {group_indices[0]}")
-            continue
-
         # Step 1: Split the group into 90% for (train+val) and 10% for test
         # We use random_state for reproducibility and shuffle=True to ensure random selection
         train_val_indices, group_test_indices = train_test_split(
@@ -774,6 +767,13 @@ def splitData(output_data):
         group_train_indices, group_val_indices = train_test_split(
             train_val_indices, test_size=(1/9), random_state=42, shuffle=True
         )
+
+        # Fail safe check
+        if len(group_train_indices) == 0 or len(group_val_indices) == 0 or len(group_test_indices) == 0:
+            print(f"Warning: Group with pattern {group_id_pattern} has too few samples to split properly. "
+                  f"Train: {len(group_train_indices)}, Val: {len(group_val_indices)}, Test: {len(group_test_indices)}. "
+                  f"Skipping this group.")
+            continue
 
         # Extend the overall lists with the indices from the current group
         train_indices_overall.extend(group_train_indices)
