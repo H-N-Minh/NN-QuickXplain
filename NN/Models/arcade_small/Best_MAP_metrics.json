@@ -1,0 +1,41 @@
+{
+  "training_result": {
+    "EXACT_MATCH": 93.90243902439023,
+    "F1": 0.9918118180889753,
+    "MCC": 0.9842521709187799,
+    "MAP": 1.0,
+    "HAMMING_LOSS": 0.0016629711751662971,
+    "COMBINED": 98.42598645234203,
+    "accuracy": 0.9983370288248338,
+    "roc_auc": 1.0,
+    "total_samples": 164
+  },
+  "config": {
+    "convert_input": true,
+    "hidden_layers": [
+      64,
+      32
+    ],
+    "dropout": false,
+    "hidden_activation_func": "leaky relu",
+    "batch_size": 512,
+    "batch_norm": true,
+    "max_epochs": 200,
+    "patience": 20,
+    "loss_func": "bcewithlogitloss",
+    "optimizer": "Adam",
+    "learning_rate": 0.021745763186487816,
+    "weight_decay": 0.0021815344726102233,
+    "use_pca": false,
+    "pca_components": 0.95,
+    "focal_loss_gamma": null,
+    "focal_loss_alpha": null,
+    "dropout_rate": 0.0
+  },
+  "removed_features": [],
+  "removed_labels": {
+    "0": 0,
+    "1": 0,
+    "11": 0
+  }
+}
