@@ -56,8 +56,6 @@ def testWithQuickXplain(settings, y_pred_prob, input_data, model_metadata):
     
     Parameters:
     settings (dict): Settings dictionary containing paths and configurations
-    model: The trained model to test
-    X_validate (numpy.ndarray): input data but was transformed with PCA (if PCA was used during training)
     input_data (numpy.ndarray): Original input data without PCA transformation
 
     Returns:
@@ -102,10 +100,10 @@ def startTesting(settings):
         # Import the model and the test data
         print(f"\nTesting model '{model_name}'...")
         model, pca, testing_indexes, model_metadata = Utils.importModel(settings, model_name)
-        input_data, output_data = Utils.importTestData(settings, model_metadata)
+        input_data, output_data = Utils.importTestData(settings, testing_indexes)
 
         # Preprocess the test data the same way as during training
-        test_loader = Utils.preprocessValidationData(input_data, output_data, pca, model_metadata)
+        test_loader = Utils.preprocessTestData(input_data, output_data, pca, model_metadata)
         
         # Test model on test data.
         print(f"...Testing model '{model_name}' on test data...")

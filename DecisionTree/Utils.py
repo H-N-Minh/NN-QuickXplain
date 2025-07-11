@@ -158,11 +158,6 @@ def importTestData(settings, testing_indexes, pca, model_metadata):
         if idx < 0 or idx > max_index:
             raise IndexError(f"Error: The test index {idx} is out of bound for dataset at {input_file}. Check path for right dataset. ")
 
-    # Check if testing_indexes are about 10% of the whole data
-    percent_test = len(testing_indexes) / input_data.shape[0] * 100
-    if not (8 <= percent_test <= 12):
-        warnings.warn(f"Warning: Number of testing_indexes ({len(testing_indexes)}) is {percent_test:.2f}% of input_data size ({input_data.shape[0]}). Expected ~10%.")
-
     # import only the section of the data that is relevant for test
     input_data = input_data.iloc[testing_indexes]
     output_data = output_data.iloc[testing_indexes]

@@ -751,40 +751,50 @@ def importModel(settings, model_name):
     # import the model and pca
     model = torch.load(model_file_name, weights_only=False)
     model.eval()
-    pca = joblib.load(pca_file_name)
+    model_data = joblib.load(pca_file_name)
+    pca = model_data['pca']
+    testing_indexes = model_data['testing_indexes']
+    
 
     # Import the metrics of the model
     with open(model_metrics_file_name, 'r') as json_file:
         model_metadata = yaml.safe_load(json_file)
     
-    return model, pca, model_metadata
+    return model, pca, testing_indexes, model_metadata
 
-def importTestData(settings, model_metadata):
+def importTestData(settings, testing_indexes):
     """
-    Import validation data. Only the section specified in the model metadata is used.
+    Import test data. Only the section specified in the model metadata is used.
     
     Parameters:
     settings (dict): Settings dictionary containing paths and configurations
-    model_metadata (dict): Metadata of the model
     
     Returns:
-    input_data: unmodified Validation features (numpy)
-    output_data: unmodified Validation labels (numpy)
+    input_data: unmodified test features (numpy)
+    output_data: unmodified test labels (numpy)
     """
+    # make sure dataset is valid
     input_file = settings['PATHS']['TRAINDATA_INPUT_PATH']
     output_file = settings['PATHS']['TRAINDATA_OUTPUT_PATH']
     if not os.path.exists(input_file) or not os.path.exists(output_file):
         print(f"Error: Cant find file at {input_file} or {output_file}.")
         raise FileNotFoundError("TrainingData file not found. Please check the file paths in settings.yaml .")
 
-    # import only the section of the data that is relevant for validation
-    print("...Importing validation data...")
-    (start_index, end_index) = model_metadata['validation_indexes']
-    assert start_index >= 0 and end_index > start_index, "Invalid validation indexes in model metadata."
-    input_data = pd.read_csv(input_file).iloc[start_index:end_index, 1:]
-    output_data = pd.read_csv(output_file).iloc[start_index:end_index, 1:]
+    # import the whole dataset
+    print("...Importing test data...")
+    input_data = pd.read_csv(input_file, header=None).iloc[:, 1:]
+    output_data = pd.read_csv(output_file, header=None).iloc[:, 1:]
 
-    assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
+    # Check for out-of-bounds indexes
+    max_index = input_data.shape[0] - 1
+    for idx in testing_indexes:
+        if idx < 0 or idx > max_index:
+            raise IndexError(f"Error: The test index {idx} is out of bound for dataset at {input_file}. Check path for right dataset. ")
+
+    # import only the section of the data that is relevant for test
+    input_data = input_data.iloc[testing_indexes]
+    output_data = output_data.iloc[testing_indexes]
+
     assert set(input_data.values.flatten()) == {1, -1}, "Input data values should only be 1 or -1."
     assert set(output_data.values.flatten()).issubset({1, -1, 0}), "Output data values should only be 1, -1 or 0."
 
@@ -802,7 +812,7 @@ def importTestData(settings, model_metadata):
 
     return input_data.values , output_data.values
 
-def preprocessValidationData(input_data, output_data, pca, model_metadata):
+def preprocessTestData(input_data, output_data, pca, model_metadata):
     """
     Preprocess the validation data by applying same transformation as for training data.
     This includes: PCA, convert input to binary (if specified), convert output to binary, and remove features/labels that were removed during training.
@@ -1164,7 +1174,7 @@ def saveTestResults(settings, model_name, metrics, result):
     metrics (dict): Metrics to save, e.g., F1, Exact Match, accuracy, etc.
     result (list): Result of the QuickXplain test, containing [faster_performance, ordered_runtime, unordered_runtime]
     """
-    print(f"...Saving validation results for model {model_name}...")
+    print(f"...Saving test results for model {model_name}...")
 
     # Check if the output file exists
     output_file = os.path.join(settings['PATHS']['MODEL_PATH'], f"Best_{model_name}_metrics.json")
@@ -1198,21 +1208,21 @@ def saveTestResults(settings, model_name, metrics, result):
         json.dump(data, f, indent=2)
 
 def printTestingSummary(settings):
-    """Print a summary of the validation results stored in Model folder."""
+    """Print a summary of the test results stored in Model folder."""
     print(f"\n\n{'='*60}")
     print("TESTING SUMMARY")
     print(f"{'='*60}")
     saved_models_dir = settings['PATHS']['MODEL_PATH']
 
-    # Go through each json file and print the result of the validation
-    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
+    # Go through each json file and print the result of the test
+    for model_name in settings['WORKFLOW']['TEST']['models_to_test']:
         model_file_name = os.path.join(saved_models_dir, f"Best_{model_name}_metrics.json")
         assert os.path.exists(model_file_name), f"Model metrics file ({model_file_name}) does not exist. Check path"
         
         with open(model_file_name, 'r') as json_file:
             model_metrics = json.load(json_file)
 
-        # extract the validation result and model's configuration
+        # extract the test result and model's configuration
         model_config = model_metrics['config']
         metrics = model_metrics['testing_result']
         QX_result = model_metrics['QX_result']
