@@ -93,7 +93,7 @@ class ConflictModel(nn.Module):
     
 
 class ModelManager:
-    def __init__(self, config, X_train, X_test, y_train, y_test):
+    def __init__(self, config, X_train, X_val, y_train, y_val):
         self.model_ = ConflictModel(
             input_size=X_train.shape[1],
             hidden_layers=config['hidden_layers'],
@@ -107,7 +107,7 @@ class ModelManager:
         # Prepare data loaders
         batch_size = config['batch_size']
         assert batch_size > 0, "Batch size must be greater than 0"
-        self.train_loader_, self.test_loader_, pos_weight = Utils.prepareData(X_train, X_test, y_train, y_test, batch_size)
+        self.train_loader_, self.val_loader_, pos_weight = Utils.prepareData(X_train, X_val, y_train, y_val, batch_size)
         
         # Define loss function based on config
         if config['loss_func'] == 'bcewithlogitloss':
@@ -149,7 +149,7 @@ class ModelManager:
         num_samples = 0
         
         with torch.no_grad():
-            for inputs, labels in self.test_loader_:
+            for inputs, labels in self.val_loader_:
                 outputs = self.model_(inputs)
                 loss = self.loss_func_(outputs, labels)
                 batch_size = inputs.size(0)
@@ -225,38 +225,38 @@ class ModelManager:
         - metrics: A dictionary containing the evaluation metrics.
         - y_pred_prob: The predicted probabilities for each output constraint."""
 
-        # Get raw output (logits) from the model using the test data loader.
+        # Get raw output (logits) from the model using the val data loader.
         model.eval()      # Evaluation Mode
         y_pred_logits_list = []
-        y_test_list = []
+        y_val_list = []
         with torch.no_grad():
             for inputs, labels in data_loader:
                 outputs = model(inputs)
                 y_pred_logits_list.append(outputs.cpu())
-                y_test_list.append(labels.cpu())
+                y_val_list.append(labels.cpu())
         
         # Concatenate results and convert to numpy
         y_pred_logits = torch.cat(y_pred_logits_list, dim=0)
-        y_test = torch.cat(y_test_list, dim=0).numpy()
+        y_val = torch.cat(y_val_list, dim=0).numpy()
 
         # get the final (activated) prediction of model (in probability)
         y_pred_prob = torch.sigmoid(y_pred_logits).numpy()
 
         # Convert probabilities to binary predictions using the best threshold
-        best_threshold = Utils.findBestThreshold(y_test, y_pred_prob)
+        best_threshold = Utils.findBestThreshold(y_val, y_pred_prob)
         y_pred_binary = (y_pred_prob > best_threshold).astype(int)
 
         # Exact matches
-        exact_match_pct = np.all(y_pred_binary == y_test, axis=1).mean() * 100
+        exact_match_pct = np.all(y_pred_binary == y_val, axis=1).mean() * 100
         
         # F1, Accuracy, and MCC for each label
-        avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred_binary, y_test)
+        avg_f1, avg_mcc, avg_accuracy = Utils.calculateF1_Mcc_Accuracy(y_pred_binary, y_val)
 
         # Hamming Loss
-        hamming = hamming_loss(y_test, y_pred_binary)
+        hamming = hamming_loss(y_val, y_pred_binary)
 
         # For ROC-AUC and mAP, we need probability scores
-        mAP, roc_auc = Utils.calculateMapAndROC(y_pred_prob, y_test)
+        mAP, roc_auc = Utils.calculateMapAndROC(y_pred_prob, y_val)
 
         # Calculate combined score
         combined_score = Utils.calculateCombinedScore(exact_match_pct, avg_f1, avg_mcc, mAP, hamming)
@@ -270,7 +270,7 @@ class ModelManager:
             Utils.METRIC_COMBINED: combined_score,
             Utils.METRIC_ACCURACY: avg_accuracy,
             Utils.METRIC_ROC_AUC: roc_auc,
-            Utils.METRIC_TOTAL_SAMPLES: y_test.shape[0]
+            Utils.METRIC_TOTAL_SAMPLES: y_val.shape[0]
         }
         
         return metrics, y_pred_prob

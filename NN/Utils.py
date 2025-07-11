@@ -23,6 +23,7 @@ from sklearn.metrics import (
 
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+from sklearn.model_selection import train_test_split
 
 
 ############################################ for main.py ########################################
@@ -69,12 +70,25 @@ def loadSettings():
         print("Settings file not found. Please make sure the settings.yaml file is in the correct directory.")
         sys.exit(1)
     
+    # Choose the right dataset based on the DATASET key
+    dataset = settings.get('DATASET', 'ARCADE_SMALL')  # Default to arcade_small if not specified
+    assert dataset in ['ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG', 'B2C_SMALL', 'B2C_BIG'], \
+        "Invalid dataset specified in settings.yaml. Choose from 'ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG', 'B2C_SMALL', 'B2C_BIG'."
+    
+    settings['PATHS']['MODEL_PATH'] = settings['PATHS'][dataset]['MODEL_PATH']
+    settings['PATHS']['TRAINDATA_INPUT_PATH'] = settings['PATHS'][dataset]['TRAINDATA_INPUT_PATH']
+    settings['PATHS']['TRAINDATA_OUTPUT_PATH'] = settings['PATHS'][dataset]['TRAINDATA_OUTPUT_PATH']
+    settings['PATHS']['TRAINDATA_CONSTRAINTS_NAME_PATH'] = settings['PATHS'][dataset]['TRAINDATA_CONSTRAINTS_NAME_PATH']
+    settings['PATHS']['TRAINDATA_FM_PATH'] = settings['PATHS'][dataset]['TRAINDATA_FM_PATH']
+
     # Ensure all paths in settings are absolute
     for key in settings['PATHS']:
-        # Except for Java path, which is handled separately
-        if key == 'JAVA_PATH':
+        # JAVA path is set exactly in settings.yaml, so skip it here. Also skip if the value is a valid path (path should be a String)
+        if key == 'JAVA_PATH' or not isinstance(settings['PATHS'][key], str):
             continue
         settings['PATHS'][key] = os.path.join(root_dir, settings['PATHS'][key])
+    
+    print(f"\nSettings loaded from: {settings_path}\nSelected dataset: {dataset}")
     return settings
 
 def startClearing(settings):
@@ -195,8 +209,8 @@ def importTrainingData(settings):
         raise FileNotFoundError("Training file not found. Please check the file paths in settings.yaml .")
 
     print("Importing data...")
-    input_data = pd.read_csv(input_file).iloc[:, 1:]
-    output_data = pd.read_csv(output_file).iloc[:, 1:]
+    input_data = pd.read_csv(input_file, header=None).iloc[:, 1:]
+    output_data = pd.read_csv(output_file, header=None).iloc[:, 1:]
 
     assert input_data.shape[0] == output_data.shape[0], "Input and output data must have the same number of rows."
     assert input_data.shape[1] == output_data.shape[1], "Input and output data must have the same number of columns."
