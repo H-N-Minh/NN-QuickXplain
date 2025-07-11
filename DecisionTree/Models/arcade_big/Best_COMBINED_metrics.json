@@ -37,11 +37,13 @@
     "total_samples": 3232
   },
   "QX_result": {
-    "ordered_runtime": 0.000787985321782178,
+    "ordered_runtime": 0.0008498854025371286,
     "ordered_cc": 6.989170792079208,
-    "unordered_runtime": 0.0013844342246287131,
+    "unordered_runtime": 0.0016588635034034652,
     "unordered_cc": 13.07394801980198,
-    "faster_performance_percentage": 75.69289507798864,
-    "CC_less_percentage": 46.54123772334635
+    "faster_performance_percentage": 95.18672734598415,
+    "CC_less_percentage": 46.54123772334635,
+    "cosine_similarity_percentage": 99.85636565696929,
+    "exact_match_percentage": 99.75247524752476
   }
 }

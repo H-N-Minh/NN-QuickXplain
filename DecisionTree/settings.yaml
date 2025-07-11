@@ -1,6 +1,6 @@
 # the dataset to use, can be ARCADE_SMALL, ARCADE_BIG, BUSYBOX_SMALL, BUSYBOX_BIG
-# DATASET: "ARCADE_SMALL"  
-DATASET: "ARCADE_BIG"
+DATASET: "ARCADE_SMALL"  
+# DATASET: "ARCADE_BIG"
 
 PATHS:
   ARCADE_SMALL:
@@ -66,7 +66,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
       use_pca: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
       class_weight: ['balanced', null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 
-      n_estimator: [50, 600]   # Min max values. number of estimators for only RandomForest (only used if estimator_type is 'RandomForest')
+      n_estimator: [50, 1000]   # Min max values. number of estimators for only RandomForest (only used if estimator_type is 'RandomForest')
   
   TEST:  # test the trained model directly with QuickXPlain, tested on unseen data.
     SKIP: false # skip validation part completely if set to true
