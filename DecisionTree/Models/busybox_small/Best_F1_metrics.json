@@ -1,23 +1,23 @@
 {
   "training_result": {
-    "EXACT_MATCH": 0.0,
-    "F1": 0.4704202949982565,
-    "MCC": 0.04004398752646042,
-    "MAP": 0.14906707804884087,
-    "HAMMING_LOSS": 0.016441317144959527,
-    "COMBINED": 42.46136099330736,
-    "accuracy": 0.9835586828550404,
-    "roc_auc": 0.8847430892773546,
+    "EXACT_MATCH": 99.00662251655629,
+    "F1": 0.9968980136200953,
+    "MCC": 0.9956530788563115,
+    "MAP": 0.9926285083569852,
+    "HAMMING_LOSS": 6.898454746136865e-05,
+    "COMBINED": 99.54700604046677,
+    "accuracy": 0.9999310154525385,
+    "roc_auc": 0.996279761904762,
     "total_samples": 302
   },
   "config": {
-    "max_depth": 10,
-    "estimator_type": "RandomForest",
+    "max_depth": 80,
+    "estimator_type": "DecisionTree",
     "multi_output_type": "MultiOutputClassifier",
     "use_pca": false,
     "pca_components": 0.95,
     "class_weight": "balanced",
-    "n_estimator": 550
+    "n_estimators": null
   },
   "removed_features": [],
   "removed_labels": {
