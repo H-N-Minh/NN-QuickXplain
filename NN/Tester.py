@@ -98,17 +98,17 @@ def testWithQuickXplain(settings, y_pred_prob, input_data, model_metadata):
     return [avg_ordered_runtime, avg_ordered_cc, avg_unordered_runtime, avg_unordered_cc, cosine_similarity, exact_match]
 
 def startTesting(settings):
-    for model_name in settings['WORKFLOW']['VALIDATE']['models_to_test']:
-        # Import the model and the validation data
+    for model_name in settings['WORKFLOW']['TEST']['models_to_test']:
+        # Import the model and the test data
         print(f"\nTesting model '{model_name}'...")
-        model, pca, model_metadata = Utils.importModel(settings, model_name)
-        input_data, output_data = Utils.importValidationData(settings, model_metadata)
+        model, pca, testing_indexes, model_metadata = Utils.importModel(settings, model_name)
+        input_data, output_data = Utils.importTestData(settings, model_metadata)
 
-        # Preprocess the validation data the same way as during training
+        # Preprocess the test data the same way as during training
         test_loader = Utils.preprocessValidationData(input_data, output_data, pca, model_metadata)
         
-        # Test model on validation data.
-        print(f"...Testing model '{model_name}' on validation data...")
+        # Test model on test data.
+        print(f"...Testing model '{model_name}' on test data...")
         metrics, y_pred_prob = ModelManager.evaluateModel(model, test_loader)
 
         # Test the model on QX
@@ -119,6 +119,6 @@ def startTesting(settings):
         Utils.saveTestResults(settings, model_name, metrics, result)
         print(f"Done testing '{model_name}'!")
 
-    # Print validation summary
+    # Print test summary
     Utils.printTestingSummary(settings)
 

@@ -315,41 +315,110 @@ def saveModel(best_models, settings):
         model = best_model['model_manager'].model_
         torch.save(model, model_filename)
 
-        # save PCA
+        # save PCA and testing indexes
         pca_filename = os.path.join(model_folder_path, f"Best_{name}_pca.joblib")
-        joblib.dump(best_model['pca'], pca_filename)
+        joblib.dump({'pca': best_model['pca'], 'testing_indexes': best_model['testing_indexes']}, pca_filename)
 
         # save training plot
         training_plot_filename = os.path.join(model_folder_path, f"Best_{name}_training_plot.png")
         saveTrainingPlot(best_model['model_manager'], training_plot_filename)
 
         # Save metrics
-        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca']}
+        metrics_serializable = {k: convert_to_serializable(v) for k, v in best_model.items() if k not in ['model_manager', 'pca', 'testing_indexes']}
         with open(metrics_filename, 'w') as f:
             json.dump(metrics_serializable, f, indent=2)
                     
     return model_folder_path
 
-def splitData(input_data, output_data):
+
+def splitData(output_data):
     """
-    Randomly select a continuous portion of the data (10% of total data),
-    remove it from input_data and output_data, because it will not be used for training, instead it will
-    be used later in validation phase. The index of removed chunks will be returned.
-    This indexes are stored, so later in Testing phase, the same chunk will be loaded for testing
+    Splits input and output data into training, validation, and testing sets.
+    Dataset is made of groups, where each group is defined by a unique Conflict set as output.
+    Each group is split as follows:
+    80% for training, 10% for validation, and 10% for testing.
+
+    Args:
+        output_data (np.array): The output labels/targets (y), where unique values
+                                 define groups.
+
+    Returns:
+        tuple: A tuple containing:
+            - train_indices_overall (np.array): Indices of the training data in the original dataset.
+            - val_indices_overall (np.array): Indices of the validation data in the original dataset.
+            - test_indices_overall (np.array): Indices of the testing data in the original dataset.
     """
-    total_data = len(input_data)
-    chunk_size = int(0.1 * total_data)  # 10% of the total data
+    print(f"\nSplitting data into training (80%), validation (10%), and testing sets (10%)...")
+    # We'll collect the indices for training, validation, and testing
+    train_indices_overall = []
+    val_indices_overall = []
+    test_indices_overall = []
 
-    # Randomly select the start index for the chunk
-    rng = np.random.RandomState(42)  
-    start_index = rng.randint(0, total_data - chunk_size)
-    end_index = start_index + chunk_size
+    # Create a mapping from unique output patterns (as tuples) to their original indices
+    unique_patterns_map = {}
+    for i, row_output in enumerate(output_data):
+        # Convert the numpy array row to a tuple to make it hashable for dictionary keys
+        row_tuple = tuple(row_output)
+        if row_tuple not in unique_patterns_map:
+            unique_patterns_map[row_tuple] = []
+        unique_patterns_map[row_tuple].append(i)
 
-    # Remove the validation chunk from the original data
-    input_data = np.delete(input_data, slice(start_index, end_index), axis=0)
-    output_data = np.delete(output_data, slice(start_index, end_index), axis=0)
+    print(f"...There are {len(unique_patterns_map)} unique conflict sets in the output data...")
 
-    return input_data, output_data, (start_index, end_index)
+    # Debug
+    skip_count = 0
+    samples_skipped = 0
+
+    # Iterate through each unique group's indices
+    for group_id_pattern, group_indices in unique_patterns_map.items():
+        # If the group has less than 10 samples, we cannot split it properly
+        if len(group_indices) < 10:
+            skip_count += 1
+            samples_skipped += len(group_indices)
+            continue
+
+        # Step 1: Split the group into 90% for (train+val) and 10% for test
+        # We use random_state for reproducibility and shuffle=True to ensure random selection
+        train_val_indices, group_test_indices = train_test_split(
+            group_indices, test_size=0.1, random_state=42, shuffle=True
+        )
+
+        # Step 2: Split the again for 10% for validation and 80% for training
+        group_train_indices, group_val_indices = train_test_split(
+            train_val_indices, test_size=(1/9), random_state=42, shuffle=True
+        )
+
+        # Fail safe check
+        if len(group_train_indices) == 0 or len(group_val_indices) == 0 or len(group_test_indices) == 0:
+            print(f"Warning: Group with pattern {group_id_pattern} has too few samples to split properly. "
+                  f"Train: {len(group_train_indices)}, Val: {len(group_val_indices)}, Test: {len(group_test_indices)}. "
+                  f"Skipping this group.")
+            continue
+
+        # Extend the overall lists with the indices from the current group
+        train_indices_overall.extend(group_train_indices)
+        val_indices_overall.extend(group_val_indices)
+        test_indices_overall.extend(group_test_indices)
+
+    if skip_count > 0:
+        print(f"\033[91m!!!\033[0mWARNING\033[91m!!!\033[0m: {skip_count} unique conflict sets are skipped due to insufficient samples (<10) for splitting into train/val/test sets.")
+        print(f"{samples_skipped} samples in total were skipped. These data will not be used for training nor testing.")
+    else:
+        print("No samples were skipped. The whole dataset will be used for training, validation, and testing.")
+
+    # Convert lists to NumPy arrays for easier indexing and consistency
+    train_indices_overall = np.array(train_indices_overall)
+    val_indices_overall = np.array(val_indices_overall)
+    test_indices_overall = np.array(test_indices_overall)
+
+    # Shuffle the overall indices to mix up the order, but maintain the split proportions
+    # Using the same seed for shuffling ensures reproducibility of the overall shuffle
+    np.random.seed(42)
+    np.random.shuffle(train_indices_overall)
+    np.random.shuffle(val_indices_overall)
+    np.random.shuffle(test_indices_overall)
+
+    return (train_indices_overall, val_indices_overall, test_indices_overall)
 
 def updateBestModel(model_info, best_models):
     """
@@ -672,7 +741,7 @@ def importModel(settings, model_name):
     
     return model, pca, model_metadata
 
-def importValidationData(settings, model_metadata):
+def importTestData(settings, model_metadata):
     """
     Import validation data. Only the section specified in the model metadata is used.
     
