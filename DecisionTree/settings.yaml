@@ -72,7 +72,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       # NOTE: the more configurations, the more time it takes to train the model
 
       max_depth: [10, 20, 30, 40, 50, 60, 70, 80, 90, null]       # max training depth, null for unlimited depth
-      estimator_type: ['RandomForest']    # ['DecisionTree', 'RandomForest']
+      estimator_type: ['DecisionTree', 'RandomForest']    # ['DecisionTree', 'RandomForest']
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
       use_pca: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
       class_weight: ['balanced', null]       # [null, 'balanced']    # use 'balanced' to give more weight to the minority class in case of imbalanced data 

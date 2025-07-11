@@ -42,8 +42,8 @@ def loadSettings():
     
     # Choose the right dataset based on the DATASET key
     dataset = settings.get('DATASET', 'ARCADE_SMALL')  # Default to arcade_small if not specified
-    assert dataset in ['ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG'], \
-        "Invalid dataset specified in settings.yaml. Choose from 'ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG'."
+    assert dataset in ['ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG', 'B2C_SMALL', 'B2C_BIG'], \
+        "Invalid dataset specified in settings.yaml. Choose from 'ARCADE_SMALL', 'ARCADE_BIG', 'BUSYBOX_SMALL', 'BUSYBOX_BIG', 'B2C_SMALL', 'B2C_BIG'."
     
     settings['PATHS']['MODEL_PATH'] = settings['PATHS'][dataset]['MODEL_PATH']
     settings['PATHS']['TRAINDATA_INPUT_PATH'] = settings['PATHS'][dataset]['TRAINDATA_INPUT_PATH']
@@ -826,6 +826,7 @@ def splitData(output_data):
             - val_indices_overall (np.array): Indices of the validation data in the original dataset.
             - test_indices_overall (np.array): Indices of the testing data in the original dataset.
     """
+    print(f"\nSplitting data into training (80%), validation (10%), and testing sets (10%)...")
     # We'll collect the indices for training, validation, and testing
     train_indices_overall = []
     val_indices_overall = []
@@ -840,10 +841,20 @@ def splitData(output_data):
             unique_patterns_map[row_tuple] = []
         unique_patterns_map[row_tuple].append(i)
 
-    print(f"\nThere are {len(unique_patterns_map)} unique conflict sets in the output data.")
+    print(f"...There are {len(unique_patterns_map)} unique conflict sets in the output data...")
+
+    # Debug
+    skip_count = 0
+    samples_skipped = 0
 
     # Iterate through each unique group's indices
     for group_id_pattern, group_indices in unique_patterns_map.items():
+        # If the group has less than 10 samples, we cannot split it properly
+        if len(group_indices) < 10:
+            skip_count += 1
+            samples_skipped += len(group_indices)
+            continue
+
         # Step 1: Split the group into 90% for (train+val) and 10% for test
         # We use random_state for reproducibility and shuffle=True to ensure random selection
         train_val_indices, group_test_indices = train_test_split(
@@ -866,6 +877,12 @@ def splitData(output_data):
         train_indices_overall.extend(group_train_indices)
         val_indices_overall.extend(group_val_indices)
         test_indices_overall.extend(group_test_indices)
+
+    if skip_count > 0:
+        print(f"\033[91m!!!\033[0mWARNING\033[91m!!!\033[0m: {skip_count} unique conflict sets are skipped due to insufficient samples (<10) for splitting into train/val/test sets.")
+        print(f"{samples_skipped} samples in total were skipped. These data will not be used for training nor testing.")
+    else:
+        print("No samples were skipped. The whole dataset will be used for training, validation, and testing.")
 
     # Convert lists to NumPy arrays for easier indexing and consistency
     train_indices_overall = np.array(train_indices_overall)
