@@ -17,6 +17,8 @@ NN/TrainingData/busybox/conflicts_126725.csv
 NN/TrainingData/busybox/invalid_confs_126725.csv
 DecisionTree/TrainingData/busybox/conflicts_126725.csv
 DecisionTree/TrainingData/busybox/invalid_confs_126725.csv
+DecisionTree/TrainingData/busybox_big/conflicts_96199.csv
+DecisionTree/TrainingData/busybox_big/invalid_confs_96199.csv
 
 DecisionTree/Models/**/*.pkl
 

@@ -1,6 +1,7 @@
 # the dataset to use, can be ARCADE_SMALL, ARCADE_BIG, BUSYBOX_SMALL, BUSYBOX_BIG
-DATASET: "ARCADE_SMALL"  
+# DATASET: "ARCADE_SMALL"  
 # DATASET: "ARCADE_BIG"
+DATASET: "BUSYBOX_BIG"
 
 PATHS:
   ARCADE_SMALL:
@@ -19,17 +20,17 @@ PATHS:
 
   BUSYBOX_SMALL:
     MODEL_PATH: "Models/busybox"  # path to the folder of trained models
-    TRAINDATA_INPUT_PATH: "TrainingData/busybox/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
-    TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/busybox_conflicts_655.csv"    # conflicts computed by the solver (also stored in .csv format)
-    TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-    TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+    TRAINDATA_INPUT_PATH: "TrainingData/busybox_small/busybox_invalid_confs_655.csv" # invalid configurations (all stored in .csv file)
+    TRAINDATA_OUTPUT_PATH: "TrainingData/busybox_small/busybox_conflicts_655.csv"    # conflicts computed by the solver (also stored in .csv format)
+    TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox_small/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+    TRAINDATA_FM_PATH: "TrainingData/busybox_small/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
   BUSYBOX_BIG:
     MODEL_PATH: "Models/busybox"  # path to the folder of trained models
-    TRAINDATA_INPUT_PATH: "TrainingData/busybox/invalid_confs_126725.csv" # invalid configurations (all stored in .csv file)
-    TRAINDATA_OUTPUT_PATH: "TrainingData/busybox/conflicts_126725.csv"    # conflicts computed by the solver (also stored in .csv format)
-    TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
-    TRAINDATA_FM_PATH: "TrainingData/busybox/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
+    TRAINDATA_INPUT_PATH: "TrainingData/busybox_big/invalid_confs_96199.csv" # invalid configurations (all stored in .csv file)
+    TRAINDATA_OUTPUT_PATH: "TrainingData/busybox_big/conflicts_96199.csv"    # conflicts computed by the solver (also stored in .csv format)
+    TRAINDATA_CONSTRAINTS_NAME_PATH: "TrainingData/busybox_big/busybox_constraints_names.txt" # name of all constraints (must be same order as in the .csv file)
+    TRAINDATA_FM_PATH: "TrainingData/busybox_big/busybox-1.18.0.xml"   # the feature model, needed for solver (XML file)
 
 
   SOLVER_INPUT_PATH: "Solver/Input"     # invalid configurations (each config is a text file)
@@ -51,7 +52,7 @@ CLEAR:  # this is currently not set up yet
 
 WORKFLOW: # what the program do or not do (to allow doing only partial work instead of full training every run)
   TRAIN:
-    SKIP: true # skip training if the model already exists and stored in the model folder
+    SKIP: false # skip training if the model already exists and stored in the model folder
 
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
     optuna_trials: 50  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
@@ -61,7 +62,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
     configurations:   # different configs for different models to find best model
       # NOTE: the more configurations, the more time it takes to train the model
 
-      max_depth: [10, 20, 25, 30, 35, 40, 50, 60, null]       # max training depth, null for unlimited depth
+      max_depth: [10, 20, 30, 40, 50, 60, 70, 80, 90, null]       # max training depth, null for unlimited depth
       estimator_type: ['RandomForest']    # ['DecisionTree', 'RandomForest']
       multi_output_type: ['MultiOutputClassifier', 'ClassifierChain']         # ['MultiOutputClassifier', 'ClassifierChain', 'Direct']  # 'Direct' should never be alone in this list, else could cause an error, since it only works with RandomForest
       use_pca: [false, true]    #[false, true]   PCA reduces the dimensionality of the data, help training faster, but also might lose some information of training data
@@ -69,7 +70,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       n_estimator: [50, 1000]   # Min max values. number of estimators for only RandomForest (only used if estimator_type is 'RandomForest')
   
   TEST:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: false # skip validation part completely if set to true
+    SKIP: true # skip validation part completely if set to true
     # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
     # Note: the selected dataset must also be correctly set in the PATHS section above
     models_to_test: ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  specify which models to be tested.
