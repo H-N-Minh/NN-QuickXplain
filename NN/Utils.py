@@ -133,27 +133,45 @@ def getConfigFromOptuna(trial, configs_settings):
     Get the config suggested by Optuna. All of these below are hyperparameters for 1 model configuration.
     """
     hidden_layer_choices = [json.dumps(l) for l in configs_settings['hidden_layers']]
-    patience_choices = [str(p) for p in configs_settings['patience']]
+    
     config = {
         'convert_input': trial.suggest_categorical('convert_input', configs_settings['convert_input']),
         'hidden_layers': json.loads(trial.suggest_categorical('hidden_layers', hidden_layer_choices)),
-        'dropout_rate': trial.suggest_float('dropout_rate', min(configs_settings['dropout_rates']), max(configs_settings['dropout_rates'])),
+        'dropout': trial.suggest_categorical('dropout', configs_settings['dropout']),
         'hidden_activation_func': trial.suggest_categorical('hidden_activation_func', configs_settings['hidden_activation_funcs']),
+
         'batch_size': trial.suggest_categorical('batch_size', configs_settings['batch_sizes']),
         'batch_norm': trial.suggest_categorical('batch_norm', configs_settings['batch_norm']),
-        'max_epochs': trial.suggest_int('max_epochs', min(configs_settings['max_epochs']), max(configs_settings['max_epochs'])),
-        'patience': trial.suggest_categorical('patience', patience_choices),
+
+        'max_epochs': configs_settings['max_epochs'],
+        'patience': configs_settings['patience'],
+
         'loss_func': trial.suggest_categorical('loss_func', configs_settings['loss_funcs']),
-        'focal_loss_gamma': trial.suggest_float('focal_loss_gamma', min(configs_settings['focal_loss_gamma']), max(configs_settings['focal_loss_gamma'])),
-        'focal_loss_alpha': trial.suggest_float('focal_loss_alpha', min(configs_settings['focal_loss_alpha']), max(configs_settings['focal_loss_alpha'])),
         'optimizer': trial.suggest_categorical('optimizer', configs_settings['optimizers']),
-        'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates'])),
-        'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays'])),
+        'learning_rate': trial.suggest_float('learning_rate', min(configs_settings['learning_rates']), max(configs_settings['learning_rates']), log= True),
+        'weight_decay': trial.suggest_float('weight_decay', min(configs_settings['weight_decays']), max(configs_settings['weight_decays']), log= True),
+        
         'use_pca': trial.suggest_categorical('use_pca', configs_settings['use_pca_options']),
         'pca_components': 0.95
     }
-    # Correct the value of 'patience'
-    config['patience'] = None if config['patience'].lower() == 'none' or config['patience'].lower() == 'null' else int(config['patience'])
+
+    # If the loss function is Focal Loss, suggest gamma and alpha values
+    if config['loss_func'] == 'Focal Loss':
+        # Suggest gamma and alpha values for Focal Loss
+        config['focal_loss_gamma'] = trial.suggest_float('focal_loss_gamma', min(configs_settings['focal_loss_gamma']), max(configs_settings['focal_loss_gamma']))
+        config['focal_loss_alpha'] = trial.suggest_float('focal_loss_alpha', min(configs_settings['focal_loss_alpha']), max(configs_settings['focal_loss_alpha']))
+    else:
+        # If the loss function is not Focal Loss, set gamma and alpha to None
+        config['focal_loss_gamma'] = None
+        config['focal_loss_alpha'] = None
+
+    # Dropout rate is only suggested if dropout is enabled
+    if config['dropout']:
+        # If dropout is enabled, suggest a dropout rate
+        config['dropout_rate'] = trial.suggest_float('dropout_rate', min(configs_settings['dropout_rates']), max(configs_settings['dropout_rates']))
+    else:
+        # If dropout is not enabled, set dropout_rate to 0
+        config['dropout_rate'] = 0.0
 
     return config
 
