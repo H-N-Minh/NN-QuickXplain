@@ -22,6 +22,8 @@ DecisionTree/TrainingData/busybox_big/conflicts_96199.csv
 DecisionTree/TrainingData/busybox_big/invalid_confs_96199.csv
 NN/TrainingData/busybox_big/conflicts_96199.csv
 NN/TrainingData/busybox_big/invalid_confs_96199.csv
+NN/TrainingData/b2c_big/conflicts_79550.csv
+NN/TrainingData/b2c_big/invalid_confs_79550.csv
 
 DecisionTree/Models/**/*.pkl
 

@@ -1,0 +1,194 @@
+Static content
+User behaviour tracking information
+Multiple catalogs
+Wish list save after session
+E-mail wish list
+Multiple wish lists
+Product returns
+Campaigns
+Affiliate registration
+Commission tracking
+Allow backorders
+Report types
+Report formats
+Level of detail
+Fulfillment system
+Inventory management system
+Procurement system
+External distributor system
+Register to browse
+Register to buy
+None
+Login credentials
+Personal Information
+Reminders
+Quick checkout profile
+Custom fields
+Basic information
+Detailed information
+Warranty information
+Customer reviews
+Size
+Weight
+Availability
+Custom fields1
+Basic search
+Advanced search
+Product page
+Category page
+Seasonal product views
+Personalized views
+Public access
+Restricted access
+Private access
+Inventory management policy
+Cart content page
+Cart summary page
+Cart save after session
+Eletronic page
+E-mail
+Phone
+Mail
+Digital Dialing
+Rotary Dialing
+Question and feedback tracking
+Request order hardcopy
+Internal tracking
+Partner tracking
+Locally visited pages
+External referring pages
+Previous purchases1
+Customer preferences
+Personal information
+Demographics1
+Previous purchases
+Shopping cart content
+Wish list content
+Previously visited pages
+Date and time
+Custom target criteria
+Assignment to page types for display
+Product flagging
+Manual
+Product database management
+Presentation options
+General layout management
+Content approval
+Site search
+Search engine registration
+Domain name setup
+Welcome message
+Special offers
+Time dependent
+Personalized
+Multiple shipping addresses
+Multiple billing addresses
+Card holder name
+Card number
+Expiry date
+Security information
+Age
+Income
+Education
+Custom Demographic field
+Site layout
+List size
+Language
+Eletronic goods
+Physical goods
+Services
+Documents
+Complex product configuration
+Guest checkout
+Quality of service selection
+Carrier selection
+Gift options
+Multiple shipments
+Shipping cost calculation
+Fraud detection
+Order number
+Order date
+Order status
+Warehouse management
+File repository
+License management
+Appointment scheduling
+Resource planning
+Advertisement response tracking
+Context sensitive ads
+Coupons
+Handling multiple discounts
+Product kitting
+Personalized1
+Response tracking
+Non-repudiation service
+Video
+Sound
+Multi-level
+Multiple classification
+Price
+Quality
+Price-Quality ratio
+Manufacturer name
+Custom filter
+CertiTAX
+CyberSource
+Custom tax gateway
+COD
+Credit card
+Debit card
+Eletronic cheque
+Fax mail order
+Purchase order
+Gift certificate
+Phone order
+Custom payment type
+Authorize.Net
+CyberSource1
+LinkPoint
+Paradata
+SkipJack
+Verisign Payflow Pro
+Custom payment gateway
+Banner ads
+Pop-up ads
+House advertisements
+Product and quantity scope
+Time scope
+Purchase value scope
+Percentage discount
+Fixed discount
+Free item
+Customer segments
+Shipping address1
+Purchase value
+Quantity
+Substitute products
+Past customers also bought
+Thumbnail
+2D image
+3D image
+360 degrees image
+Different perspectives
+Gallery
+Enable profile update on checkout
+Fixed-rate taxation
+Surcharge
+Percentage
+FedEX
+UPS
+USPS
+Canada Post
+Custom shipping gateway
+Advertisement management interface
+Tax codes
+Flat rate
+Shipping
+Billing
+Country
+Region
+City
+Quantity purchased
+Order total
+Weight1
+Product classification
