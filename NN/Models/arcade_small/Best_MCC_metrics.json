@@ -37,5 +37,26 @@
     "0": 0,
     "1": 0,
     "11": 0
+  },
+  "testing_result": {
+    "EXACT_MATCH": 95.1219512195122,
+    "F1": 0.994258387007924,
+    "MCC": 0.9889535766992822,
+    "MAP": 0.997561553030303,
+    "HAMMING_LOSS": 0.0011086474501108647,
+    "COMBINED": 98.72815186265757,
+    "accuracy": 0.9988913525498891,
+    "roc_auc": 0.9998916448135198,
+    "total_samples": 164
+  },
+  "QX_result": {
+    "ordered_runtime": 0.0017438671158536586,
+    "ordered_cc": 7.097560975609756,
+    "unordered_runtime": 0.002952790237804878,
+    "unordered_cc": 13.804878048780488,
+    "faster_performance_percentage": 69.3242685156906,
+    "CC_less_percentage": 48.58657243816255,
+    "cosine_similarity_percentage": 99.6951219512195,
+    "exact_match_percentage": 99.39024390243902
   }
 }

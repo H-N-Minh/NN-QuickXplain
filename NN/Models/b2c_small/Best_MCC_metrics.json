@@ -117,5 +117,26 @@
     "170": 0,
     "171": 0,
     "172": 0
+  },
+  "testing_result": {
+    "EXACT_MATCH": 18.152866242038215,
+    "F1": 0.7944561495593302,
+    "MCC": 0.6825716100839723,
+    "MAP": 0.7294285111536454,
+    "HAMMING_LOSS": 0.013052103999164665,
+    "COMBINED": 70.67294048352358,
+    "accuracy": 0.9869478960008354,
+    "roc_auc": 0.9512790166690192,
+    "total_samples": 314
+  },
+  "QX_result": {
+    "ordered_runtime": 0.007054835286624204,
+    "ordered_cc": 11.26751592356688,
+    "unordered_runtime": 0.011881581484076434,
+    "unordered_cc": 17.929936305732483,
+    "faster_performance_percentage": 68.41756045819557,
+    "CC_less_percentage": 37.15808170515097,
+    "cosine_similarity_percentage": 92.67247822413923,
+    "exact_match_percentage": 83.43949044585987
   }
 }

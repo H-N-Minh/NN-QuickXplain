@@ -71,7 +71,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
   RETRAIN: # retrain all the models in Models folder, using exact configs.
     SKIP: true # if we doing retraining then the training phase below will be skipped.
   TRAIN:
-    SKIP: false # skip training if the model already exists and stored in the model folder
+    SKIP: true # skip training if the model already exists and stored in the model folder
     
     # The number of trials/configurations to try. The higher the number, the longer the training will take, but the better the results will be.
     optuna_trials: 50  # number of trials for Optuna to find the best hyperparameters (100 means 100 different configurations will be tested)
@@ -107,8 +107,7 @@ WORKFLOW: # what the program do or not do (to allow doing only partial work inst
       
 
   TEST:  # test the trained model directly with QuickXPlain, tested on unseen data.
-    SKIP: true # skip validation part completely
-    # Note: set the path to the folder of the models we want to validate (set the MODEL_PATH in the PATHS section above)
-    models_to_test: ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"] specify which models to be tested.
+    SKIP: false # skip validation part completely
+    models_to_test: ["COMBINED", "EXACT_MATCH"]  # ["F1", "EXACT_MATCH", "MCC", "MAP", "HAMMING_LOSS", "COMBINED"] specify which models to be tested.
 
 
