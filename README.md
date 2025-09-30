@@ -98,10 +98,13 @@ The source code is organized into the following folders:
 *   `NN/`: Contains the scripts and notebooks for training and evaluating the Multi-Layer Perceptron models.
 *   `DecisionTree/`: Contains the scripts and notebooks for training and evaluating the Decision Tree and Random Forest models.
 
-### Technical Appendix
+### Reproduce
+1. Each of these folders contains a 'requirements.txt' file that includes all libraries needed to run the project
+2. The folder 'Models' contains .json files that specify the configurations that produces the best models. Choose 1 configuration (1 .json file) that you want to reproduce
+3. Open 'settings.yaml' and adjust the settings in there to match the chosen configuration.
+4. Set the paths in this file to point to the location of the dataset
+5. Set 'Skip' option of 'Train' and 'Test' to false, this means when we run the project, it will train the model from scratch and test it when training finished.
+6. Run the file 'main.py' to start the process.
 
-For detailed information on data preprocessing, optimal hyperparameter configurations for each model, and exhaustive performance metrics, please refer to the `Technical Appendix.pdf` included in this repository. This document provides the necessary details to ensure the full reproducibility of our work.
+Note: the code is designed to keep track and only store the results of best models. So to ensure that the result of any new test will be saved, remove all the currently saved models by deleting/renaming the folder 'Models' before running the code.
 
----
-
-We believe this work showcases a powerful and practical method for enhancing the responsiveness and scalability of interactive constraint-based systems, ultimately leading to a better user experience.
