@@ -1,6 +1,8 @@
 # From Conflicts to Efficiency: Learning Constraint Orderings for QuickXPlain
 
-This repository contains the code and resources for the paper "From Conflicts to Efficiency: Learning Constraint Orderings for QuickXPlain". The project introduces a machine learning-based approach to enhance the efficiency of the QuickXPlain algorithm for conflict detection in interactive constraint-based systems.
+This repository contains the code and resources for the paper "From Conflicts to Efficiency: Learning Constraint Orderings for QuickXPlain". This served as the bachelor thesis under the supervision of Prof. Alexander Felfernig (Institut Software Engineering and Artificial Intelligence, Graz University of Technology)
+
+The project introduces a machine learning-based approach to enhance the efficiency of the QuickXPlain algorithm for conflict detection in interactive constraint-based systems.
 
 ## 📝 Abstract
 
